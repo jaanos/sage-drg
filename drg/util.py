@@ -22,6 +22,14 @@ def checkPos(exp):
     """
     return not (exp <= 0)
 
+def factor(exp):
+    """
+    Factor an expression.
+    """
+    if isinstance(exp, Expression):
+        return exp.factor()
+    return exp
+
 def integralize(exp):
     """
     Coerce an expression into an integer if possible,

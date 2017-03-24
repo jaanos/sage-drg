@@ -3,6 +3,7 @@ from sage.calculus.functional import simplify as _simplify
 from sage.rings.integer import Integer
 from .util import checkNonneg
 from .util import checkPos
+from .util import factor as _factor
 from .util import integralize
 
 class DRGParameters:
@@ -39,12 +40,14 @@ class DRGParameters:
         self.k = tuple(k)
         self.n = sum(self.k)
 
-    def __len__(self, expand = False, simplify = False):
+    def __len__(self, expand = False, factor = False, simplify = False):
         """
         Return the number of vertices.
         """
         if expand:
             self.n = _expand(self.n)
+        if factor:
+            self.n = _factor(self.n)
         if simplify:
             self.n = _simplify(self.n)
         return self.n
@@ -58,35 +61,41 @@ class DRGParameters:
                tuple(', '.join(str(x) for x in l)
                      for l in self.intersectionArray())
 
-    def aTable(self, expand = False, simplify = False):
+    def aTable(self, expand = False, factor = False, simplify = False):
         """
         Return the table of intersection numbers ``a[1], a[2], ..., a[d]'',
         where ``d'' is the diameter of the graph.
         """
         if expand:
             self.a = tuple(map(_expand, self.a))
+        if factor:
+            self.a = tuple(map(_factor, self.a))
         if simplify:
             self.a = tuple(map(_simplify, self.a))
         return self.a[1:]
 
-    def bTable(self, expand = False, simplify = False):
+    def bTable(self, expand = False, factor = False, simplify = False):
         """
         Return the table of intersection numbers ``b[0], b[1], ..., b[d-1]'',
         where ``d'' is the diameter of the graph.
         """
         if expand:
             self.b = tuple(map(_expand, self.b))
+        if factor:
+            self.b = tuple(map(_factor, self.b))
         if simplify:
             self.b = tuple(map(_simplify, self.b))
         return self.b[:-1]
 
-    def cTable(self, expand = False, simplify = False):
+    def cTable(self, expand = False, factor = False, simplify = False):
         """
         Return the table of intersection numbers ``c[1], c[2], ..., c[d]'',
         where ``d'' is the diameter of the graph.
         """
         if expand:
             self.c = tuple(map(_expand, self.c))
+        if factor:
+            self.c = tuple(map(_factor, self.c))
         if simplify:
             self.c = tuple(map(_simplify, self.c))
         return self.c[1:]
@@ -97,20 +106,25 @@ class DRGParameters:
         """
         return self.d
 
-    def intersectionArray(self, expand = False, simplify = False):
+    def intersectionArray(self, expand = False, factor = False,
+                          simplify = False):
         """
         Return the intersection array of the graph as a tuple of two tuples.
         """
-        return (self.bTable(expand = expand, simplify = simplify),
-                self.cTable(expand = expand, simplify = simplify))
+        return (self.bTable(expand = expand, factor = factor,
+                            simplify = simplify),
+                self.cTable(expand = expand, factor = factor,
+                            simplify = simplify))
 
-    def kTable(self, expand = False, simplify = False):
+    def kTable(self, expand = False, factor = False, simplify = False):
         """
         Return the table of intersection numbers ``k[0], k[1], ..., k[d]'',
         where ``d'' is the diameter of the graph.
         """
         if expand:
             self.k = tuple(map(_expand, self.k))
+        if factor:
+            self.k = tuple(map(_factor, self.k))
         if simplify:
             self.k = tuple(map(_simplify, self.k))
         return self.k
