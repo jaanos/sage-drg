@@ -1,5 +1,9 @@
+from sage.calculus.functional import expand as _expand
+from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
 from sage.symbolic.ring import SR
+from .util import _factor
+from .util import full_simplify
 
 class Array3D:
     """
@@ -14,6 +18,12 @@ class Array3D:
         """
         self.A = [Matrix(SR, n) for i in range(n)]
         self.n = n
+
+    def __eq__(self, other):
+        """
+        Equality comparison.
+        """
+        return self.n == other.n and self.A == other.A
 
     def __getitem__(self, key):
         """
@@ -80,3 +90,16 @@ class Array3D:
             "repeating or nonexisting indices"
         self.A = [Matrix(SR, [[self.A[h][i, j] for j in order] for i in order])
                   for h in order]
+
+    def rewrite(self, expand = False, factor = False, simplify = False):
+        """
+        Rewrite the array.
+        """
+        if expand:
+            self.map(_expand)
+        if factor:
+            self.map(_factor)
+        if simplify > 1:
+            self.map(full_simplify)
+        elif simplify:
+            self.map(_simplify)

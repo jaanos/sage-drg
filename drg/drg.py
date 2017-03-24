@@ -9,10 +9,13 @@ from .array3d import Array3D
 from .coefflist import CoefficientList
 from .util import checkNonneg
 from .util import checkPos
-from .util import factor as _factor
+from .util import _factor
 from .util import full_simplify
 from .util import integralize
 from .util import matrixMap
+from .util import rewriteExp
+from .util import rewriteMatrix
+from .util import rewriteTuple
 from .util import variables
 
 class DRGParameters:
@@ -102,12 +105,8 @@ class DRGParameters:
         """
         Return the number of vertices.
         """
-        if expand:
-            self.n = _expand(self.n)
-        if factor:
-            self.n = _factor(self.n)
-        if simplify:
-            self.n = _simplify(self.n)
+        self.n = rewriteExp(self.n, expand = expand, factor = factor,
+                            simplify = simplify)
         return self.n
 
     def __repr__(self):
@@ -124,12 +123,8 @@ class DRGParameters:
         Return the table of intersection numbers ``a[1], a[2], ..., a[d]``,
         where ``d`` is the diameter of the graph.
         """
-        if expand:
-            self.a = tuple(map(_expand, self.a))
-        if factor:
-            self.a = tuple(map(_factor, self.a))
-        if simplify:
-            self.a = tuple(map(_simplify, self.a))
+        self.a = rewriteTuple(self.a, expand = expand, factor = factor,
+                              simplify = simplify)
         return self.a[1:]
 
     def bTable(self, expand = False, factor = False, simplify = False):
@@ -137,12 +132,8 @@ class DRGParameters:
         Return the table of intersection numbers ``b[0], b[1], ..., b[d-1]``,
         where ``d`` is the diameter of the graph.
         """
-        if expand:
-            self.b = tuple(map(_expand, self.b))
-        if factor:
-            self.b = tuple(map(_factor, self.b))
-        if simplify:
-            self.b = tuple(map(_simplify, self.b))
+        self.b = rewriteTuple(self.b, expand = expand, factor = factor,
+                              simplify = simplify)
         return self.b[:-1]
 
     def cTable(self, expand = False, factor = False, simplify = False):
@@ -150,12 +141,8 @@ class DRGParameters:
         Return the table of intersection numbers ``c[1], c[2], ..., c[d]``,
         where ``d`` is the diameter of the graph.
         """
-        if expand:
-            self.c = tuple(map(_expand, self.c))
-        if factor:
-            self.c = tuple(map(_factor, self.c))
-        if simplify:
-            self.c = tuple(map(_simplify, self.c))
+        self.c = rewriteTuple(self.c, expand = expand, factor = factor,
+                              simplify = simplify)
         return self.c[1:]
 
     def cosineSequences(self, index = None, ev = None, expand = False,
@@ -175,12 +162,8 @@ class DRGParameters:
                     self.omega[i, j] = _simplify(_factor((
                         (self.theta[i] - self.a[j-1]) * self.omega[i, j-1]
                         - self.c[j-1] * self.omega[i, j-2]) / self.b[j-1]))
-        if expand:
-            matrixMap(_expand, self.omega)
-        if factor:
-            matrixMap(_factor, self.omega)
-        if simplify:
-            matrixMap(_simplify, self.omega)
+        rewriteMatrix(self.omega, expand = expand, factor = factor,
+                      simplify = simplify)
         if ev is not None:
             try:
                 index = self.theta.index(ev)
@@ -213,12 +196,8 @@ class DRGParameters:
                             * identity_matrix(SR, self.d + 1):
                     warn(Warning("the eigenmatrices do not multiply "
                                  "into a multiple of the identity matrix"))
-        if expand:
-            matrixMap(_expand, self.Q)
-        if factor:
-            matrixMap(_factor, self.Q)
-        if simplify:
-            matrixMap(_simplify, self.Q)
+        rewriteMatrix(self.Q, expand = expand, factor = factor,
+                      simplify = simplify)
         return Matrix(SR, self.Q)
 
     def eigenmatrix(self, expand = False, factor = False, simplify = False):
@@ -237,12 +216,8 @@ class DRGParameters:
                             * identity_matrix(SR, self.d + 1):
                     warn(Warning("the eigenmatrices do not multiply "
                                  "into a multiple of the identity matrix"))
-        if expand:
-            matrixMap(_expand, self.P)
-        if factor:
-            matrixMap(_factor, self.P)
-        if simplify:
-            matrixMap(_simplify, self.P)
+        rewriteMatrix(self.P, expand = expand, factor = factor,
+                      simplify = simplify)
         return Matrix(SR, self.P)
 
     def eigenvalues(self, expand = False, factor = False, simplify = False):
@@ -263,12 +238,8 @@ class DRGParameters:
                     warn(Warning("More than one variable is used - "
                                  "please check that the ordering is correct"))
             self.theta = tuple(self.theta)
-        if expand:
-            self.theta = tuple(map(_expand, self.theta))
-        if factor:
-            self.theta = tuple(map(_factor, self.theta))
-        if simplify:
-            self.theta = tuple(map(_simplify, self.theta))
+        self.theta = rewriteTuple(self.theta, expand = expand, factor = factor,
+                                  simplify = simplify)
         return self.theta
 
     def intersectionArray(self, expand = False, factor = False,
@@ -286,12 +257,8 @@ class DRGParameters:
         Return the table of intersection numbers ``k[0], k[1], ..., k[d]``,
         where ``d`` is the diameter of the graph.
         """
-        if expand:
-            self.k = tuple(map(_expand, self.k))
-        if factor:
-            self.k = tuple(map(_factor, self.k))
-        if simplify:
-            self.k = tuple(map(_simplify, self.k))
+        self.k = rewriteTuple(self.k, expand = expand, factor = factor,
+                              simplify = simplify)
         return self.k
 
     def kreinParameters(self, expand = False, factor = False, simplify = False):
@@ -316,12 +283,7 @@ class DRGParameters:
                             raise ValueError("Krein parameter q[%d, %d, %d] "
                                              "negative" % (h, i, j))
             self.q = q
-        if expand:
-            self.q.map(_expand)
-        if factor:
-            self.q.map(_factor)
-        if simplify:
-            self.q.map(_simplify)
+        self.q.rewrite(expand = expand, factor = factor, simplify = simplify)
         return self.q
 
     def multiplicities(self, expand = False, factor = False, simplify = False):

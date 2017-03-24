@@ -1,3 +1,5 @@
+from sage.calculus.functional import expand as _expand
+from sage.calculus.functional import simplify as _simplify
 from sage.rings.integer import Integer
 from sage.rings.real_mpfr import create_RealNumber
 from sage.structure.factorization_integer import IntegerFactorization
@@ -23,7 +25,7 @@ def checkPos(exp):
     """
     return not (exp <= 0)
 
-def factor(exp):
+def _factor(exp):
     """
     Factor an expression.
     """
@@ -68,6 +70,47 @@ def matrixMap(fun, M):
     """
     for i in range(M.nrows()):
         M[i] = map(fun, M[i])
+
+def rewriteExp(exp, expand = False, factor = False, simplify = False):
+    """
+    Rewrite an expression.
+    """
+    if expand:
+        exp = _expand(exp)
+    if factor:
+        exp = _factor(exp)
+    if simplify > 1:
+        exp = full_simplify(exp)
+    elif simplify:
+        exp = _simplify(exp)
+    return exp
+
+def rewriteMatrix(M, expand = False, factor = False, simplify = False):
+    """
+    Rewrite a matrix.
+    """
+    if expand:
+        matrixMap(_expand, M)
+    if factor:
+        matrixMap(_factor, M)
+    if simplify > 1:
+        matrixMap(full_simplify, M)
+    elif simplify:
+        matrixMap(_simplify, M)
+
+def rewriteTuple(t, expand = False, factor = False, simplify = False):
+    """
+    Rewrite a tuple.
+    """
+    if expand:
+        t = tuple(map(_expand, t))
+    if factor:
+        t = tuple(map(_factor, t))
+    if simplify > 1:
+        t = tuple(map(full_simplify, t))
+    elif simplify:
+        t = tuple(map(_simplify, t))
+    return t
 
 def variables(exp):
     """
