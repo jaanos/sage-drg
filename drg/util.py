@@ -54,6 +54,13 @@ def integralize(exp):
         pass
     raise TypeError("Attempt to coerce non-integer to Integer")
 
+def matrixMap(fun, M):
+    """
+    Replace each value in matrix ``M`` by its image under ``fun``.
+    """
+    for i in range(M.nrows()):
+        M[i] = map(fun, M[i])
+
 def variables(exp):
     """
     Return a list of variables in an expression.

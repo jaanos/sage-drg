@@ -10,6 +10,7 @@ from .util import checkNonneg
 from .util import checkPos
 from .util import factor as _factor
 from .util import integralize
+from .util import matrixMap
 from .util import variables
 
 class DRGParameters:
@@ -155,6 +156,39 @@ class DRGParameters:
             self.c = tuple(map(_simplify, self.c))
         return self.c[1:]
 
+    def cosineSequences(self, index = None, ev = None, expand = False,
+                        factor = False, simplify = False):
+        """
+        Compute and return the cosine sequences for each eigenvalue.
+        """
+        if "theta" not in self.__dict__:
+            self.eigenvalues(expand = expand, factor = factor,
+                             simplify = simplify)
+        if "omega" not in self.__dict__:
+            self.omega = Matrix(SR, self.d + 1)
+            self.omega[:, 0] = 1
+            for i in range(self.d + 1):
+                self.omega[i, 1] = self.theta[i]/self.b[0]
+                for j in range(2, self.d + 1):
+                    self.omega[i, j] = _simplify(_factor((
+                        (self.theta[i] - self.a[j-1]) * self.omega[i, j-1]
+                        - self.c[j-1] * self.omega[i, j-2]) / self.b[j-1]))
+        if expand:
+            matrixMap(_expand, self.omega)
+        if factor:
+            matrixMap(_factor, self.omega)
+        if simplify:
+            matrixMap(_simplify, self.omega)
+        if ev is not None:
+            try:
+                index = self.theta.index(ev)
+            except ValueError as ex:
+                if index is None:
+                    raise ex
+        if index is not None:
+            return self.omega[index]
+        return self.omega
+
     def diameter(self):
         """
         Return the diameter of the graph.
@@ -235,7 +269,15 @@ class DRGParameters:
         assert set(order) == set(range(self.d + 1)), \
             "repeating or nonexisting indices"
         self.theta = tuple(self.theta[i] for i in order)
+        if "omega" in self.__dict__:
+            self.omega = Matrix(SR, [self.omega[i] for i in order])
         return self.theta
+
+    def valency(self):
+        """
+        Return the valency of the graph.
+        """
+        return self.b[0]
 
     def variables(self):
         """
