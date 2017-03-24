@@ -52,7 +52,7 @@ def integralize(exp):
             return Integer(exp)
     except:
         pass
-    raise TypeError("Attempt to coerce non-integer to Integer")
+    raise TypeError("attempt to coerce non-integer to Integer")
 
 def matrixMap(fun, M):
     """

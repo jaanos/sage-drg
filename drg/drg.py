@@ -30,7 +30,7 @@ class DRGParameters:
         of the intersection array are performed.
         """
         self.d = Integer(len(b))
-        assert self.d == len(c), "Parameter length mismatch"
+        assert self.d == len(c), "parameter length mismatch"
         try:
             self.c = tuple([Integer(0)] + map(integralize, c))
         except TypeError:
@@ -53,7 +53,7 @@ class DRGParameters:
             for i in range(self.d):
                 k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
         except TypeError:
-            raise ValueError("Subconstituents not integral")
+            raise ValueError("subconstituents not integral")
         self.k = tuple(k)
         self.n = sum(self.k)
         self.p = Array3D(self.d + 1)
@@ -244,6 +244,29 @@ class DRGParameters:
             self.k = tuple(map(_simplify, self.k))
         return self.k
 
+    def multiplicities(self, expand = False, factor = False, simplify = False):
+        """
+        Compute and return the multiplicities of the eigenvalues.
+        """
+        if "omega" not in self.__dict__:
+            self.cosineSequences(expand = expand, factor = factor,
+                                 simplify = simplify)
+        if "m" not in self.__dict__:
+            try:
+                self.m = tuple(integralize(_simplify(_factor(
+                                            self.n / sum(k * om**2 for k, om
+                                                         in zip(self.k, omg)))))
+                               for omg in self.omega)
+            except TypeError:
+                raise ValueError("multiplicities not integral")
+        if expand:
+            self.m = tuple(map(_expand, self.m))
+        if factor:
+            self.m = tuple(map(_factor, self.m))
+        if simplify:
+            self.m = tuple(map(_simplify, self.m))
+        return self.m
+
     def pTable(self, expand = False, factor = False, simplify = False):
         """
         Return the table of all intersection numbers.
@@ -271,6 +294,8 @@ class DRGParameters:
         self.theta = tuple(self.theta[i] for i in order)
         if "omega" in self.__dict__:
             self.omega = Matrix(SR, [self.omega[i] for i in order])
+        if "m" in self.__dict__:
+            self.m = tuple(self.m[i] for i in order)
         return self.theta
 
     def valency(self):
