@@ -1,5 +1,6 @@
 from sage.rings.integer import Integer
 from sage.rings.real_mpfr import create_RealNumber
+from sage.structure.factorization_integer import IntegerFactorization
 from sage.symbolic.expression import Expression
 
 def checkNonneg(exp):
@@ -43,7 +44,9 @@ def integralize(exp):
     if isinstance(exp, float):
         exp = create_RealNumber(exp)
     try:
-        if exp.is_integer():
+        if isinstance(exp, IntegerFactorization):
+            return exp + Integer(0)
+        elif exp.is_integer():
             return Integer(exp)
     except:
         pass
