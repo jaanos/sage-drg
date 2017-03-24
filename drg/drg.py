@@ -2,6 +2,7 @@ from warnings import warn
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
+from sage.matrix.constructor import identity_matrix
 from sage.rings.integer import Integer
 from sage.symbolic.ring import SR
 from .array3d import Array3D
@@ -187,13 +188,61 @@ class DRGParameters:
                     raise ex
         if index is not None:
             return self.omega[index]
-        return self.omega
+        return Matrix(SR, self.omega)
 
     def diameter(self):
         """
         Return the diameter of the graph.
         """
         return self.d
+
+    def dualEigenmatrix(self, expand = False, factor = False, simplify = False):
+        """
+        Compute and return the dual eigenmatrix of the graph.
+        """
+        if "m" not in self.__dict__:
+            self.multiplicities(expand = expand, factor = factor,
+                                simplify = simplify)
+        if "Q" not in self.__dict__:
+            self.Q = Matrix(SR, [[self.omega[j, i] * self.m[j]
+                                  for j in range(self.d + 1)]
+                                 for i in range(self.d + 1)])
+            if "P" in self.__dict__ and _simplify(_expand(self.P * self.Q)) \
+                        != self.order(expand = True, simplify = True) \
+                            * identity_matrix(SR, self.d + 1):
+                    warn(Warning("the eigenmatrices do not multiply "
+                                 "into a multiple of the identity matrix"))
+        if expand:
+            matrixMap(_expand, self.Q)
+        if factor:
+            matrixMap(_factor, self.Q)
+        if simplify:
+            matrixMap(_simplify, self.Q)
+        return Matrix(SR, self.Q)
+
+    def eigenmatrix(self, expand = False, factor = False, simplify = False):
+        """
+        Compute and return the eigenmatrix of the graph.
+        """
+        if "omega" not in self.__dict__:
+            self.cosineSequences(expand = expand, factor = factor,
+                                 simplify = simplify)
+        if "P" not in self.__dict__:
+            self.P = Matrix(SR, [[self.omega[i, j] * self.k[j]
+                                  for j in range(self.d + 1)]
+                                 for i in range(self.d + 1)])
+            if "Q" in self.__dict__ and _simplify(_expand(self.P * self.Q)) \
+                        != self.order(expand = True, simplify = True) \
+                            * identity_matrix(SR, self.d + 1):
+                    warn(Warning("the eigenmatrices do not multiply "
+                                 "into a multiple of the identity matrix"))
+        if expand:
+            matrixMap(_expand, self.P)
+        if factor:
+            matrixMap(_factor, self.P)
+        if simplify:
+            matrixMap(_simplify, self.P)
+        return Matrix(SR, self.P)
 
     def eigenvalues(self, expand = False, factor = False, simplify = False):
         """
@@ -296,6 +345,10 @@ class DRGParameters:
             self.omega = Matrix(SR, [self.omega[i] for i in order])
         if "m" in self.__dict__:
             self.m = tuple(self.m[i] for i in order)
+        if "P" in self.__dict__:
+            self.P = Matrix(SR, [self.P[i] for i in order])
+        if "Q" in self.__dict__:
+            self.Q = Matrix(SR, [[r[j] for j in order] for r in self.Q])
         return self.theta
 
     def valency(self):
