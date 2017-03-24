@@ -1,6 +1,7 @@
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.rings.integer import Integer
+from .array3d import Array3D
 from .util import checkNonneg
 from .util import checkPos
 from .util import factor as _factor
