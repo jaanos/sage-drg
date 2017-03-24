@@ -70,3 +70,13 @@ class Array3D:
         for M in self.A:
             for i in range(self.n):
                 M[i] = map(fun, M[i])
+
+    def reorder(self, order):
+        """
+        Reorder each dimension in the array.
+        """
+        assert len(order) == self.n, "wrong number of indices"
+        assert set(order) == set(range(self.n)), \
+            "repeating or nonexisting indices"
+        self.A = [Matrix(SR, [[self.A[h][i, j] for j in order] for i in order])
+                  for h in order]

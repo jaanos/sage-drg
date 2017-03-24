@@ -10,6 +10,7 @@ from .coefflist import CoefficientList
 from .util import checkNonneg
 from .util import checkPos
 from .util import factor as _factor
+from .util import full_simplify
 from .util import integralize
 from .util import matrixMap
 from .util import variables
@@ -293,6 +294,36 @@ class DRGParameters:
             self.k = tuple(map(_simplify, self.k))
         return self.k
 
+    def kreinParameters(self, expand = False, factor = False, simplify = False):
+        """
+        Compute and return the Krein parameters.
+        """
+        if "m" not in self.__dict__:
+            self.multiplicities(expand = expand, factor = factor,
+                                simplify = simplify)
+        if "q" not in self.__dict__:
+            q = Array3D(self.d + 1)
+            for h in range(self.d + 1):
+                for i in range(self.d + 1):
+                    for j in range(self.d + 1):
+                        q[h, i, j] = full_simplify(
+                                            sum(self.k[t] * self.omega[h, t]
+                                                          * self.omega[i, t]
+                                                          * self.omega[j, t]
+                                                for t in range(self.d + 1))
+                                            * self.m[i] * self.m[j] / self.n)
+                        if not checkNonneg(q[h, i, j]):
+                            raise ValueError("Krein parameter q[%d, %d, %d] "
+                                             "negative" % (h, i, j))
+            self.q = q
+        if expand:
+            self.q.map(_expand)
+        if factor:
+            self.q.map(_factor)
+        if simplify:
+            self.q.map(_simplify)
+        return self.q
+
     def multiplicities(self, expand = False, factor = False, simplify = False):
         """
         Compute and return the multiplicities of the eigenvalues.
@@ -349,6 +380,8 @@ class DRGParameters:
             self.P = Matrix(SR, [self.P[i] for i in order])
         if "Q" in self.__dict__:
             self.Q = Matrix(SR, [[r[j] for j in order] for r in self.Q])
+        if "q" in self.__dict__:
+            self.q.reorder(order)
         return self.theta
 
     def valency(self):

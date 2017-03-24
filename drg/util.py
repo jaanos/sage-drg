@@ -31,6 +31,14 @@ def factor(exp):
         return exp.factor()
     return exp
 
+def full_simplify(exp):
+    """
+    Fully simplify an expression.
+    """
+    if isinstance(exp, Expression):
+        return exp.full_simplify()
+    return exp
+
 def integralize(exp):
     """
     Coerce an expression into an integer if possible,
