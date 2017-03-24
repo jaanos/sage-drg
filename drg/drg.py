@@ -145,6 +145,23 @@ class DRGParameters:
                               simplify = simplify)
         return self.c[1:]
 
+    def check_absoluteBound(self):
+        """
+        Check whether the absolute bound is not exceeded.
+        """
+        if "q" not in self.__dict__:
+            self.kreinParameters()
+        for i in range(self.d + 1):
+            if sum(self.m[h] for h in range(self.d + 1)
+                   if self.q[h, i, i] != 0) > self.m[i]*(self.m[i] + 1)/2:
+                raise ValueError("absolute bound exceeded "
+                                 "for (%d, %d)" % (i, i))
+            for j in range(i+1, self.d + 1):
+                if sum(self.m[h] for h in range(self.d + 1)
+                       if self.q[h, i, j] != 0) > self.m[i]*self.m[j]:
+                    raise ValueError("absolute bound exceeded "
+                                     "for (%d, %d)" % (i, j))
+
     def cosineSequences(self, index = None, ev = None, expand = False,
                         factor = False, simplify = False):
         """
