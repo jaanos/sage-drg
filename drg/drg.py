@@ -252,6 +252,15 @@ class DRGParameters:
                 self.cTable(expand = expand, factor = factor,
                             simplify = simplify))
 
+    def is_formallySelfDual(self):
+        """
+        Check whether the graph is formally self-dual.
+        """
+        if "fsd" not in self.__dict__:
+            self.fsd = (self.eigenmatrix(simplify = 2)
+                        - self.dualEigenmatrix(simplify = 2)).is_zero()
+        return self.fsd
+
     def kTable(self, expand = False, factor = False, simplify = False):
         """
         Return the table of intersection numbers ``k[0], k[1], ..., k[d]``,
@@ -344,6 +353,8 @@ class DRGParameters:
             self.Q = Matrix(SR, [[r[j] for j in order] for r in self.Q])
         if "q" in self.__dict__:
             self.q.reorder(order)
+        if "fsd" in self.__dict__:
+            del self.fsd
         return self.theta
 
     def valency(self):
