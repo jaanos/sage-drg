@@ -61,3 +61,11 @@ class Array3D:
         """
         k1, k2, k3 = key
         self.A[k1][k2, k3] = value
+
+    def map(self, fun):
+        """
+        Replace each value by its image under ``fun''.
+        """
+        for M in self.A:
+            for i in range(self.n):
+                M[i] = map(fun, M[i])

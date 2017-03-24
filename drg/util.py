@@ -27,7 +27,7 @@ def factor(exp):
     """
     Factor an expression.
     """
-    if isinstance(exp, Expression):
+    if isinstance(exp, Expression) and not exp.is_zero():
         return exp.factor()
     return exp
 
@@ -43,6 +43,8 @@ def integralize(exp):
     """
     if isinstance(exp, float):
         exp = create_RealNumber(exp)
+    elif isinstance(exp, Expression) and not exp.is_constant():
+        return exp
     try:
         if isinstance(exp, IntegerFactorization):
             return exp + Integer(0)
@@ -50,6 +52,4 @@ def integralize(exp):
             return Integer(exp)
     except:
         pass
-    if isinstance(exp, Expression):
-        return exp
     raise TypeError("Attempt to coerce non-integer to Integer")

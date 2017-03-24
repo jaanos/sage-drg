@@ -24,8 +24,14 @@ class DRGParameters:
         of the intersection array are performed.
         """
         self.d = Integer(len(b))
-        self.c = tuple([Integer(0)] + map(integralize, c))
-        self.b = tuple(map(integralize, b) + [Integer(0)])
+        try:
+            self.c = tuple([Integer(0)] + map(integralize, c))
+        except TypeError:
+            raise ValueError("c sequence not integral")
+        try:
+            self.b = tuple(map(integralize, b) + [Integer(0)])
+        except TypeError:
+            raise ValueError("b sequence not integral")
         self.a = tuple(b[0]-x-y for x, y in zip(self.b, self.c))
         assert self.d == len(c), "Parameter length mismatch"
         assert self.c[1] == 1, "Invalid c[1] value"
@@ -36,10 +42,52 @@ class DRGParameters:
         assert all(checkNonneg(x) for x in self.a), \
             "a values negative"
         k = [1]
-        for i in range(self.d):
-            k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
+        try:
+            for i in range(self.d):
+                k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
+        except TypeError:
+            raise ValueError("Subconstituents not integral")
         self.k = tuple(k)
         self.n = sum(self.k)
+        self.p = Array3D(self.d + 1)
+        for i in range(self.d + 1):
+            self.p[0, i, i] = k[i]
+            self.p[i, 0, i] = Integer(1)
+            self.p[i, i, 0] = Integer(1)
+        for i in range(self.d):
+            self.p[i+1, 1, i+1] = self.a[i+1]
+            self.p[i, 1, i+1] = self.b[i]
+            self.p[i+1, 1, i] = self.c[i+1]
+        for i in range(2, self.d + 1):
+            for j in range(1, self.d + 1):
+                for h in range(1, self.d):
+                    try:
+                        self.p[h, i, j] = integralize(_simplify(_expand(
+                            ( self.c[h] * self.p[h-1, i-1, j]
+                            + self.b[h] * self.p[h+1, i-1, j]
+                            - self.b[i-2] * self.p[h, i-2, j]
+                            + (self.a[h] - self.a[i-1]) * self.p[h, i-1, j]
+                            ) / self.c[i]
+                        )))
+                    except TypeError:
+                        raise ValueError("intersection number p[%d, %d, %d] "
+                                         "is nonintegral" % (h, i, j))
+                    assert checkNonneg(self.p[h, i, j]), \
+                        "intersection number p[%d, %d, %d] is negative" % \
+                        (h, i, j)
+                try:
+                    self.p[self.d, i, j] = integralize(_simplify(_expand(
+                        ( self.c[self.d] * self.p[self.d-1, i-1, j]
+                        - self.b[i-2] * self.p[self.d, i-2, j]
+                        + (self.a[self.d] - self.a[i-1]) * self.p[self.d, i-1, j]
+                        ) / self.c[i]
+                    )))
+                except TypeError:
+                    raise ValueError("intersection number p[%d, %d, %d] "
+                                     "is nonintegral" % (self.d, i, j))
+                assert checkNonneg(self.p[self.d, i, j]), \
+                    "intersection number p[%d, %d, %d] is negative" % \
+                    (self.d, i, j)
 
     def __len__(self, expand = False, factor = False, simplify = False):
         """
@@ -129,5 +177,17 @@ class DRGParameters:
         if simplify:
             self.k = tuple(map(_simplify, self.k))
         return self.k
+
+    def pTable(self, expand = False, factor = False, simplify = False):
+        """
+        Return the table of all intersection numbers.
+        """
+        if expand:
+            self.p.map(_expand)
+        if factor:
+            self.p.map(_factor)
+        if simplify:
+            self.p.map(_simplify)
+        return self.p
 
     order = __len__
