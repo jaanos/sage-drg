@@ -1,11 +1,16 @@
+from warnings import warn
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
+from sage.matrix.constructor import Matrix
 from sage.rings.integer import Integer
+from sage.symbolic.ring import SR
 from .array3d import Array3D
+from .coefflist import CoefficientList
 from .util import checkNonneg
 from .util import checkPos
 from .util import factor as _factor
 from .util import integralize
+from .util import variables
 
 class DRGParameters:
     """
@@ -33,6 +38,7 @@ class DRGParameters:
             self.b = tuple(map(integralize, b) + [Integer(0)])
         except TypeError:
             raise ValueError("b sequence not integral")
+        self.vars = tuple(set(sum(map(variables, b + c), ())))
         self.a = tuple(b[0]-x-y for x, y in zip(self.b, self.c))
         assert self.c[1] == 1, "Invalid c[1] value"
         assert all(checkNonneg(self.b[i] - self.b[i+1])
@@ -155,6 +161,32 @@ class DRGParameters:
         """
         return self.d
 
+    def eigenvalues(self, expand = False, factor = False, simplify = False):
+        """
+        Compute and return the eigenvalues of the graph.
+        """
+        if "theta" not in self.__dict__:
+            B = Matrix(SR, [M[1] for M in self.p])
+            self.theta = B.eigenvalues()
+            try:
+                self.theta.sort(key = lambda x: CoefficientList(x, self.vars),
+                                reverse = True)
+            except:
+                warn(Warning("Sorting of eigenvalues failed - "
+                             "you may want to sort theta manually"))
+            else:
+                if len(self.vars) > 1:
+                    warn(Warning("More than one variable is used - "
+                                 "please check that the ordering is correct"))
+            self.theta = tuple(self.theta)
+        if expand:
+            self.theta = tuple(map(_expand, self.theta))
+        if factor:
+            self.theta = tuple(map(_factor, self.theta))
+        if simplify:
+            self.theta = tuple(map(_simplify, self.theta))
+        return self.theta
+
     def intersectionArray(self, expand = False, factor = False,
                           simplify = False):
         """
@@ -189,5 +221,26 @@ class DRGParameters:
         if simplify:
             self.p.map(_simplify)
         return self.p
+
+    def reorderEigenvalues(self, *order):
+        """
+        Specify a new order for the eigenvalues and return it.
+        """
+        if "theta" not in self.__dict__:
+            self.eigenvalues()
+        if len(order) == 1 and isinstance(order[0], (tuple, list)):
+            order = order[0]
+        assert len(order) == self.d, "wrong number of indices"
+        order = [0] + list(order)
+        assert set(order) == set(range(self.d + 1)), \
+            "repeating or nonexisting indices"
+        self.theta = tuple(self.theta[i] for i in order)
+        return self.theta
+
+    def variables(self):
+        """
+        Return the variables in the graph parameters.
+        """
+        return self.vars
 
     order = __len__

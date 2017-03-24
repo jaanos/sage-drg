@@ -53,3 +53,12 @@ def integralize(exp):
     except:
         pass
     raise TypeError("Attempt to coerce non-integer to Integer")
+
+def variables(exp):
+    """
+    Return a list of variables in an expression.
+    """
+    if isinstance(exp, Expression):
+        return exp.variables()
+    else:
+        return ()
