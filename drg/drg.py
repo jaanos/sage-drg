@@ -17,13 +17,14 @@ class DRGParameters:
         """
         Object constructor.
 
-        Takes two iterables of the same length ``d'' as input,
+        Takes two iterables of the same length ``d`` as input,
         representing the intersection array
-        ``{b[0], b[1], ..., b[d-1]; c[1], c[2], ..., c[d]}''.
+        ``{b[0], b[1], ..., b[d-1]; c[1], c[2], ..., c[d]}``.
         The basic checks on integrality and nonnegativity
         of the intersection array are performed.
         """
         self.d = Integer(len(b))
+        assert self.d == len(c), "Parameter length mismatch"
         try:
             self.c = tuple([Integer(0)] + map(integralize, c))
         except TypeError:
@@ -33,7 +34,6 @@ class DRGParameters:
         except TypeError:
             raise ValueError("b sequence not integral")
         self.a = tuple(b[0]-x-y for x, y in zip(self.b, self.c))
-        assert self.d == len(c), "Parameter length mismatch"
         assert self.c[1] == 1, "Invalid c[1] value"
         assert all(checkNonneg(self.b[i] - self.b[i+1])
                    for i in range(self.d)), "b sequence not non-ascending"
@@ -112,8 +112,8 @@ class DRGParameters:
 
     def aTable(self, expand = False, factor = False, simplify = False):
         """
-        Return the table of intersection numbers ``a[1], a[2], ..., a[d]'',
-        where ``d'' is the diameter of the graph.
+        Return the table of intersection numbers ``a[1], a[2], ..., a[d]``,
+        where ``d`` is the diameter of the graph.
         """
         if expand:
             self.a = tuple(map(_expand, self.a))
@@ -125,8 +125,8 @@ class DRGParameters:
 
     def bTable(self, expand = False, factor = False, simplify = False):
         """
-        Return the table of intersection numbers ``b[0], b[1], ..., b[d-1]'',
-        where ``d'' is the diameter of the graph.
+        Return the table of intersection numbers ``b[0], b[1], ..., b[d-1]``,
+        where ``d`` is the diameter of the graph.
         """
         if expand:
             self.b = tuple(map(_expand, self.b))
@@ -138,8 +138,8 @@ class DRGParameters:
 
     def cTable(self, expand = False, factor = False, simplify = False):
         """
-        Return the table of intersection numbers ``c[1], c[2], ..., c[d]'',
-        where ``d'' is the diameter of the graph.
+        Return the table of intersection numbers ``c[1], c[2], ..., c[d]``,
+        where ``d`` is the diameter of the graph.
         """
         if expand:
             self.c = tuple(map(_expand, self.c))
@@ -167,8 +167,8 @@ class DRGParameters:
 
     def kTable(self, expand = False, factor = False, simplify = False):
         """
-        Return the table of intersection numbers ``k[0], k[1], ..., k[d]'',
-        where ``d'' is the diameter of the graph.
+        Return the table of intersection numbers ``k[0], k[1], ..., k[d]``,
+        where ``d`` is the diameter of the graph.
         """
         if expand:
             self.k = tuple(map(_expand, self.k))

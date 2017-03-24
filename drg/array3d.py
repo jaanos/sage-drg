@@ -5,18 +5,19 @@ class Array3D:
     """
     A three-dimensional array of expressions.
     """
+
     def __init__(self, n):
         """
         Object constructor.
 
-        ``n'' is the size of the array in each dimension.
+        ``n`` is the size of the array in each dimension.
         """
         self.A = [Matrix(SR, n) for i in range(n)]
         self.n = n
 
     def __getitem__(self, key):
         """
-        Return the value at item ``key'',
+        Return the value at item ``key``,
         which must be an integer, a slice,
         or a tuple of at most three of those.
         """
@@ -56,7 +57,7 @@ class Array3D:
 
     def __setitem__(self, key, value):
         """
-        Set ``value`` at position determined by ``key'',
+        Set ``value`` at position determined by ``key``,
         which must be a triple of integers.
         """
         k1, k2, k3 = key
@@ -64,7 +65,7 @@ class Array3D:
 
     def map(self, fun):
         """
-        Replace each value by its image under ``fun''.
+        Replace each value by its image under ``fun``.
         """
         for M in self.A:
             for i in range(self.n):

@@ -7,9 +7,9 @@ def checkNonneg(exp):
     """
     Check whether an expression can be nonnegative.
 
-    Returns ``True'' if ``exp'' is an integer
+    Returns ``True`` if ``exp`` is an integer
     or an expression that is not always negative.
-    Otherwise, returns ``False''.
+    Otherwise, returns ``False``.
     """
     return not (exp < 0)
 
@@ -17,9 +17,9 @@ def checkPos(exp):
     """
     Check whether an expression can be positive.
 
-    Returns ``True'' if ``exp'' is an integer
+    Returns ``True`` if ``exp`` is an integer
     or an expression that is not always negative.
-    Otherwise, returns ``False''.
+    Otherwise, returns ``False``.
     """
     return not (exp <= 0)
 
@@ -36,8 +36,8 @@ def integralize(exp):
     Coerce an expression into an integer if possible,
     else return an error.
 
-    Returns the corresponding integer if ``exp'' is integral.
-    Returns ``exp'' if ``exp'' is an expression
+    Returns the corresponding integer if ``exp`` is integral.
+    Returns ``exp`` if ``exp`` is an expression
     which is not known to be integral.
     Otherwise, an exception is raised.
     """
