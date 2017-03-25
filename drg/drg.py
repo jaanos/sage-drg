@@ -45,7 +45,7 @@ class DRGParameters:
             self.b = tuple(map(integralize, b) + [Integer(0)])
         except TypeError:
             raise ValueError("b sequence not integral")
-        self.vars = tuple(set(sum(map(variables, b + c), ())))
+        self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
         self.a = tuple(full_simplify(b[0]-x-y)
                        for x, y in zip(self.b, self.c))
         assert self.c[1] == 1, "Invalid c[1] value"
@@ -152,12 +152,16 @@ class DRGParameters:
         """
         if "quotient" not in self.__dict__:
             assert self.antipodal, "graph not antipodal"
-            m = floor(self.d / 2)
-            b = self.b[:m]
-            c = list(self.c[1:m+1])
-            if self.d % 2 == 0:
-                c[-1] *= self.r
-            self.quotient = DRGParameters(b, c)
+            if self.d == 2:
+                self.quotient = DRGParameters([self.b[0]/(self.b[1]+1)],
+                                              [Integer(1)])
+            else:
+                m = floor(self.d / 2)
+                b = self.b[:m]
+                c = list(self.c[1:m+1])
+                if self.d % 2 == 0:
+                    c[-1] *= self.r
+                self.quotient = DRGParameters(b, c)
         return self.quotient
 
     def bTable(self, expand = False, factor = False, simplify = False):
@@ -206,6 +210,25 @@ class DRGParameters:
                        if self.q[h, i, j] != 0) > self.m[i]*self.m[j]:
                     raise ValueError("absolute bound exceeded "
                                      "for (%d, %d)" % (i, j))
+
+    def check_feasible(self, recurse = True):
+        """
+        Check whether the intersection array is feasible.
+        """
+        self.check_absoluteBound()
+        if recurse and self.d > 1:
+            if self.bipartite:
+                try:
+                    self.bipartiteHalf().check_feasible()
+                except (ValueError, AssertionError) as ex:
+                    raise ex.__class__("bipartite half:", *ex.args)
+            if self.antipodal:
+                if self.bipartite:
+                    recurse = False
+                try:
+                    self.antipodalQuotient().check_feasible(recurse)
+                except (ValueError, AssertionError) as ex:
+                    raise ex.__class__("antipodal quotient:", *ex.args)
 
     def cosineSequences(self, index = None, ev = None, expand = False,
                         factor = False, simplify = False):

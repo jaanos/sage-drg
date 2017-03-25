@@ -56,7 +56,7 @@ def integralize(exp):
     elif isinstance(exp, Expression) and not exp.is_constant():
         return exp
     try:
-        if isinstance(exp, IntegerFactorization):
+        if isinstance(exp, (int, IntegerFactorization)):
             return exp + Integer(0)
         elif exp.is_integer():
             return Integer(exp)
