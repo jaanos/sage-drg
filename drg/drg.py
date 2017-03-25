@@ -1,6 +1,7 @@
 from warnings import warn
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
+from sage.functions.other import floor
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
 from sage.rings.integer import Integer
@@ -45,7 +46,8 @@ class DRGParameters:
         except TypeError:
             raise ValueError("b sequence not integral")
         self.vars = tuple(set(sum(map(variables, b + c), ())))
-        self.a = tuple(b[0]-x-y for x, y in zip(self.b, self.c))
+        self.a = tuple(full_simplify(b[0]-x-y)
+                       for x, y in zip(self.b, self.c))
         assert self.c[1] == 1, "Invalid c[1] value"
         assert all(checkNonneg(self.b[i] - self.b[i+1])
                    for i in range(self.d)), "b sequence not non-ascending"
@@ -53,6 +55,23 @@ class DRGParameters:
                    for i in range(self.d)), "c sequence not non-descending"
         assert all(checkNonneg(x) for x in self.a), \
             "a values negative"
+        m = floor(self.d / 2)
+        self.antipodal = all(full_simplify(self.b[i] - self.c[self.d - i])
+                             == 0 for i in range(self.d) if i != m)
+        if self.antipodal:
+            try:
+                self.r = integralize(1 + self.b[m] / self.c[self.d - m])
+            except TypeError:
+                raise ValueError("covering index not integral")
+        self.bipartite = all(a == 0 for a in self.a)
+        if self.bipartite:
+            try:
+                for i in range(m):
+                    integralize(self.b[2*i]*self.b[2*i+1]/self.c[2])
+                    integralize(self.c[2*i+1]*self.c[2*i+2]/self.c[2])
+            except TypeError:
+                raise ValueError("intersection array of halved graph "
+                                 "not integral")
         k = [1]
         try:
             for i in range(self.d):
@@ -127,6 +146,20 @@ class DRGParameters:
                               simplify = simplify)
         return self.a[1:]
 
+    def antipodalQuotient(self):
+        """
+        Return the parameters of the antipodal quotient.
+        """
+        if "quotient" not in self.__dict__:
+            assert self.antipodal, "graph not antipodal"
+            m = floor(self.d / 2)
+            b = self.b[:m]
+            c = list(self.c[1:m+1])
+            if self.d % 2 == 0:
+                c[-1] *= self.r
+            self.quotient = DRGParameters(b, c)
+        return self.quotient
+
     def bTable(self, expand = False, factor = False, simplify = False):
         """
         Return the table of intersection numbers ``b[0], b[1], ..., b[d-1]``,
@@ -135,6 +168,18 @@ class DRGParameters:
         self.b = rewriteTuple(self.b, expand = expand, factor = factor,
                               simplify = simplify)
         return self.b[:-1]
+
+    def bipartiteHalf(self):
+        """
+        Return the parameters of the bipartite half.
+        """
+        if "half" not in self.__dict__:
+            assert self.bipartite, "graph not bipartite"
+            m = floor(self.d / 2)
+            b = [self.b[2*i]*self.b[2*i+1]/self.c[2] for i in range(m)]
+            c = [self.c[2*i+1]*self.c[2*i+2]/self.c[2] for i in range(m)]
+            self.half = DRGParameters(b, c)
+        return self.half
 
     def cTable(self, expand = False, factor = False, simplify = False):
         """
@@ -268,6 +313,19 @@ class DRGParameters:
                             simplify = simplify),
                 self.cTable(expand = expand, factor = factor,
                             simplify = simplify))
+
+    def is_antipodal(self):
+        """
+        Check whether the graph is antipodal,
+        and return the covering index if it is.
+        """
+        return self.r if self.antipodal else False
+
+    def is_bipartite(self):
+        """
+        Check whether the graph is bipartite.
+        """
+        return self.bipartite
 
     def is_formallySelfDual(self):
         """
