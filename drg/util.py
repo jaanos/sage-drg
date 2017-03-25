@@ -1,5 +1,7 @@
+from sage.arith.misc import factor as factorize
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
+from sage.functions.other import sqrt
 from sage.rings.integer import Integer
 from sage.rings.real_mpfr import create_RealNumber
 from sage.structure.factorization_integer import IntegerFactorization
@@ -63,6 +65,21 @@ def integralize(exp):
     except:
         pass
     raise TypeError("attempt to coerce non-integer to Integer")
+
+def is_squareSum(x):
+    """
+    Determine whether an integer is a sum of two squares.
+    """
+    if x.is_prime():
+        return x == 2 or x % 4 == 1
+    i, j, y = -1, 0, x
+    while j <= y:
+        if sqrt(y).is_integer():
+            return True
+        i += 2
+        j += i
+        y -= i
+    return False
 
 def matrixMap(fun, M):
     """

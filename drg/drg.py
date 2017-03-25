@@ -4,6 +4,7 @@ from sage.calculus.functional import simplify as _simplify
 from sage.functions.other import floor
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
+from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from sage.symbolic.ring import SR
 from .array3d import Array3D
@@ -13,6 +14,7 @@ from .util import checkPos
 from .util import _factor
 from .util import full_simplify
 from .util import integralize
+from .util import is_squareSum
 from .util import matrixMap
 from .util import rewriteExp
 from .util import rewriteMatrix
@@ -110,7 +112,8 @@ class DRGParameters:
                     self.p[self.d, i, j] = integralize(_simplify(_expand(
                         ( self.c[self.d] * self.p[self.d-1, i-1, j]
                         - self.b[i-2] * self.p[self.d, i-2, j]
-                        + (self.a[self.d] - self.a[i-1]) * self.p[self.d, i-1, j]
+                        + (self.a[self.d] - self.a[i-1])
+                            * self.p[self.d, i-1, j]
                         ) / self.c[i]
                     )))
                 except TypeError:
@@ -194,6 +197,25 @@ class DRGParameters:
                               simplify = simplify)
         return self.c[1:]
 
+    def check_2design(self):
+        """
+        For an graph with intersection array
+        {r*mu+1, (r-1)*mu, 1; 1, mu, r*mu+1},
+        check whether a corresponding 2-design exists.
+        """
+        if self.d == 3 and self.antipodal and isinstance(self.r, Integer) \
+                and isinstance(self.b[0], Integer) \
+                and self.b[0] - 1 == self.b[1] + self.c[2]:
+            if self.r % 2 == 0:
+                ok = is_squareSum(self.b[0])
+            elif self.b[0] % 2 == 0:
+                ok = Integers(self.r)(self.b[0]).is_square() and \
+                    Integers(self.b[0])(self.r if self.r % 4 == 1
+                                        else -self.r).is_square()
+            if not ok:
+                raise ValueError("no corresponding 2-design: "
+                                 "nonexistence by BCN, Prop. 1.10.5.")
+
     def check_absoluteBound(self):
         """
         Check whether the absolute bound is not exceeded.
@@ -211,10 +233,25 @@ class DRGParameters:
                     raise ValueError("absolute bound exceeded "
                                      "for (%d, %d)" % (i, j))
 
+    def check_geodeticEmbedding(self):
+        """
+        For a graph with intersection array {2b, b, 1; 1, 1, 2b},
+        check whether there exists an embedding
+        into a geodetic graph of diameter 2.
+        """
+        if self.d == 3 and self.b[0] == self.c[3] and self.b[2] == 1 \
+                and self.c[2] == 1 and self.b[0] == 2*self.b[1] \
+                and self.b[0] > 4:
+            raise ValueError("no embedding into a geodetic graph "
+                             "of diameter 2: nonexistence by BCN, "
+                             "Prop. 1.17.3.")
+
     def check_feasible(self, recurse = True):
         """
         Check whether the intersection array is feasible.
         """
+        self.check_geodeticEmbedding()
+        self.check_2design()
         self.check_absoluteBound()
         if recurse and self.d > 1:
             if self.bipartite:
@@ -321,7 +358,8 @@ class DRGParameters:
             else:
                 if len(self.vars) > 1:
                     warn(Warning("More than one variable is used - "
-                                 "please check that the ordering is correct"))
+                                 "please check that the ordering "
+                                 "of the eigenvalues is correct"))
             self.theta = tuple(self.theta)
         self.theta = rewriteTuple(self.theta, expand = expand, factor = factor,
                                   simplify = simplify)
