@@ -233,6 +233,17 @@ class DRGParameters:
                     raise ValueError("absolute bound exceeded "
                                      "for (%d, %d)" % (i, j))
 
+    def check_conference(self):
+        """
+        Check whether a conference graph can exist.
+        """
+        if self.d == 2 and all(isinstance(x, Integer)
+                               for x in self.b + self.c) and \
+                self.b[1] == self.c[2] and self.b[0] == 2*self.b[1] and \
+                (self.n % 4 != 1 or not is_squareSum(self.n)):
+            raise ValueError("conference graph must have order "
+                             "a sum of two squares with residue 1 (mod 4)")
+
     def check_geodeticEmbedding(self):
         """
         For a graph with intersection array {2b, b, 1; 1, 1, 2b},
@@ -250,6 +261,7 @@ class DRGParameters:
         """
         Check whether the intersection array is feasible.
         """
+        self.check_conference()
         self.check_geodeticEmbedding()
         self.check_2design()
         self.check_absoluteBound()
