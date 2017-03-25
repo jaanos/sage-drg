@@ -78,6 +78,11 @@ class DRGParameters:
         try:
             for i in range(self.d):
                 k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
+                if isinstance(self.a[i+1], Integer) and \
+                        isinstance(k[-1], Integer) and \
+                        self.a[i+1] % 2 == 1 and k[-1] % 2 == 1:
+                    raise ValueError("handshake lemma fails "
+                                     "for subconstituent %d" % (i+1))
         except TypeError:
             raise ValueError("subconstituents not integral")
         self.k = tuple(k)
