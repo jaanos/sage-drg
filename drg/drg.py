@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 from warnings import warn
+from sage.all import pi
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.functions.other import ceil
 from sage.functions.other import floor
+from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
 from sage.rings.finite_rings.integer_mod_ring import Integers
@@ -355,7 +357,7 @@ class DRGParameters:
         """
         Check whether the intersection array is feasible.
         """
-        if self.d == 1:
+        if self.d == 1 or self.k[1] == 2:
             return
         self.check_conference()
         self.check_geodeticEmbedding()
@@ -509,20 +511,25 @@ class DRGParameters:
         Compute and return the eigenvalues of the graph.
         """
         if "theta" not in self.__dict__:
-            B = Matrix(SR, [M[1] for M in self.p])
-            self.theta = B.eigenvalues()
-            try:
-                self.theta.sort(key = lambda x: CoefficientList(x, self.vars),
-                                reverse = True)
-            except:
-                warn(Warning("Sorting of eigenvalues failed - "
-                             "you may want to sort theta manually"))
+            if self.k[1] == 2:
+                self.theta = tuple(2*cos(2*i*pi/self.n)
+                                   for i in range(self.d + 1))
             else:
-                if len(self.vars) > 1:
-                    warn(Warning("More than one variable is used - "
-                                 "please check that the ordering "
-                                 "of the eigenvalues is correct"))
-            self.theta = tuple(self.theta)
+                B = Matrix(SR, [M[1] for M in self.p])
+                self.theta = B.eigenvalues()
+                try:
+                    self.theta.sort(
+                        key = lambda x: CoefficientList(x, self.vars),
+                        reverse = True)
+                except:
+                    warn(Warning("Sorting of eigenvalues failed - "
+                                 "you may want to sort theta manually"))
+                else:
+                    if len(self.vars) > 1:
+                        warn(Warning("More than one variable is used - "
+                                     "please check that the ordering "
+                                     "of the eigenvalues is correct"))
+                self.theta = tuple(self.theta)
         self.theta = rewriteTuple(self.theta, expand = expand,
                                   factor = factor, simplify = simplify)
         return self.theta
@@ -602,13 +609,17 @@ class DRGParameters:
             self.cosineSequences(expand = expand, factor = factor,
                                  simplify = simplify)
         if "m" not in self.__dict__:
-            try:
-                self.m = tuple(integralize(_simplify(_factor(
+            if self.k[1] == 2:
+                self.m = tuple(Integer(1 if th in [2, -2] else 2)
+                               for th in self.theta)
+            else:
+                try:
+                    self.m = tuple(integralize(_simplify(_factor(
                                             self.n / sum(k * om**2 for k, om
                                                     in zip(self.k, omg)))))
-                               for omg in self.omega)
-            except TypeError:
-                raise ValueError("multiplicities not integral")
+                                   for omg in self.omega)
+                except TypeError:
+                    raise ValueError("multiplicities not integral")
         if expand:
             self.m = tuple(map(_expand, self.m))
         if factor:
