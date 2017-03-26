@@ -160,17 +160,35 @@ class DRGParameters:
                          (isinstance(self.a[1], Integer) and self.n % 3 != 0
                           and self.a[1] % 3 != 0 and self.k[1] % 3 != 0)):
                 raise ValueError("handshake lemma not satisfied")
-            if (self.c[2] == 1 or checkNonneg(1 - self.a[1]) or
-                                (self.c[2] == 2 and
-                                 checkPos(self.a[1]*(self.a[1]+3)/2
-                                          - self.k[1]))):
+            c2one = checkNonneg(1-self.c[2])
+            case3 = checkNonneg(1-self.b[self.d-1]) and \
+                self.a[self.d] == self.a[1] + 1
+            if c2one or case3 or self.a[1] == 1 or \
+                    (self.c[2] == 2 and checkPos(self.a[1]*(self.a[1]+3)/2
+                                                 - self.k[1])) or \
+                    any(checkPos(self.b[i]-1) and self.c[i] == self.b[1]
+                        for i in range(2, self.d+1)):
+                if case3:
+                    try:
+                        integralize(self.k[d] / (self.a[1]+2))
+                    except TypeError:
+                        raise ValueError("last subconstituent "
+                                         "a union of cliques, "
+                                         "a[1]+2 does not divide k[d]: "
+                                         "nonexistence by BCN, "
+                                         "Prop. 4.3.2(iii).")
                 try:
-                    integralize(self.k[1] / (self.a[1]+1))
-                    integralize(self.n*self.k[1] /
-                                ((self.a[1]+1)*(self.a[1]+2)))
+                    kl = integralize(self.k[1] / (self.a[1]+1))
+                    vkll = integralize(self.n*kl / (self.a[1]+2))
                 except TypeError:
                     raise ValueError("handshake lemma not satisfied "
                                      "for maximal cliques")
+                if checkPos(self.a[1] * self.c[2] - self.a[2]) or \
+                        (c2one and checkPos(1 + self.b[1]*(self.b[1]+1) *
+                                                (self.a[1]+2)/(1 + self.a[1])
+                                            - vkll)):
+                    raise ValueError("graph with maximal cliques: "
+                                     "nonexistence by BCN, Prop. 4.3.3.")
         self.p = Array3D(self.d + 1)
         for i in range(self.d + 1):
             self.p[0, i, i] = k[i]
