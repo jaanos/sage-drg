@@ -127,8 +127,8 @@ class DRGParameters:
         self.k = tuple(k)
         self.n = sum(self.k)
         if self.d >= 2:
-            if self.a[1] == 0 and any(checkPos(2*self.a[i] - self.k[i]
-                                      for i in range(2, self.d+1))):
+            if self.a[1] == 0 and any(checkPos(2*self.a[i] - self.k[i])
+                                      for i in range(2, self.d+1)):
                 raise ValueError(u"Turán's theorem: "
                                   "nonexistence by BCN, Prop. 5.6.4.")
             if not self.antipodal:
@@ -170,7 +170,7 @@ class DRGParameters:
                         for i in range(2, self.d+1)):
                 if case3:
                     try:
-                        integralize(self.k[d] / (self.a[1]+2))
+                        integralize(self.k[self.d] / (self.a[1]+2))
                     except TypeError:
                         raise ValueError("last subconstituent "
                                          "a union of cliques, "
