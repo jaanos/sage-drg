@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 from warnings import warn
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
+from sage.functions.other import ceil
 from sage.functions.other import floor
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
@@ -39,6 +41,8 @@ class DRGParameters:
         """
         self.d = Integer(len(b))
         assert self.d == len(c), "parameter length mismatch"
+        assert all(checkPos(x) for x in c), "c sequence not positive"
+        assert all(checkPos(x) for x in b), "b sequence not positive"
         try:
             self.c = tuple([Integer(0)] + map(integralize, c))
         except TypeError:
@@ -57,6 +61,38 @@ class DRGParameters:
                    for i in range(self.d)), "c sequence not non-descending"
         assert all(checkNonneg(x) for x in self.a), \
             "a values negative"
+        if checkPos(self.b[0] - 2):
+            if self.b[1] == 1 and (self.d != 2 or self.c[2] != self.b[0]):
+                raise ValueError("b1 = 1 and not a cycle "
+                                 "or cocktail party graph")
+            for i in range(2, self.d):
+                if checkPos(self.b[i] - 1):
+                    continue
+                if checkNonneg(self.d - 3*i) or \
+                        any(checkPos(self.c[j] - 1) or
+                            checkNonneg(self.a[j] - self.c[i+j])
+                            for j in range(1, self.d - i + 1)) or \
+                        (self.d >= 2*i and self.c[2*i] == 1) or \
+                        any(checkPos(a[j]) for j
+                            in range(1, self.d - 2*i + 1)) or \
+                        (i < self.d and checkPos((self.c[2] - 1)*self.a[i+1]
+                                                 + self.a[1] - self.a[i])):
+                    raise ValueError("Godsil's diameter bound not reached: "
+                                     "nonexistence by BCN, Lem. 5.3.1.")
+        if self.d >= 3 and checkPos(self.c[2] - 1) and \
+                checkPos(3*self.c[2] - 2*self.c[3]) and \
+                (self.d != 3 or checkPos(self.b[2] + self.c[2] - self.c[3])):
+            raise ValueError("intersection number c[3] too small: "
+                             "nonexistence by BCN, Thm. 5.4.1.")
+        if checkPos(self.a[1]) and \
+                any(checkPos(self.a[1] + 1 - 2*self.a[i]) or
+                    ((i < self.d-1 or checkPos(self.a[self.d]) or
+                     (self.d > 2 and checkPos(self.b[self.d-1]-1))) and
+                     checkPos(self.a[1] + 1 - self.a[i] - self.a[i+1])) or
+                    checkPos(self.a[1] + 2 - self.b[i] - self.c[i+1])
+                    for i in range(1, self.d)):
+            raise ValueError("counting argument: "
+                             "nonexistence by BCN, Prop. 5.5.1.")
         m = floor(self.d / 2)
         self.antipodal = all(full_simplify(self.b[i] - self.c[self.d - i])
                              == 0 for i in range(self.d) if i != m)
@@ -78,15 +114,63 @@ class DRGParameters:
         try:
             for i in range(self.d):
                 k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
+                if checkNonneg(self.a[i+1] - k[-1]):
+                    raise ValueError("valency of subconstituent %d too large"
+                                     % (i+1))
                 if isinstance(self.a[i+1], Integer) and \
                         isinstance(k[-1], Integer) and \
                         self.a[i+1] % 2 == 1 and k[-1] % 2 == 1:
-                    raise ValueError("handshake lemma fails "
+                    raise ValueError("handshake lemma not satisfied "
                                      "for subconstituent %d" % (i+1))
         except TypeError:
             raise ValueError("subconstituents not integral")
         self.k = tuple(k)
         self.n = sum(self.k)
+        if self.d >= 2:
+            if self.a[1] == 0 and any(checkPos(2*self.a[i] - self.k[i]
+                                      for i in range(2, self.d+1))):
+                raise ValueError(u"Turán's theorem: "
+                                  "nonexistence by BCN, Prop. 5.6.4.")
+            if not self.antipodal:
+                ka = self.k[self.d] * self.a[self.d]
+                kka = self.k[self.d] * (self.k[self.d] - self.a[self.d] - 1)
+                try:
+                    if (checkPos(self.k[1] - ka) and
+                            checkPos(self.k[1] - kka)) \
+                            or (checkPos(self.k[2] - kka) and
+                                (checkPos(self.k[1] - ka) or
+                                 checkPos(self.k[1] - self.a[self.d] *
+                                    (self.a[1] + 2 - self.a[self.d]))) and
+                                (checkPos(self.b[self.d-1] - 1) or
+                                 not (self.a[1] + 1 == self.a[self.d]) or
+                                 checkPos(
+                                    integralize(self.k[1]/self.a[self.d])
+                                    - self.k[self.d]))):
+                        raise TypeError
+                except TypeError:
+                    raise ValueError("last subconstituent too small: "
+                                     "nonexistence by BCN, Prop. 5.6.1.")
+                if self.d >= 3 and \
+                        self.k[1] == self.k[self.d] * (self.k[self.d] - 1) \
+                        and checkPos(self.k[self.d] - self.a[self.d] - 1):
+                    raise ValueError("last subconstituent too small: "
+                                     "nonexistence by BCN, Prop. 5.6.3.")
+            if isinstance(self.n, Integer) and isinstance(self.k[1], Integer) \
+                    and ((self.n % 2 == 1 and self.k[1] % 2 == 1) or
+                         (isinstance(self.a[1], Integer) and self.n % 3 != 0
+                          and self.a[1] % 3 != 0 and self.k[1] % 3 != 0)):
+                raise ValueError("handshake lemma not satisfied")
+            if (self.c[2] == 1 or checkNonneg(1 - self.a[1]) or
+                                (self.c[2] == 2 and
+                                 checkPos(self.a[1]*(self.a[1]+3)/2
+                                          - self.k[1]))):
+                try:
+                    integralize(self.k[1] / (self.a[1]+1))
+                    integralize(self.n*self.k[1] /
+                                ((self.a[1]+1)*(self.a[1]+2)))
+                except TypeError:
+                    raise ValueError("handshake lemma not satisfied "
+                                     "for maximal cliques")
         self.p = Array3D(self.d + 1)
         for i in range(self.d + 1):
             self.p[0, i, i] = k[i]
@@ -249,6 +333,31 @@ class DRGParameters:
             raise ValueError("conference graph must have order "
                              "a sum of two squares with residue 1 (mod 4)")
 
+    def check_feasible(self, recurse = True):
+        """
+        Check whether the intersection array is feasible.
+        """
+        if self.d == 1:
+            return
+        self.check_conference()
+        self.check_geodeticEmbedding()
+        self.check_2design()
+        self.check_terwilliger()
+        self.check_absoluteBound()
+        if recurse:
+            if self.bipartite:
+                try:
+                    self.bipartiteHalf().check_feasible()
+                except (ValueError, AssertionError) as ex:
+                    raise ex.__class__("bipartite half:", *ex.args)
+            if self.antipodal:
+                if self.bipartite:
+                    recurse = False
+                try:
+                    self.antipodalQuotient().check_feasible(recurse)
+                except (ValueError, AssertionError) as ex:
+                    raise ex.__class__("antipodal quotient:", *ex.args)
+
     def check_geodeticEmbedding(self):
         """
         For a graph with intersection array {2b, b, 1; 1, 1, 2b},
@@ -262,27 +371,44 @@ class DRGParameters:
                              "of diameter 2: nonexistence by BCN, "
                              "Prop. 1.17.3.")
 
-    def check_feasible(self, recurse = True):
+    def check_terwilliger(self):
         """
-        Check whether the intersection array is feasible.
+        Check whether the graph is a Terwilliger graph
+        and whether existence conditions are satisfied in this case,
+        or if the Terwilliger diameter bound is satisfied otherwise.
         """
-        self.check_conference()
-        self.check_geodeticEmbedding()
-        self.check_2design()
-        self.check_absoluteBound()
-        if recurse and self.d > 1:
-            if self.bipartite:
-                try:
-                    self.bipartiteHalf().check_feasible()
-                except (ValueError, AssertionError) as ex:
-                    raise ex.__class__("bipartite half:", *ex.args)
-            if self.antipodal:
-                if self.bipartite:
-                    recurse = False
-                try:
-                    self.antipodalQuotient().check_feasible(recurse)
-                except (ValueError, AssertionError) as ex:
-                    raise ex.__class__("antipodal quotient:", *ex.args)
+        small = (self.d == 2 and checkPos(50 * self.c[2] - self.n)) or \
+                (self.d >= 3 and checkPos(50 * (self.c[2] - 1) - self.b[0]))
+        if self.d >= 2 and isinstance(self.b[0], Integer) and \
+                isinstance(self.a[1], Integer) and \
+                isinstance(self.c[2], Integer):
+            if self.b[0] == 10 and self.a[1] == 3 and \
+                    (self.c[2] == 2 or checkPos(self.b[2] - self.c[2])):
+                s = 4
+            else:
+                s = ceil(self.b[0] / (self.a[1] + 1))
+            v = 2*(s*(self.a[1] + 1) - self.b[0]) / (s*(s-1)) + 1 - self.c[2]
+            if checkPos(v):
+                raise ValueError("coclique bound exceeded: "
+                                 "nonexistence by KP10, Thm. 3.")
+            elif v == 0:
+                ia = self.intersectionArray()
+                if small and ia not in [((2, 1), (1, 1)), ((5, 4), (1, 1)),
+                                        ((5, 2, 1), (1, 2, 5)),
+                                        ((10, 6, 4), (1, 2, 5)),
+                                        ((10, 6, 4, 1), (1, 2, 6, 10))]:
+                    raise ValueError("too small for a Terwilliger graph: "
+                                     "nonexistence by BCN, Cor. 1.16.6.")
+                return
+        if checkNonneg(self.c[2] - 2) and (small
+                or checkPos(self.b[1]*(self.c[1]-1) - self.a[1]*(self.a[1]-1))
+                or (self.d >= 3 and checkPos(self.c[3] - 1)
+                                and checkPos(2*self.c[2] - self.c[3]))) and \
+                any(checkPos(self.c[i] - self.b[i] + self.a[1] + 2
+                             - self.c[i+1] + self.b[i+1])
+                    for i in range(self.d)):
+            raise ValueError("Terwilliger's diameter bound not reached: "
+                             "nonexistence by BCN, Thm. 5.2.1.")
 
     def cosineSequences(self, index = None, ev = None, expand = False,
                         factor = False, simplify = False):
@@ -319,7 +445,8 @@ class DRGParameters:
         """
         return self.d
 
-    def dualEigenmatrix(self, expand = False, factor = False, simplify = False):
+    def dualEigenmatrix(self, expand = False, factor = False,
+                        simplify = False):
         """
         Compute and return the dual eigenmatrix of the graph.
         """
@@ -378,8 +505,8 @@ class DRGParameters:
                                  "please check that the ordering "
                                  "of the eigenvalues is correct"))
             self.theta = tuple(self.theta)
-        self.theta = rewriteTuple(self.theta, expand = expand, factor = factor,
-                                  simplify = simplify)
+        self.theta = rewriteTuple(self.theta, expand = expand,
+                                  factor = factor, simplify = simplify)
         return self.theta
 
     def intersectionArray(self, expand = False, factor = False,
@@ -423,7 +550,8 @@ class DRGParameters:
                               simplify = simplify)
         return self.k
 
-    def kreinParameters(self, expand = False, factor = False, simplify = False):
+    def kreinParameters(self, expand = False, factor = False,
+                        simplify = False):
         """
         Compute and return the Krein parameters.
         """
@@ -459,7 +587,7 @@ class DRGParameters:
             try:
                 self.m = tuple(integralize(_simplify(_factor(
                                             self.n / sum(k * om**2 for k, om
-                                                         in zip(self.k, omg)))))
+                                                    in zip(self.k, omg)))))
                                for omg in self.omega)
             except TypeError:
                 raise ValueError("multiplicities not integral")
