@@ -10,6 +10,7 @@ from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
+from sage.symbolic.relation import solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .coefflist import CoefficientList
@@ -377,6 +378,7 @@ class DRGParameters:
         self.check_geodeticEmbedding()
         self.check_2design()
         self.check_terwilliger()
+        self.check_secondEigenvalue()
         self.check_absoluteBound()
         if recurse:
             if self.bipartite:
@@ -405,6 +407,24 @@ class DRGParameters:
                              "of diameter 2: nonexistence by BCN, "
                              "Prop. 1.17.3.")
 
+    def check_secondEigenvalue(self):
+        """
+        For a graph with the second eigenvalue equal to b[1]-1,
+        check whether it belongs to the characterization.
+        """
+        if "theta" not in self.__dict__:
+            self.eigenvalues()
+        if (self.b[1] - 1) in self.theta:
+            if (self.d != 2 or all(th != -2 for th in self.theta)
+                    or self.n > 28) and self.c[2] != 1 and \
+                    not (self.is_hamming() or
+                         self.is_locallyPetersen() or
+                         self.is_johnson() or
+                         self.is_halfCube() or
+                         self.match(((27, 10, 1), (1, 10, 27)))):
+                raise ValueError("theta[1] = b[1]-1, not in characterization:"
+                                 " nonexistence by BCN, Thm. 4.4.11.")
+
     def check_terwilliger(self):
         """
         Check whether the graph is a Terwilliger graph
@@ -426,11 +446,9 @@ class DRGParameters:
                 raise ValueError("coclique bound exceeded: "
                                  "nonexistence by KP10, Thm. 3.")
             elif v == 0:
-                ia = self.intersectionArray()
-                if small and ia not in [((2, 1), (1, 1)), ((5, 4), (1, 1)),
-                                        ((5, 2, 1), (1, 2, 5)),
-                                        ((10, 6, 4), (1, 2, 5)),
-                                        ((10, 6, 4, 1), (1, 2, 6, 10))]:
+                if small and not self.is_locallyPetersen() and \
+                        not self.match(((2, 1), (1, 1)), ((5, 4), (1, 1)),
+                                       ((5, 2, 1), (1, 2, 5))):
                     raise ValueError("too small for a Terwilliger graph: "
                                      "nonexistence by BCN, Cor. 1.16.6.")
                 return
@@ -580,6 +598,45 @@ class DRGParameters:
                         - self.dualEigenmatrix(simplify = 2)).is_zero()
         return self.fsd
 
+    def is_halfCube(self):
+        """
+        Check whether the graph can be a halved cube.
+        """
+        b1 = [SR(x) == (self.d-i) * (2*(self.d-i) - 1)
+              for i, x in enumerate(self.b[:-1])]
+        b2 = [SR(x) == (self.d-i) * (2*(self.d-i) + 1)
+              for i, x in enumerate(self.b[:-1])]
+        c = [SR(x) == (i+1) * (2*i + 1) for i, x in enumerate(self.c[1:])]
+        return len(solve(b1 + c, self.vars)) > 0 or \
+               len(solve(b2 + c, self.vars)) > 0
+
+    def is_hamming(self):
+        """
+        Check whether the graph can be a Hamming (or Doob) graph.
+        """
+        z = SR.symbol()
+        return len(solve([SR(x) == (self.d-i) * z
+                          for i, x in enumerate(self.b[:-1])] +
+                          [SR(x) == i+1 for i, x in enumerate(self.c[1:])],
+                         self.vars + (z, ))) > 0
+
+    def is_johnson(self):
+        """
+        Check whether the graph can be a Johnson graph.
+        """
+        z = SR.symbol()
+        return len(solve([SR(x) == (self.d-i) * (self.d - z - i)
+                          for i, x in enumerate(self.b[:-1])] +
+                          [SR(x) == (i+1)**2 for i, x
+                           in enumerate(self.c[1:])], self.vars + (z, ))) > 0
+
+    def is_locallyPetersen(self):
+        """
+        Check whether the graph can be locally Petersen.
+        """
+        return self.match(((10, 6), (1, 6)), ((10, 6, 4), (1, 2, 5)),
+                          ((10, 6, 4, 1), (1, 2, 6, 10)))
+
     def kTable(self, expand = False, factor = False, simplify = False):
         """
         Return the table of intersection numbers ``k[0], k[1], ..., k[d]``,
@@ -614,6 +671,20 @@ class DRGParameters:
             self.q = q
         self.q.rewrite(expand = expand, factor = factor, simplify = simplify)
         return self.q
+
+    def match(self, *ial):
+        """
+        Check whether the graph matches any of the given intersection arrays.
+        """
+        for b, c in ial:
+            assert len(b) == len(c), "parameter length mismatch"
+            if self.d != len(b):
+                continue
+            if len(solve([SR(l) == r for l, r
+                         in zip(self.b[:-1] + self.c[1:],
+                                tuple(b) + tuple(c))], self.vars)) > 0:
+                return True
+        return False
 
     def multiplicities(self, expand = False, factor = False, simplify = False):
         """
