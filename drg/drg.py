@@ -43,8 +43,6 @@ class DRGParameters:
         """
         self.d = Integer(len(b))
         assert self.d == len(c), "parameter length mismatch"
-        assert all(checkPos(x) for x in c), "c sequence not positive"
-        assert all(checkPos(x) for x in b), "b sequence not positive"
         try:
             self.c = tuple([Integer(0)] + map(integralize, c))
         except TypeError:
@@ -53,6 +51,9 @@ class DRGParameters:
             self.b = tuple(map(integralize, b) + [Integer(0)])
         except TypeError:
             raise ValueError("b sequence not integral")
+        assert all(checkPos(x) for x in self.c[1:]), "c sequence not positive"
+        assert all(checkPos(x) for x in self.b[:-1]), \
+            "b sequence not positive"
         self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
         self.a = tuple(full_simplify(b[0]-x-y)
                        for x, y in zip(self.b, self.c))
@@ -320,7 +321,25 @@ class DRGParameters:
             c2one = checkNonneg(1-self.c[2])
             case3 = checkNonneg(1-self.b[self.d-1]) and \
                 self.a[self.d] == self.a[1] + 1
-            if c2one or case3 or self.a[1] == 1 or \
+            case4 = False
+            if self.p[2, self.d, self.d] == 0:
+                try:
+                    ad1 = self.a[self.d] + 1
+                    bad1 = self.b[self.d-1] - ad1
+                    integralize(self.k[self.d] / ad1)
+                    if checkPos(self.a[self.d] - self.a[1] - 1) or \
+                            checkPos(bad1) or \
+                            checkPos(self.b[self.d-1] - self.c[2]) or \
+                            (checkNonneg(bad1) and checkPos(self.a[self.d])) \
+                            or (checkPos(self.b[self.d-1] - 1) and
+                                checkPos(ad1 - self.a[1])):
+                        raise TypeError
+                    case4 = checkNonneg(1 - self.b[self.d-1]) and \
+                        checkPos(self.a[self.d])
+                except TypeError:
+                    raise ValueError("p[2,d,d] = 0: "
+                                     "nonexistence by BCN, Prop. 5.7.1.")
+            if c2one or case3 or case4 or self.a[1] == 1 or \
                     (self.c[2] == 2 and checkPos(self.a[1]*(self.a[1]+3)/2
                                                  - self.k[1])) or \
                     any(checkPos(self.b[i]-1) and self.c[i] == self.b[1]
