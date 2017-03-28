@@ -66,6 +66,12 @@ def integralize(exp):
         pass
     raise TypeError("attempt to coerce non-integer to Integer")
 
+def is_constant(x):
+    """
+    Determine whether an expression is constant.
+    """
+    return not isinstance(x, Expression) or x.is_constant()
+
 def is_squareSum(x):
     """
     Determine whether an integer is a sum of two squares.

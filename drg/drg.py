@@ -10,6 +10,7 @@ from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
+from sage.rings.number_field.number_field import NumberField
 from sage.symbolic.relation import solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
@@ -19,6 +20,7 @@ from .util import checkPos
 from .util import _factor
 from .util import full_simplify
 from .util import integralize
+from .util import is_constant
 from .util import is_squareSum
 from .util import matrixMap
 from .util import rewriteExp
@@ -379,6 +381,7 @@ class DRGParameters:
         self.check_2design()
         self.check_terwilliger()
         self.check_secondEigenvalue()
+        self.check_localEigenvalues()
         self.check_absoluteBound()
         if recurse:
             if self.bipartite:
@@ -406,6 +409,48 @@ class DRGParameters:
             raise ValueError("no embedding into a geodetic graph "
                              "of diameter 2: nonexistence by BCN, "
                              "Prop. 1.17.3.")
+
+    def check_localEigenvalues(self):
+        """
+        For a graph of diameter at least 3,
+        check whether the eigenvalues of the local graph
+        are in the allowed range.
+        """
+        if "m" not in self.__dict__:
+            self.multiplicities()
+        if self.d >= 3 and not self.match(((5, 2, 1), (1, 2, 5))) and \
+                all(is_constant(th) for th in self.theta if th != self.k[1]):
+            th1, i = max((th, h) for h, th in enumerate(self.theta)
+                         if th != self.k[1])
+            thd, j = min((th, h) for h, th in enumerate(self.theta)
+                         if th != self.k[1])
+            if (self.b[1]/(th1+1) < 1 and self.c[2] != 1) or \
+                    (self.b[1]/(thd+1) > -2 and self.a[1] != 0):
+                raise ValueError("local eigenvalues not in allowed range: "
+                                 "nonexistence by BCN, Thm. 4.4.3.")
+            s = {h for h, m in enumerate(self.m)
+                 if self.theta[h] != self.k[1] and m < self.k[1]}
+            if not s.issubset({i, j}):
+                raise ValueError("m[i] < k for i != 2, d: "
+                                 "nonexistence by BCN, Thm. 4.4.4.")
+            r = []
+            for h in s:
+                t = self.b[1] / (self.theta[h] + 1)
+                try:
+                    integralize(t)
+                except TypeError:
+                    r.append(t)
+            if len(r) == 0:
+                return
+            p = next(iter(r)).minpoly()
+            k = NumberField(p, names = ('a', ))
+            a, = k.gen()
+            if len(r) == 1 or p.degree() != 2 or \
+                    len({t.minpoly() for t in r}) == 2 or not a.is_integral():
+                raise ValueError("m[i] < k, b[1]/(theta[1]+1) and "
+                                 "b[1]/(theta[d]+1) not integers "
+                                 "or algebraic conjugates: "
+                                 "nonexistence by BCN, Thm. 4.4.4.")
 
     def check_secondEigenvalue(self):
         """
