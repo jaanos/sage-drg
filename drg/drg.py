@@ -63,38 +63,6 @@ class DRGParameters:
                    for i in range(self.d)), "c sequence not non-descending"
         assert all(checkNonneg(x) for x in self.a), \
             "a values negative"
-        if checkPos(self.b[0] - 2):
-            if self.b[1] == 1 and (self.d != 2 or self.c[2] != self.b[0]):
-                raise ValueError("b1 = 1 and not a cycle "
-                                 "or cocktail party graph")
-            for i in range(2, self.d):
-                if checkPos(self.b[i] - 1):
-                    continue
-                if checkNonneg(self.d - 3*i) or \
-                        any(checkPos(self.c[j] - 1) or
-                            checkNonneg(self.a[j] - self.c[i+j])
-                            for j in range(1, self.d - i + 1)) or \
-                        (self.d >= 2*i and self.c[2*i] == 1) or \
-                        any(checkPos(a[j]) for j
-                            in range(1, self.d - 2*i + 1)) or \
-                        (i < self.d and checkPos((self.c[2] - 1)*self.a[i+1]
-                                                 + self.a[1] - self.a[i])):
-                    raise ValueError("Godsil's diameter bound not reached: "
-                                     "nonexistence by BCN, Lem. 5.3.1.")
-        if self.d >= 3 and checkPos(self.c[2] - 1) and \
-                checkPos(3*self.c[2] - 2*self.c[3]) and \
-                (self.d != 3 or checkPos(self.b[2] + self.c[2] - self.c[3])):
-            raise ValueError("intersection number c[3] too small: "
-                             "nonexistence by BCN, Thm. 5.4.1.")
-        if checkPos(self.a[1]) and \
-                any(checkPos(self.a[1] + 1 - 2*self.a[i]) or
-                    ((i < self.d-1 or checkPos(self.a[self.d]) or
-                     (self.d > 2 and checkPos(self.b[self.d-1]-1))) and
-                     checkPos(self.a[1] + 1 - self.a[i] - self.a[i+1])) or
-                    checkPos(self.a[1] + 2 - self.b[i] - self.c[i+1])
-                    for i in range(1, self.d)):
-            raise ValueError("counting argument: "
-                             "nonexistence by BCN, Prop. 5.5.1.")
         m = floor(self.d / 2)
         self.antipodal = all(full_simplify(self.b[i] - self.c[self.d - i])
                              == 0 for i in range(self.d) if i != m)
@@ -128,69 +96,6 @@ class DRGParameters:
             raise ValueError("subconstituents not integral")
         self.k = tuple(k)
         self.n = sum(self.k)
-        if self.d >= 2:
-            if self.a[1] == 0 and any(checkPos(2*self.a[i] - self.k[i])
-                                      for i in range(2, self.d+1)):
-                raise ValueError(u"Turán's theorem: "
-                                  "nonexistence by BCN, Prop. 5.6.4.")
-            if not self.antipodal:
-                ka = self.k[self.d] * self.a[self.d]
-                kka = self.k[self.d] * (self.k[self.d] - self.a[self.d] - 1)
-                try:
-                    if (checkPos(self.k[1] - ka) and
-                            checkPos(self.k[1] - kka)) \
-                            or (checkPos(self.k[2] - kka) and
-                                (checkPos(self.k[1] - ka) or
-                                 checkPos(self.k[1] - self.a[self.d] *
-                                    (self.a[1] + 2 - self.a[self.d]))) and
-                                (checkPos(self.b[self.d-1] - 1) or
-                                 not (self.a[1] + 1 == self.a[self.d]) or
-                                 checkPos(
-                                    integralize(self.k[1]/self.a[self.d])
-                                    - self.k[self.d]))):
-                        raise TypeError
-                except TypeError:
-                    raise ValueError("last subconstituent too small: "
-                                     "nonexistence by BCN, Prop. 5.6.1.")
-                if self.d >= 3 and \
-                        self.k[1] == self.k[self.d] * (self.k[self.d] - 1) \
-                        and checkPos(self.k[self.d] - self.a[self.d] - 1):
-                    raise ValueError("last subconstituent too small: "
-                                     "nonexistence by BCN, Prop. 5.6.3.")
-            if isinstance(self.n, Integer) and isinstance(self.k[1], Integer) \
-                    and ((self.n % 2 == 1 and self.k[1] % 2 == 1) or
-                         (isinstance(self.a[1], Integer) and self.n % 3 != 0
-                          and self.a[1] % 3 != 0 and self.k[1] % 3 != 0)):
-                raise ValueError("handshake lemma not satisfied")
-            c2one = checkNonneg(1-self.c[2])
-            case3 = checkNonneg(1-self.b[self.d-1]) and \
-                self.a[self.d] == self.a[1] + 1
-            if c2one or case3 or self.a[1] == 1 or \
-                    (self.c[2] == 2 and checkPos(self.a[1]*(self.a[1]+3)/2
-                                                 - self.k[1])) or \
-                    any(checkPos(self.b[i]-1) and self.c[i] == self.b[1]
-                        for i in range(2, self.d+1)):
-                if case3:
-                    try:
-                        integralize(self.k[self.d] / (self.a[1]+2))
-                    except TypeError:
-                        raise ValueError("last subconstituent "
-                                         "a union of cliques, "
-                                         "a[1]+2 does not divide k[d]: "
-                                         "nonexistence by BCN, "
-                                         "Prop. 4.3.2(iii).")
-                try:
-                    kl = integralize(self.k[1] / (self.a[1]+1))
-                    vkll = integralize(self.n*kl / (self.a[1]+2))
-                except TypeError:
-                    raise ValueError("handshake lemma not satisfied "
-                                     "for maximal cliques")
-                if checkPos(self.a[1] * self.c[2] - self.a[2]) or \
-                        (c2one and checkPos(1 + self.b[1]*(self.b[1]+1) *
-                                                (self.a[1]+2)/(1 + self.a[1])
-                                            - vkll)):
-                    raise ValueError("graph with maximal cliques: "
-                                     "nonexistence by BCN, Prop. 4.3.3.")
         self.p = Array3D(self.d + 1)
         for i in range(self.d + 1):
             self.p[0, i, i] = k[i]
@@ -342,6 +247,106 @@ class DRGParameters:
                     raise ValueError("absolute bound exceeded "
                                      "for (%d, %d)" % (i, j))
 
+    def check_combinatorial(self):
+        """
+        Check for various combinatorial conditions.
+        """
+        if checkPos(self.b[0] - 2):
+            if self.b[1] == 1 and (self.d != 2 or self.c[2] != self.b[0]):
+                raise ValueError("b1 = 1 and not a cycle "
+                                 "or cocktail party graph")
+            for i in range(2, self.d):
+                if checkPos(self.b[i] - 1):
+                    continue
+                if checkNonneg(self.d - 3*i) or \
+                        any(checkPos(self.c[j] - 1) or
+                            checkNonneg(self.a[j] - self.c[i+j])
+                            for j in range(1, self.d - i + 1)) or \
+                        (self.d >= 2*i and self.c[2*i] == 1) or \
+                        any(checkPos(a[j]) for j
+                            in range(1, self.d - 2*i + 1)) or \
+                        (i < self.d and checkPos((self.c[2] - 1)*self.a[i+1]
+                                                 + self.a[1] - self.a[i])):
+                    raise ValueError("Godsil's diameter bound not reached: "
+                                     "nonexistence by BCN, Lem. 5.3.1.")
+        if self.d >= 3 and checkPos(self.c[2] - 1) and \
+                checkPos(3*self.c[2] - 2*self.c[3]) and \
+                (self.d != 3 or checkPos(self.b[2] + self.c[2] - self.c[3])):
+            raise ValueError("intersection number c[3] too small: "
+                             "nonexistence by BCN, Thm. 5.4.1.")
+        if checkPos(self.a[1]) and \
+                any(checkPos(self.a[1] + 1 - 2*self.a[i]) or
+                    ((i < self.d-1 or checkPos(self.a[self.d]) or
+                     (self.d > 2 and checkPos(self.b[self.d-1]-1))) and
+                     checkPos(self.a[1] + 1 - self.a[i] - self.a[i+1])) or
+                    checkPos(self.a[1] + 2 - self.b[i] - self.c[i+1])
+                    for i in range(1, self.d)):
+            raise ValueError("counting argument: "
+                             "nonexistence by BCN, Prop. 5.5.1.")
+        if self.d >= 2:
+            if self.a[1] == 0 and any(checkPos(2*self.a[i] - self.k[i])
+                                      for i in range(2, self.d+1)):
+                raise ValueError(u"Turán's theorem: "
+                                  "nonexistence by BCN, Prop. 5.6.4.")
+            if not self.antipodal:
+                ka = self.k[self.d] * self.a[self.d]
+                kka = self.k[self.d] * (self.k[self.d] - self.a[self.d] - 1)
+                try:
+                    if (checkPos(self.k[1] - ka) and
+                            checkPos(self.k[1] - kka)) \
+                            or (checkPos(self.k[2] - kka) and
+                                (checkPos(self.k[1] - ka) or
+                                 checkPos(self.k[1] - self.a[self.d] *
+                                    (self.a[1] + 2 - self.a[self.d]))) and
+                                (checkPos(self.b[self.d-1] - 1) or
+                                 not (self.a[1] + 1 == self.a[self.d]) or
+                                 checkPos(
+                                    integralize(self.k[1]/self.a[self.d])
+                                    - self.k[self.d]))):
+                        raise TypeError
+                except TypeError:
+                    raise ValueError("last subconstituent too small: "
+                                     "nonexistence by BCN, Prop. 5.6.1.")
+                if self.d >= 3 and \
+                        self.k[1] == self.k[self.d] * (self.k[self.d] - 1) \
+                        and checkPos(self.k[self.d] - self.a[self.d] - 1):
+                    raise ValueError("last subconstituent too small: "
+                                     "nonexistence by BCN, Prop. 5.6.3.")
+            if isinstance(self.n, Integer) and isinstance(self.k[1], Integer) \
+                    and ((self.n % 2 == 1 and self.k[1] % 2 == 1) or
+                         (isinstance(self.a[1], Integer) and self.n % 3 != 0
+                          and self.a[1] % 3 != 0 and self.k[1] % 3 != 0)):
+                raise ValueError("handshake lemma not satisfied")
+            c2one = checkNonneg(1-self.c[2])
+            case3 = checkNonneg(1-self.b[self.d-1]) and \
+                self.a[self.d] == self.a[1] + 1
+            if c2one or case3 or self.a[1] == 1 or \
+                    (self.c[2] == 2 and checkPos(self.a[1]*(self.a[1]+3)/2
+                                                 - self.k[1])) or \
+                    any(checkPos(self.b[i]-1) and self.c[i] == self.b[1]
+                        for i in range(2, self.d+1)):
+                if case3:
+                    try:
+                        integralize(self.k[self.d] / (self.a[1]+2))
+                    except TypeError:
+                        raise ValueError("last subconstituent "
+                                         "a union of cliques, "
+                                         "a[1]+2 does not divide k[d]: "
+                                         "nonexistence by BCN, "
+                                         "Prop. 4.3.2(iii).")
+                try:
+                    kl = integralize(self.k[1] / (self.a[1]+1))
+                    vkll = integralize(self.n*kl / (self.a[1]+2))
+                except TypeError:
+                    raise ValueError("handshake lemma not satisfied "
+                                     "for maximal cliques")
+                if checkPos(self.a[1] * self.c[2] - self.a[2]) or \
+                        (c2one and checkPos(1 + self.b[1]*(self.b[1]+1) *
+                                                (self.a[1]+2)/(1 + self.a[1])
+                                            - vkll)):
+                    raise ValueError("graph with maximal cliques: "
+                                     "nonexistence by BCN, Prop. 4.3.3.")
+
     def check_conference(self):
         """
         Check whether a conference graph can exist.
@@ -359,6 +364,7 @@ class DRGParameters:
         """
         if self.d == 1 or self.k[1] == 2:
             return
+        self.check_combinatorial()
         self.check_conference()
         self.check_geodeticEmbedding()
         self.check_2design()
