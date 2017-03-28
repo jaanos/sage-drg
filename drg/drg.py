@@ -85,7 +85,7 @@ class DRGParameters:
         try:
             for i in range(self.d):
                 k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
-                if checkNonneg(self.a[i+1] - k[-1]):
+                if self.a[i+1] >= k[-1]:
                     raise ValueError("valency of subconstituent %d too large"
                                      % (i+1))
                 if isinstance(self.a[i+1], Integer) and \
@@ -259,33 +259,30 @@ class DRGParameters:
             for i in range(2, self.d):
                 if checkPos(self.b[i] - 1):
                     continue
-                if checkNonneg(self.d - 3*i) or \
-                        any(checkPos(self.c[j] - 1) or
-                            checkNonneg(self.a[j] - self.c[i+j])
+                if self.d >= 3*i or \
+                        any(self.c[j] > 1 or self.a[j] >= self.c[i+j]
                             for j in range(1, self.d - i + 1)) or \
                         (self.d >= 2*i and self.c[2*i] == 1) or \
-                        any(checkPos(a[j]) for j
-                            in range(1, self.d - 2*i + 1)) or \
-                        (i < self.d and checkPos((self.c[2] - 1)*self.a[i+1]
-                                                 + self.a[1] - self.a[i])):
+                        any(a[j] > 0 for j in range(1, self.d - 2*i + 1)) or \
+                        (i < self.d and (self.c[2] - 1)*self.a[i+1]
+                                        + self.a[1] > self.a[i]):
                     raise ValueError("Godsil's diameter bound not reached: "
                                      "nonexistence by BCN, Lem. 5.3.1.")
-        if self.d >= 3 and checkPos(self.c[2] - 1) and \
-                checkPos(3*self.c[2] - 2*self.c[3]) and \
-                (self.d != 3 or checkPos(self.b[2] + self.c[2] - self.c[3])):
+        if self.d >= 3 and self.c[2] > 1 and 3*self.c[2] > 2*self.c[3] and \
+                (self.d != 3 or self.b[2] + self.c[2] > self.c[3]):
             raise ValueError("intersection number c[3] too small: "
                              "nonexistence by BCN, Thm. 5.4.1.")
-        if checkPos(self.a[1]) and \
-                any(checkPos(self.a[1] + 1 - 2*self.a[i]) or
-                    ((i < self.d-1 or checkPos(self.a[self.d]) or
-                     (self.d > 2 and checkPos(self.b[self.d-1]-1))) and
-                     checkPos(self.a[1] + 1 - self.a[i] - self.a[i+1])) or
-                    checkPos(self.a[1] + 2 - self.b[i] - self.c[i+1])
+        if self.a[1] > 0 and \
+                any(self.a[1] + 1 > 2*self.a[i] or
+                    ((i < self.d-1 or self.a[self.d] > 0 or
+                     (self.d > 2 and self.b[self.d-1] > 1)) and
+                     self.a[1] + 1 > self.a[i] + self.a[i+1]) or
+                    self.a[1] + 2 > self.b[i] + self.c[i+1]
                     for i in range(1, self.d)):
             raise ValueError("counting argument: "
                              "nonexistence by BCN, Prop. 5.5.1.")
         if self.d >= 2:
-            if self.a[1] == 0 and any(checkPos(2*self.a[i] - self.k[i])
+            if self.a[1] == 0 and any(2*self.a[i] > self.k[i]
                                       for i in range(2, self.d+1)):
                 raise ValueError(u"Turán's theorem: "
                                   "nonexistence by BCN, Prop. 5.6.4.")
@@ -293,24 +290,21 @@ class DRGParameters:
                 ka = self.k[self.d] * self.a[self.d]
                 kka = self.k[self.d] * (self.k[self.d] - self.a[self.d] - 1)
                 try:
-                    if (checkPos(self.k[1] - ka) and
-                            checkPos(self.k[1] - kka)) \
-                            or (checkPos(self.k[2] - kka) and
-                                (checkPos(self.k[1] - ka) or
-                                 checkPos(self.k[1] - self.a[self.d] *
-                                    (self.a[1] + 2 - self.a[self.d]))) and
-                                (checkPos(self.b[self.d-1] - 1) or
+                    if (self.k[1] > ka and self.k[1] > kka) or \
+                            (self.k[2] > kka and (self.k[1] > ka or
+                                self.k[1] > self.a[self.d] *
+                                    (self.a[1] + 2 - self.a[self.d])) and
+                                (self.b[self.d-1] > 1 or
                                  not (self.a[1] + 1 == self.a[self.d]) or
-                                 checkPos(
-                                    integralize(self.k[1]/self.a[self.d])
-                                    - self.k[self.d]))):
+                                 integralize(self.k[1]/self.a[self.d])
+                                    > self.k[self.d])):
                         raise TypeError
                 except TypeError:
                     raise ValueError("last subconstituent too small: "
                                      "nonexistence by BCN, Prop. 5.6.1.")
                 if self.d >= 3 and \
                         self.k[1] == self.k[self.d] * (self.k[self.d] - 1) \
-                        and checkPos(self.k[self.d] - self.a[self.d] - 1):
+                        and self.k[self.d] > self.a[self.d] + 1:
                     raise ValueError("last subconstituent too small: "
                                      "nonexistence by BCN, Prop. 5.6.3.")
             if isinstance(self.n, Integer) and isinstance(self.k[1], Integer) \
@@ -318,31 +312,27 @@ class DRGParameters:
                          (isinstance(self.a[1], Integer) and self.n % 3 != 0
                           and self.a[1] % 3 != 0 and self.k[1] % 3 != 0)):
                 raise ValueError("handshake lemma not satisfied")
-            c2one = checkNonneg(1-self.c[2])
-            case3 = checkNonneg(1-self.b[self.d-1]) and \
-                self.a[self.d] == self.a[1] + 1
+            c2one = self.c[2] == 1
+            case3 = self.b[self.d-1] == 1 and self.a[self.d] == self.a[1] + 1
             case4 = False
             if self.p[2, self.d, self.d] == 0:
                 try:
                     ad1 = self.a[self.d] + 1
                     bad1 = self.b[self.d-1] - ad1
                     integralize(self.k[self.d] / ad1)
-                    if checkPos(self.a[self.d] - self.a[1] - 1) or \
-                            checkPos(bad1) or \
-                            checkPos(self.b[self.d-1] - self.c[2]) or \
-                            (checkNonneg(bad1) and checkPos(self.a[self.d])) \
-                            or (checkPos(self.b[self.d-1] - 1) and
-                                checkPos(ad1 - self.a[1])):
+                    if self.a[self.d] > self.a[1] + 1 or bad1 > 0 or \
+                            self.b[self.d-1] > self.c[2] or \
+                            (bad1 == 0 and self.a[self.d] > 0) \
+                            or (self.b[self.d-1] > 1 and ad1 > self.a[1]):
                         raise TypeError
-                    case4 = checkNonneg(1 - self.b[self.d-1]) and \
-                        checkPos(self.a[self.d])
+                    case4 = self.b[self.d-1] <= 1 and self.a[self.d] > 0
                 except TypeError:
                     raise ValueError("p[2,d,d] = 0: "
                                      "nonexistence by BCN, Prop. 5.7.1.")
             if c2one or case3 or case4 or self.a[1] == 1 or \
-                    (self.c[2] == 2 and checkPos(self.a[1]*(self.a[1]+3)/2
-                                                 - self.k[1])) or \
-                    any(checkPos(self.b[i]-1) and self.c[i] == self.b[1]
+                    (self.c[2] == 2 and
+                        self.a[1]*(self.a[1]+3)/2 > self.k[1]) or \
+                    any(self.b[i] > 1 and self.c[i] == self.b[1]
                         for i in range(2, self.d+1)):
                 if case3:
                     try:
@@ -359,10 +349,9 @@ class DRGParameters:
                 except TypeError:
                     raise ValueError("handshake lemma not satisfied "
                                      "for maximal cliques")
-                if checkPos(self.a[1] * self.c[2] - self.a[2]) or \
-                        (c2one and checkPos(1 + self.b[1]*(self.b[1]+1) *
-                                                (self.a[1]+2)/(1 + self.a[1])
-                                            - vkll)):
+                if self.a[1] * self.c[2] > self.a[2] or \
+                        (c2one and 1 + self.b[1]*(self.b[1]+1) *
+                                        (self.a[1]+2)/(1 + self.a[1]) > vkll):
                     raise ValueError("graph with maximal cliques: "
                                      "nonexistence by BCN, Prop. 4.3.3.")
 
@@ -422,18 +411,18 @@ class DRGParameters:
         and whether existence conditions are satisfied in this case,
         or if the Terwilliger diameter bound is satisfied otherwise.
         """
-        small = (self.d == 2 and checkPos(50 * self.c[2] - self.n)) or \
-                (self.d >= 3 and checkPos(50 * (self.c[2] - 1) - self.b[0]))
+        small = (self.d == 2 and 50 * self.c[2] > self.n) or \
+                (self.d >= 3 and 50 * (self.c[2] - 1) > self.b[0])
         if self.d >= 2 and isinstance(self.b[0], Integer) and \
                 isinstance(self.a[1], Integer) and \
                 isinstance(self.c[2], Integer):
             if self.b[0] == 10 and self.a[1] == 3 and \
-                    (self.c[2] == 2 or checkPos(self.b[2] - self.c[2])):
+                    (self.c[2] == 2 or self.b[2] > self.c[2]):
                 s = 4
             else:
                 s = ceil(self.b[0] / (self.a[1] + 1))
             v = 2*(s*(self.a[1] + 1) - self.b[0]) / (s*(s-1)) + 1 - self.c[2]
-            if checkPos(v):
+            if v > 0:
                 raise ValueError("coclique bound exceeded: "
                                  "nonexistence by KP10, Thm. 3.")
             elif v == 0:
@@ -445,12 +434,12 @@ class DRGParameters:
                     raise ValueError("too small for a Terwilliger graph: "
                                      "nonexistence by BCN, Cor. 1.16.6.")
                 return
-        if checkNonneg(self.c[2] - 2) and (small
-                or checkPos(self.b[1]*(self.c[1]-1) - self.a[1]*(self.a[1]-1))
-                or (self.d >= 3 and checkPos(self.c[3] - 1)
-                                and checkPos(2*self.c[2] - self.c[3]))) and \
-                any(checkPos(self.c[i] - self.b[i] + self.a[1] + 2
-                             - self.c[i+1] + self.b[i+1])
+        if self.c[2] <= 2 and (small
+                or self.b[1]*(self.c[1]-1) > self.a[1]*(self.a[1]-1)
+                or (self.d >= 3 and self.c[3] > 1
+                                and 2*self.c[2] > self.c[3])) and \
+                any(self.c[i] + self.a[1]+ self.b[i+1] + 2
+                    > self.b[i] + self.c[i+1]
                     for i in range(self.d)):
             raise ValueError("Terwilliger's diameter bound not reached: "
                              "nonexistence by BCN, Thm. 5.2.1.")
