@@ -379,6 +379,7 @@ class DRGParameters:
         self.check_conference()
         self.check_geodeticEmbedding()
         self.check_2design()
+        self.check_genPoly()
         self.check_terwilliger()
         self.check_secondEigenvalue()
         self.check_localEigenvalues()
@@ -396,6 +397,32 @@ class DRGParameters:
                     self.antipodalQuotient().check_feasible(recurse)
                 except (ValueError, AssertionError) as ex:
                     raise ex.__class__("antipodal quotient:", *ex.args)
+
+    def check_genPoly(self):
+        """
+        For a graph with parameters of a generalized polygon,
+        check whether its parameters satisfy the restrictions.
+        """
+        g, s, t = self.genPoly_parameters()
+        if g:
+            try:
+                st = integralize(s*t)
+                st2 = 2*st
+            except TypeError:
+                st = st2 = Integer(1)
+            if g not in [2, 4, 6, 8, 12] or (s > 1 and t > 1 and \
+                    (g == 12 or
+                     (g == 8 and (not st2.is_square() or
+                                  s > t**2 or t > s**2)) or
+                     (g == 6 and (not st.is_square()
+                                  or s > t**3 or t > s**3)))):
+                raise ValueError("no corresponding generalized polygon: "
+                                 "nonexistence by BCN, Thm. 6.5.1.")
+            if g == 6 and 1 in [s, t]:
+                m = next(x for x in [s, t] if x != 1)
+                if isinstance(m, Integer) and (m == 10 or m % 8 == 6):
+                    raise ValueError("PG(2, q) does not exist "
+                                     "for q = 10 or q = 8n+6")
 
     def check_geodeticEmbedding(self):
         """
@@ -610,6 +637,26 @@ class DRGParameters:
         self.theta = rewriteTuple(self.theta, expand = expand,
                                   factor = factor, simplify = simplify)
         return self.theta
+
+    def genPoly_parameters(self, expand = False, factor = False,
+                           simplify = False):
+        """
+        Determine the parameters of the generalized polygon
+        whose collinearity graph has matching parameters.
+        """
+        try:
+            t = rewriteExp(self.c[self.d] - 1, expand = expand,
+                           factor = factor, simplify = simplify)
+            s = rewriteExp(integralize(self.b[0] / self.c[self.d]),
+                           expand = expand, factor = factor,
+                           simplify = simplify)
+            st = s * t
+            if any(c != 1 or b != st
+                   for b, c in zip(self.b[1:-1], self.c[1:-1])):
+                raise TypeError
+            return (2*self.d, s, t)
+        except TypeError:
+            return (False, None, None)
 
     def intersectionArray(self, expand = False, factor = False,
                           simplify = False):
