@@ -431,6 +431,11 @@ class DRGParameters:
                     self.antipodalQuotient().check_feasible(recurse)
                 except (ValueError, AssertionError) as ex:
                     raise ex.__class__("antipodal quotient:", *ex.args)
+            if self.d == 2 and self.b[0] != self.c[2]:
+                try:
+                    self.complement().check_feasible(False)
+                except (ValueError, AssertionError) as ex:
+                    raise ex.__class__("complement:", *ex.args)
 
     def check_genPoly(self):
         """
@@ -546,14 +551,23 @@ class DRGParameters:
         and whether existence conditions are satisfied in this case,
         or if the Terwilliger diameter bound is satisfied otherwise.
         """
+        if "theta" not in self.__dict__:
+            self.eigenvalues()
         small = (self.d == 2 and 50 * self.c[2] > self.n) or \
                 (self.d >= 3 and 50 * (self.c[2] - 1) > self.b[0])
         if self.d >= 2 and isinstance(self.b[0], Integer) and \
                 isinstance(self.a[1], Integer) and \
                 isinstance(self.c[2], Integer):
+            if all(isinstance(th, Integer) for th in self.theta):
+                th = min(self.theta)
+            else:
+                th = None
             if self.b[0] == 10 and self.a[1] == 3 and \
                     (self.c[2] == 2 or self.b[2] > self.c[2]):
                 s = 4
+            elif th is not None and self.a[1] != 2 and \
+                    -1 - self.b[1]/(th+1) < self.a[1]:
+                s = ceil(self.b[0] / self.a[1])
             else:
                 s = ceil(self.b[0] / (self.a[1] + 1))
             v = 2*(s*(self.a[1] + 1) - self.b[0]) / (s*(s-1)) + 1 - self.c[2]
@@ -576,6 +590,15 @@ class DRGParameters:
                     for i in range(self.d)):
             raise ValueError("Terwilliger's diameter bound not reached: "
                              "nonexistence by BCN, Thm. 5.2.1.")
+
+    def complement(self):
+        """
+        Return the parameters of the complement of a strongly regular graph.
+        """
+        if self.d != 2 or self.b[0] == self.c[2]:
+            raise ValueError("the complement is not distance-regular")
+        return DRGParameters((self.k[2], self.p[2, 2, 1]),
+                             (1, self.p[1, 2, 2]))
 
     def cosineSequences(self, index = None, ev = None, expand = False,
                         factor = False, simplify = False):
