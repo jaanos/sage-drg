@@ -15,6 +15,7 @@ from sage.symbolic.relation import solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .coefflist import CoefficientList
+from .nonex import sporadic
 from .util import checkNonneg
 from .util import checkPos
 from .util import _factor
@@ -407,6 +408,7 @@ class DRGParameters:
         """
         if self.d == 1 or self.k[1] == 2:
             return
+        self.check_sporadic()
         self.check_combinatorial()
         self.check_conference()
         self.check_geodeticEmbedding()
@@ -528,6 +530,15 @@ class DRGParameters:
                          self.match(((27, 10, 1), (1, 10, 27)))):
                 raise ValueError("theta[1] = b[1]-1, not in characterization:"
                                  " nonexistence by BCN, Thm. 4.4.11.")
+
+    def check_sporadic(self):
+        """
+        Check whether the graph has an intersection array
+        for which nonexistence has been shown sporadically.
+        """
+        ia = self.intersectionArray()
+        if ia in sporadic:
+            raise ValueError("nonexistence by %s" % sporadic[ia])
 
     def check_terwilliger(self):
         """
