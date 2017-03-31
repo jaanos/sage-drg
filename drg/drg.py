@@ -284,11 +284,43 @@ class DRGParameters:
                     for i in range(1, self.d)):
             raise ValueError("counting argument: "
                              "nonexistence by BCN, Prop. 5.5.1.")
+        if self.d >= 4 and set(self.a[1:4]) == {0} and \
+                self.c[2:5] == (1, 2, 3):
+            try:
+                integralize(self.b[1] * self.b[2] * self.b[3] / 4)
+                integralize(self.n * self.k[4] / 36)
+            except TypeError:
+                raise ValueError("handshake lemma not satisfied "
+                                 "for Pappus subgraphs: "
+                                 "nonexistence by Koolen '92")
         if self.d >= 2:
             if self.a[1] == 0 and any(2*self.a[i] > self.k[i]
                                       for i in range(2, self.d+1)):
                 raise ValueError(u"Turán's theorem: "
                                   "nonexistence by BCN, Prop. 5.6.4.")
+            for h in range(1, self.d + 1):
+                for i in range(self.d + 1):
+                    for j in range(abs(h-i), min(self.d, h+i) + 1):
+                        if self.p[h, i, j] > 0:
+                            ppm = self.p[h, i+1, j-1] \
+                                if i < self.d and j > 0 else 0
+                            ppz = self.p[h, i+1, j] if i < self.d else 0
+                            ppp = self.p[h, i+1, j+1] \
+                                if i < self.d and j < self.d else 0
+                            pzm = self.p[h, i, j-1] if j > 0 else 0
+                            pzp = self.p[h, i, j+1] if j < self.d else 0
+                            pmm = self.p[h, i-1, j-1] \
+                                if i > 0 and j > 0 else 0
+                            pmz = self.p[h, i-1, j] if i > 0 else 0
+                            pmp = self.p[h, i-1, j+1] \
+                                if i > 0 and j < self.d else 0
+                            if ppm + ppz + ppp < self.b[i] or \
+                                    pzm + self.p[h, i, j] + pzp \
+                                        < self.a[i] + 1 or \
+                                    pmm + pmz + pmp < self.c[i]:
+                                raise ValueError("counting argument: "
+                                                 "nonexistence "
+                                                 "by Lambeck '93")
             if not self.antipodal:
                 ka = self.k[self.d] * self.a[self.d]
                 kka = self.k[self.d] * (self.k[self.d] - self.a[self.d] - 1)
