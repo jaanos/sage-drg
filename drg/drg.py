@@ -29,6 +29,44 @@ from .util import rewriteMatrix
 from .util import rewriteTuple
 from .util import variables
 
+class InfeasibleError(Exception):
+    def __init__(self, reason = None, refs = None, part = None):
+        part = () if part is None else (part, )
+        if isinstance(reason, InfeasibleError):
+            self.reason = reason.reason
+            self.refs = reason.refs
+            self.part = reason.part + part
+        elif isinstance(reason, Exception):
+            self.reason = ", ".join(str(x) for x in reason.args)
+            self.refs = []
+            self.part = part
+        else:
+            self.reason = reason
+            if refs is None:
+                refs = []
+            elif not isinstance(refs, list):
+                refs = [refs]
+            self.refs = [ref if isinstance(ref, tuple) else (ref, None)
+                         for ref in refs]
+            self.part = part
+        msg = []
+        if len(self.part) > 0:
+            msg.append(" of ".join(self.part))
+        if reason is not None:
+            msg.append(self.reason)
+        if len(self.refs) > 0:
+            msg.append("nonexistence by %s" %
+                       "; ".join(self.formatRef(ref) for ref in self.refs))
+        self.args = (": ".join(msg), )
+
+    @staticmethod
+    def formatRef(ref):
+        pap, thm = ref
+        if thm is None:
+            return pap
+        else:
+            return "%s, %s" % (pap, thm)
+
 class DRGParameters:
     """
     A class for parameters of a distance-regular graph
@@ -50,11 +88,11 @@ class DRGParameters:
         try:
             self.c = tuple([Integer(0)] + map(integralize, c))
         except TypeError:
-            raise ValueError("c sequence not integral")
+            raise InfeasibleError("c sequence not integral")
         try:
             self.b = tuple(map(integralize, b) + [Integer(0)])
         except TypeError:
-            raise ValueError("b sequence not integral")
+            raise InfeasibleError("b sequence not integral")
         assert all(checkPos(x) for x in self.c[1:]), "c sequence not positive"
         assert all(checkPos(x) for x in self.b[:-1]), \
             "b sequence not positive"
@@ -75,7 +113,7 @@ class DRGParameters:
             try:
                 self.r = integralize(1 + self.b[m] / self.c[self.d - m])
             except TypeError:
-                raise ValueError("covering index not integral")
+                raise InfeasibleError("covering index not integral")
         self.bipartite = all(a == 0 for a in self.a)
         if self.bipartite:
             try:
@@ -83,22 +121,22 @@ class DRGParameters:
                     integralize(self.b[2*i]*self.b[2*i+1]/self.c[2])
                     integralize(self.c[2*i+1]*self.c[2*i+2]/self.c[2])
             except TypeError:
-                raise ValueError("intersection array of halved graph "
-                                 "not integral")
+                raise InfeasibleError("intersection array of halved graph "
+                                      "not integral")
         k = [1]
         try:
             for i in range(self.d):
                 k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
                 if self.a[i+1] >= k[-1]:
-                    raise ValueError("valency of subconstituent %d too large"
-                                     % (i+1))
+                    raise InfeasibleError("valency of subconstituent %d "
+                                          "too large" % (i+1))
                 if isinstance(self.a[i+1], Integer) and \
                         isinstance(k[-1], Integer) and \
                         self.a[i+1] % 2 == 1 and k[-1] % 2 == 1:
-                    raise ValueError("handshake lemma not satisfied "
-                                     "for subconstituent %d" % (i+1))
+                    raise InfeasibleError("handshake lemma not satisfied "
+                                          "for subconstituent %d" % (i+1))
         except TypeError:
-            raise ValueError("subconstituents not integral")
+            raise InfeasibleError("subconstituents not integral")
         self.k = tuple(k)
         self.n = sum(self.k)
         self.p = Array3D(self.d + 1)
@@ -122,8 +160,9 @@ class DRGParameters:
                             ) / self.c[i]
                         )))
                     except TypeError:
-                        raise ValueError("intersection number p[%d, %d, %d] "
-                                         "is nonintegral" % (h, i, j))
+                        raise InfeasibleError("intersection number "
+                                              "p[%d, %d, %d] is nonintegral"
+                                               % (h, i, j))
                     assert checkNonneg(self.p[h, i, j]), \
                         "intersection number p[%d, %d, %d] is negative" % \
                         (h, i, j)
@@ -136,8 +175,8 @@ class DRGParameters:
                         ) / self.c[i]
                     )))
                 except TypeError:
-                    raise ValueError("intersection number p[%d, %d, %d] "
-                                     "is nonintegral" % (self.d, i, j))
+                    raise InfeasibleError("intersection number p[%d, %d, %d]"
+                                          " is nonintegral" % (self.d, i, j))
                 assert checkNonneg(self.p[self.d, i, j]), \
                     "intersection number p[%d, %d, %d] is negative" % \
                     (self.d, i, j)
@@ -232,8 +271,8 @@ class DRGParameters:
                     Integers(self.b[0])(self.r if self.r % 4 == 1
                                         else -self.r).is_square()
             if not ok:
-                raise ValueError("no corresponding 2-design: "
-                                 "nonexistence by BCN, Prop. 1.10.5.")
+                raise InfeasibleError("no corresponding 2-design",
+                                      ("BCN", "Prop. 1.10.5."))
 
     def check_absoluteBound(self):
         """
@@ -244,13 +283,13 @@ class DRGParameters:
         for i in range(self.d + 1):
             if sum(self.m[h] for h in range(self.d + 1)
                    if self.q[h, i, i] != 0) > self.m[i]*(self.m[i] + 1)/2:
-                raise ValueError("absolute bound exceeded "
-                                 "for (%d, %d)" % (i, i))
+                raise InfeasibleError("absolute bound exceeded "
+                                      "for (%d, %d)" % (i, i))
             for j in range(i+1, self.d + 1):
                 if sum(self.m[h] for h in range(self.d + 1)
                        if self.q[h, i, j] != 0) > self.m[i]*self.m[j]:
-                    raise ValueError("absolute bound exceeded "
-                                     "for (%d, %d)" % (i, j))
+                    raise InfeasibleError("absolute bound exceeded "
+                                          "for (%d, %d)" % (i, j))
 
     def check_combinatorial(self):
         """
@@ -258,8 +297,8 @@ class DRGParameters:
         """
         if checkPos(self.b[0] - 2):
             if self.b[1] == 1 and (self.d != 2 or self.c[2] != self.b[0]):
-                raise ValueError("b1 = 1 and not a cycle "
-                                 "or cocktail party graph")
+                raise InfeasibleError("b1 = 1 and not a cycle "
+                                      "or cocktail party graph")
             for i in range(2, self.d):
                 if checkPos(self.b[i] - 1):
                     continue
@@ -270,12 +309,13 @@ class DRGParameters:
                         any(a[j] > 0 for j in range(1, self.d - 2*i + 1)) or \
                         (i < self.d and (self.c[2] - 1)*self.a[i+1]
                                         + self.a[1] > self.a[i]):
-                    raise ValueError("Godsil's diameter bound not reached: "
-                                     "nonexistence by BCN, Lem. 5.3.1.")
+                    raise InfeasibleError("Godsil's diameter bound "
+                                          "not reached",
+                                          ("BCN", "Lem. 5.3.1."))
         if self.d >= 3 and self.c[2] > 1 and 3*self.c[2] > 2*self.c[3] and \
                 (self.d != 3 or self.b[2] + self.c[2] > self.c[3]):
-            raise ValueError("intersection number c[3] too small: "
-                             "nonexistence by BCN, Thm. 5.4.1.")
+            raise InfeasibleError("intersection number c[3] too small",
+                                  ("BCN", "Thm. 5.4.1."))
         if self.a[1] > 0 and \
                 any(self.a[1] + 1 > 2*self.a[i] or
                     ((i < self.d-1 or self.a[self.d] > 0 or
@@ -283,22 +323,21 @@ class DRGParameters:
                      self.a[1] + 1 > self.a[i] + self.a[i+1]) or
                     self.a[1] + 2 > self.b[i] + self.c[i+1]
                     for i in range(1, self.d)):
-            raise ValueError("counting argument: "
-                             "nonexistence by BCN, Prop. 5.5.1.")
+            raise InfeasibleError("counting argument",
+                                  ("BCN", "Prop. 5.5.1."))
         if self.d >= 4 and set(self.a[1:4]) == {0} and \
                 self.c[2:5] == (1, 2, 3):
             try:
                 integralize(self.b[1] * self.b[2] * self.b[3] / 4)
                 integralize(self.n * self.k[4] / 36)
             except TypeError:
-                raise ValueError("handshake lemma not satisfied "
-                                 "for Pappus subgraphs: "
-                                 "nonexistence by Koolen '92")
+                raise InfeasibleError("handshake lemma not satisfied "
+                                      "for Pappus subgraphs", "Koolen92")
         if self.d >= 2:
             if self.a[1] == 0 and any(2*self.a[i] > self.k[i]
                                       for i in range(2, self.d+1)):
-                raise ValueError(u"Turán's theorem: "
-                                  "nonexistence by BCN, Prop. 5.6.4.")
+                raise InfeasibleError(u"Turán's theorem",
+                                      ("BCN", "Prop. 5.6.4."))
             for h in range(1, self.d + 1):
                 for i in range(self.d + 1):
                     for j in range(abs(h-i), min(self.d, h+i) + 1):
@@ -319,9 +358,8 @@ class DRGParameters:
                                     pzm + self.p[h, i, j] + pzp \
                                         < self.a[i] + 1 or \
                                     pmm + pmz + pmp < self.c[i]:
-                                raise ValueError("counting argument: "
-                                                 "nonexistence "
-                                                 "by Lambeck '93")
+                                raise InfeasibleError("counting argument",
+                                                      "Lambeck93")
             if not self.antipodal:
                 ka = self.k[self.d] * self.a[self.d]
                 kka = self.k[self.d] * (self.k[self.d] - self.a[self.d] - 1)
@@ -336,18 +374,18 @@ class DRGParameters:
                                     > self.k[self.d])):
                         raise TypeError
                 except TypeError:
-                    raise ValueError("last subconstituent too small: "
-                                     "nonexistence by BCN, Prop. 5.6.1.")
+                    raise InfeasibleError("last subconstituent too small",
+                                          ("BCN", "Prop. 5.6.1."))
                 if self.d >= 3 and \
                         self.k[1] == self.k[self.d] * (self.k[self.d] - 1) \
                         and self.k[self.d] > self.a[self.d] + 1:
-                    raise ValueError("last subconstituent too small: "
-                                     "nonexistence by BCN, Prop. 5.6.3.")
+                    raise InfeasibleError("last subconstituent too small",
+                                          ("BCN", "Prop. 5.6.3."))
             if isinstance(self.n, Integer) and isinstance(self.k[1], Integer) \
                     and ((self.n % 2 == 1 and self.k[1] % 2 == 1) or
                          (isinstance(self.a[1], Integer) and self.n % 3 != 0
                           and self.a[1] % 3 != 0 and self.k[1] % 3 != 0)):
-                raise ValueError("handshake lemma not satisfied")
+                raise InfeasibleError("handshake lemma not satisfied")
             c2one = self.c[2] == 1
             case3 = self.b[self.d-1] == 1 and self.a[self.d] == self.a[1] + 1
             case4 = False
@@ -363,8 +401,8 @@ class DRGParameters:
                         raise TypeError
                     case4 = self.b[self.d-1] <= 1 and self.a[self.d] > 0
                 except TypeError:
-                    raise ValueError("p[2,d,d] = 0: "
-                                     "nonexistence by BCN, Prop. 5.7.1.")
+                    raise InfeasibleError("p[2,d,d] = 0",
+                                          ("BCN", "Prop. 5.7.1."))
             if c2one or case3 or case4 or self.a[1] == 1 or \
                     (self.c[2] == 2 and
                         self.a[1]*(self.a[1]+3)/2 > self.k[1]) or \
@@ -374,22 +412,21 @@ class DRGParameters:
                     try:
                         integralize(self.k[self.d] / (self.a[1]+2))
                     except TypeError:
-                        raise ValueError("last subconstituent "
-                                         "a union of cliques, "
-                                         "a[1]+2 does not divide k[d]: "
-                                         "nonexistence by BCN, "
-                                         "Prop. 4.3.2(iii).")
+                        raise InfeasibleError("last subconstituent a union "
+                                              "of cliques, a[1]+2 does not "
+                                              "divide k[d]",
+                                              ("BCN", "Prop. 4.3.2.(iii)"))
                 try:
                     kl = integralize(self.k[1] / (self.a[1]+1))
                     vkll = integralize(self.n*kl / (self.a[1]+2))
                 except TypeError:
-                    raise ValueError("handshake lemma not satisfied "
-                                     "for maximal cliques")
+                    raise InfeasibleError("handshake lemma not satisfied "
+                                          "for maximal cliques")
                 if self.a[1] * self.c[2] > self.a[2] or \
                         (c2one and 1 + self.b[1]*(self.b[1]+1) *
                                         (self.a[1]+2)/(1 + self.a[1]) > vkll):
-                    raise ValueError("graph with maximal cliques: "
-                                     "nonexistence by BCN, Prop. 4.3.3.")
+                    raise InfeasibleError("graph with maximal cliques",
+                                          ("BCN", "Prop. 4.3.3."))
 
     def check_conference(self):
         """
@@ -399,14 +436,17 @@ class DRGParameters:
                                for x in self.b + self.c) and \
                 self.b[1] == self.c[2] and self.b[0] == 2*self.b[1] and \
                 (self.n % 4 != 1 or not is_squareSum(self.n)):
-            raise ValueError("conference graph must have order "
-                             "a sum of two squares with residue 1 (mod 4)")
+            raise InfeasibleError("conference graph must have order a sum "
+                                  "of two squares with residue 1 (mod 4)")
 
-    def check_feasible(self, recurse = True):
+    def check_feasible(self, checked = set()):
         """
         Check whether the intersection array is feasible.
         """
         if self.d == 1 or self.k[1] == 2:
+            return
+        ia = self.intersectionArray()
+        if ia in checked:
             return
         self.check_sporadic()
         self.check_combinatorial()
@@ -418,24 +458,24 @@ class DRGParameters:
         self.check_secondEigenvalue()
         self.check_localEigenvalues()
         self.check_absoluteBound()
-        if recurse:
+        checked.add(ia)
+        if self.bipartite:
+            try:
+                self.bipartiteHalf().check_feasible(checked)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = "bipartite half")
+        if self.antipodal:
             if self.bipartite:
-                try:
-                    self.bipartiteHalf().check_feasible()
-                except (ValueError, AssertionError) as ex:
-                    raise ex.__class__("bipartite half:", *ex.args)
-            if self.antipodal:
-                if self.bipartite:
-                    recurse = False
-                try:
-                    self.antipodalQuotient().check_feasible(recurse)
-                except (ValueError, AssertionError) as ex:
-                    raise ex.__class__("antipodal quotient:", *ex.args)
-            if self.d == 2 and self.b[0] != self.c[2]:
-                try:
-                    self.complement().check_feasible(False)
-                except (ValueError, AssertionError) as ex:
-                    raise ex.__class__("complement:", *ex.args)
+                recurse = False
+            try:
+                self.antipodalQuotient().check_feasible(checked)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = "antipodal quotient")
+        if self.d == 2 and self.b[0] != self.c[2]:
+            try:
+                self.complement().check_feasible(checked)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = "complement")
 
     def check_genPoly(self):
         """
@@ -455,13 +495,13 @@ class DRGParameters:
                                   s > t**2 or t > s**2)) or
                      (g == 6 and (not st.is_square()
                                   or s > t**3 or t > s**3)))):
-                raise ValueError("no corresponding generalized polygon: "
-                                 "nonexistence by BCN, Thm. 6.5.1.")
+                raise InfeasibleError("no corresponding generalized polygon",
+                                      ("BCN", "Thm. 6.5.1."))
             if g == 6 and 1 in [s, t]:
                 m = next(x for x in [s, t] if x != 1)
                 if isinstance(m, Integer) and (m == 10 or m % 8 == 6):
-                    raise ValueError("PG(2, q) does not exist "
-                                     "for q = 10 or q = 8n+6")
+                    raise InfeasibleError("PG(2, q) does not exist "
+                                          "for q = 10 or q = 8n+6")
 
     def check_geodeticEmbedding(self):
         """
@@ -472,9 +512,8 @@ class DRGParameters:
         if self.d == 3 and self.b[0] == self.c[3] and self.b[2] == 1 \
                 and self.c[2] == 1 and self.b[0] == 2*self.b[1] \
                 and self.b[0] > 4:
-            raise ValueError("no embedding into a geodetic graph "
-                             "of diameter 2: nonexistence by BCN, "
-                             "Prop. 1.17.3.")
+            raise InfeasibleError("no embedding into a geodetic graph "
+                                  "of diameter 2", ("BCN", "Prop. 1.17.3."))
 
     def check_localEigenvalues(self):
         """
@@ -492,13 +531,14 @@ class DRGParameters:
                          if th != self.k[1])
             if (self.b[1]/(th1+1) < 1 and self.c[2] != 1) or \
                     (self.b[1]/(thd+1) > -2 and self.a[1] != 0):
-                raise ValueError("local eigenvalues not in allowed range: "
-                                 "nonexistence by BCN, Thm. 4.4.3.")
+                raise InfeasibleError("local eigenvalues "
+                                      "not in allowed range",
+                                      ("BCN", "Thm. 4.4.3."))
             s = {h for h, m in enumerate(self.m)
                  if self.theta[h] != self.k[1] and m < self.k[1]}
             if not s.issubset({i, j}):
-                raise ValueError("m[i] < k for i != 2, d: "
-                                 "nonexistence by BCN, Thm. 4.4.4.")
+                raise InfeasibleError("m[i] < k for i != 2, d",
+                                      ("BCN", "Thm. 4.4.4."))
             r = []
             for h in s:
                 t = self.b[1] / (self.theta[h] + 1)
@@ -513,10 +553,10 @@ class DRGParameters:
             a, = k.gen()
             if len(r) == 1 or p.degree() != 2 or \
                     len({t.minpoly() for t in r}) == 2 or not a.is_integral():
-                raise ValueError("m[i] < k, b[1]/(theta[1]+1) and "
-                                 "b[1]/(theta[d]+1) not integers "
-                                 "or algebraic conjugates: "
-                                 "nonexistence by BCN, Thm. 4.4.4.")
+                raise InfeasibleError("m[i] < k, b[1]/(theta[1]+1) and "
+                                      "b[1]/(theta[d]+1) not integers "
+                                      "or algebraic conjugates",
+                                      ("BCN", "Thm. 4.4.4."))
 
     def check_secondEigenvalue(self):
         """
@@ -533,8 +573,9 @@ class DRGParameters:
                          self.is_johnson() or
                          self.is_halfCube() or
                          self.match(((27, 10, 1), (1, 10, 27)))):
-                raise ValueError("theta[1] = b[1]-1, not in characterization:"
-                                 " nonexistence by BCN, Thm. 4.4.11.")
+                raise InfeasibleError("theta[1] = b[1]-1, "
+                                      "not in characterization",
+                                      ("BCN", "Thm. 4.4.11."))
 
     def check_sporadic(self):
         """
@@ -543,7 +584,7 @@ class DRGParameters:
         """
         ia = self.intersectionArray()
         if ia in sporadic:
-            raise ValueError("nonexistence by %s" % sporadic[ia])
+            raise InfeasibleError(refs = sporadic[ia])
 
     def check_terwilliger(self):
         """
@@ -572,14 +613,14 @@ class DRGParameters:
                 s = ceil(self.b[0] / (self.a[1] + 1))
             v = 2*(s*(self.a[1] + 1) - self.b[0]) / (s*(s-1)) + 1 - self.c[2]
             if v > 0:
-                raise ValueError("coclique bound exceeded: "
-                                 "nonexistence by KP10, Thm. 3.")
+                raise InfeasibleError("coclique bound exceeded",
+                                      ("KoolenPark10", "Thm. 3."))
             elif v == 0:
                 if small and not self.is_locallyPetersen() and \
                         not self.match(((2, 1), (1, 1)), ((5, 4), (1, 1)),
                                        ((5, 2, 1), (1, 2, 5))):
-                    raise ValueError("too small for a Terwilliger graph: "
-                                     "nonexistence by BCN, Cor. 1.16.6.")
+                    raise InfeasibleError("too small for a Terwilliger graph",
+                                          ("BCN", "Cor. 1.16.6."))
                 return
         if self.c[2] <= 2 and (small
                 or self.b[1]*(self.c[1]-1) > self.a[1]*(self.a[1]-1)
@@ -588,8 +629,8 @@ class DRGParameters:
                 any(self.c[i] + self.a[1]+ self.b[i+1] + 2
                     > self.b[i] + self.c[i+1]
                     for i in range(self.d)):
-            raise ValueError("Terwilliger's diameter bound not reached: "
-                             "nonexistence by BCN, Thm. 5.2.1.")
+            raise InfeasibleError("Terwilliger's diameter bound not reached",
+                                  ("BCN", "Thm. 5.2.1."))
 
     def complement(self):
         """
@@ -824,8 +865,9 @@ class DRGParameters:
                                                 for t in range(self.d + 1))
                                             * self.m[i] * self.m[j] / self.n)
                         if not checkNonneg(q[h, i, j]):
-                            raise ValueError("Krein parameter q[%d, %d, %d] "
-                                             "negative" % (h, i, j))
+                            raise InfeasibleError("Krein parameter "
+                                                  "q[%d, %d, %d] negative"
+                                                  % (h, i, j))
             self.q = q
         self.q.rewrite(expand = expand, factor = factor, simplify = simplify)
         return self.q
@@ -862,7 +904,7 @@ class DRGParameters:
                                                     in zip(self.k, omg)))))
                                    for omg in self.omega)
                 except TypeError:
-                    raise ValueError("multiplicities not integral")
+                    raise InfeasibleError("multiplicities not integral")
         if expand:
             self.m = tuple(map(_expand, self.m))
         if factor:
