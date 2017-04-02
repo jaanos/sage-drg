@@ -8,6 +8,7 @@ from sage.functions.other import floor
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
+from sage.misc.misc import subsets
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
@@ -52,7 +53,7 @@ class InfeasibleError(Exception):
         msg = []
         if len(self.part) > 0:
             msg.append(" of ".join(self.part))
-        if reason is not None:
+        if self.reason is not None:
             msg.append(self.reason)
         if len(self.refs) > 0:
             msg.append("nonexistence by %s" %
@@ -498,6 +499,16 @@ class DRGParameters:
                 self.complement().check_feasible(checked)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = "complement")
+        for idx in subsets(range(1, self.d + 1)):
+            if len(idx) > 0 and len(idx) < self.d and idx != [1]:
+                try:
+                    self.mergeClasses(*idx).check_feasible(checked)
+                except (InfeasibleError, AssertionError) as ex:
+                    raise InfeasibleError(ex,
+                        part = "distance-%s graph" % (idx if len(idx) > 1
+                                                      else idx[0]))
+                except IndexError:
+                    pass
 
     def check_genPoly(self):
         """
@@ -907,6 +918,32 @@ class DRGParameters:
                                 tuple(b) + tuple(c))], self.vars)) > 0:
                 return True
         return False
+
+    def mergeClasses(self, *args):
+        adj = set(args)
+        assert all(i >= 1 and i <= self.d for i in adj), \
+            "indices out of bounds"
+        b = [sum(self.k[j] for j in adj)]
+        c = [1]
+        cur = adj
+        idx = set(range(1, self.d+1)).difference(adj)
+        while len(idx) > 0:
+            nxt = {i for i in idx if any(any(checkPos(self.p[h, i, j])
+                                             for j in adj) for h in cur)}
+            if len(nxt) == 0:
+                break
+            bi = {sum(sum(self.p[h, i, j] for j in adj) for i in nxt)
+                  for h in cur}
+            ci = {sum(sum(self.p[h, i, j] for j in adj) for i in cur)
+                  for h in nxt}
+            if len(bi) > 1 or len(ci) > 1:
+                raise IndexError("merging classes %s does not yield "
+                                 "a P-polynomial scheme" % sorted(adj))
+            b.append(next(iter(bi)))
+            c.append(next(iter(ci)))
+            cur = nxt
+            idx.difference_update(nxt)
+        return DRGParameters(b, c)
 
     def multiplicities(self, expand = False, factor = False, simplify = False):
         """
