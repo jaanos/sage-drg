@@ -291,6 +291,27 @@ class DRGParameters:
                     raise InfeasibleError("absolute bound exceeded "
                                           "for (%d, %d)" % (i, j))
 
+    def check_antipodal(self):
+        """
+        For an antipodal cover of even diameter at least 4,
+        check whether its quotient satisfies necessary conditions
+        for the existence of a cover.
+        """
+        if self.antipodal and self.d >= 4 and self.d % 2 == 0:
+            q = self.antipodalQuotient()
+            try:
+                integralize(sum(q.p[q.d, i, q.d-i] for i in range(1, q.d))
+                            / self.r)
+                if self.d == 4 and self.c[2] == 1:
+                    kl = q.b[0] / (q.a[1] + 1)
+                    if self.r > kl:
+                        raise TypeError
+                    integralize(q.n*kl / (q.a[1]+2))
+            except TypeError:
+                raise InfeasibleError("quotient cannot have covers "
+                                      "of even diameter",
+                                      ("BCN", "Prop. 4.2.7."))
+
     def check_combinatorial(self):
         """
         Check for various combinatorial conditions.
@@ -453,6 +474,7 @@ class DRGParameters:
         self.check_conference()
         self.check_geodeticEmbedding()
         self.check_2design()
+        self.check_antipodal()
         self.check_genPoly()
         self.check_terwilliger()
         self.check_secondEigenvalue()
