@@ -16,6 +16,7 @@ from sage.symbolic.relation import solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .coefflist import CoefficientList
+from .nonex import families
 from .nonex import sporadic
 from .util import checkNonneg
 from .util import checkPos
@@ -58,7 +59,10 @@ class InfeasibleError(Exception):
         if len(self.refs) > 0:
             msg.append("nonexistence by %s" %
                        "; ".join(self.formatRef(ref) for ref in self.refs))
-        self.args = (": ".join(msg), )
+        msg = ": ".join(msg)
+        if isinstance(msg, unicode):
+            msg = msg.encode("utf-8")
+        self.args = (msg, )
 
     @staticmethod
     def formatRef(ref):
@@ -460,6 +464,20 @@ class DRGParameters:
                 (self.n % 4 != 1 or not is_squareSum(self.n)):
             raise InfeasibleError("conference graph must have order a sum "
                                   "of two squares with residue 1 (mod 4)")
+
+    def check_family(self):
+        """
+        Check whether the graph has an intersection array for which
+        nonexistence has been shown as a part of an infinite family.
+        """
+        for (b, c), (cond, ref) in families.items():
+            if len(b) != self.d:
+                continue
+            vars = tuple(set(sum(map(variables, b + c), ())))
+            sols = solve([SR(l) == r for l, r
+                          in zip(self.b[:-1] + self.c[1:], b + c)], vars)
+            if any(all(cnd.subs(sol) for cnd in cond) for sol in sols):
+                raise InfeasibleError(refs = ref)
 
     def check_feasible(self, checked = set()):
         """

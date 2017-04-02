@@ -162,6 +162,18 @@ refs = {
         "pages": (373, 379),
         "year": 1990
     },
+    u"JurišićVidali12": {
+        "type": "article",
+        "authors": [(u"Jurišić", ("Aleksandar", )), ("Vidali", (u"Janoš", ))],
+        "title": "Extremal $1$-codes in distance-regular graphs "
+                 "of diameter $3$",
+        "journal": "Des. Codes Cryptogr.",
+        "fjournal": "Designs, Codes and Cryptography",
+        "volume": 65,
+        "number": (1, 2),
+        "pages": (29, 47),
+        "year": 2012
+    },
     u"JurišićVidali17": {
         "type": "unpublished",
         "authors": [(u"Jurišić", ("Aleksandar", )), ("Vidali", (u"Janoš", ))],
@@ -201,6 +213,18 @@ refs = {
         "number": 1,
         "pages": (53, 54),
         "year": 1993
+    },
+    "Urlep12": {
+        "type": "article",
+        "authors": [("Urlep", (u"Matjaž", ))],
+        "title": "Triple intersection numbers of "
+                 "$Q$-polynomial distance-regular graphs",
+        "journal": "European J. Combin.",
+        "fjournal": "European Journal of Combinatorics",
+        "volume": 33,
+        "number": 6,
+        "pages": (1246, 1252),
+        "year": 2012
     },
     "Vidali13": {
         "type": "phdthesis",
