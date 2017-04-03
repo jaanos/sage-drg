@@ -238,6 +238,16 @@ refs = {
         "pages": (53, 54),
         "year": 1993
     },
+    "Soicher15": {
+        "type": "unpublished",
+        "authors": ["Soicher", ("Leonard", "H.")],
+        "title": "The uniqueness of a distance-regular graph "
+                 r"with intersection array $\{32, 27, 8, 1; 1, 4, 27, 32\}$ "
+                 "and related results",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1512.05976",
+        "year": 2015
+    },
     "Urlep12": {
         "type": "article",
         "authors": [("Urlep", (u"Matjaž", ))],

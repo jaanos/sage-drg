@@ -633,7 +633,8 @@ class DRGParameters:
             self.eigenvalues()
         if (self.b[1] - 1) in self.theta:
             if (self.d != 2 or all(th != -2 for th in self.theta)
-                    or self.n > 28) and self.c[2] != 1 and \
+                    or (self.b[1] != 1 and self.n > 28)) and \
+                    self.c[2] != 1 and \
                     not (self.is_hamming() or
                          self.is_locallyPetersen() or
                          self.is_johnson() or
