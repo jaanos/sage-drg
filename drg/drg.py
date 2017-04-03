@@ -614,7 +614,7 @@ class DRGParameters:
             if len(r) == 0:
                 return
             p = next(iter(r)).minpoly()
-            a, = NumberField(p, names = ('a', )).gen()
+            a = NumberField(p, names = ('a', )).gen()
             if len(r) == 1 or p.degree() != 2 or \
                     len({t.minpoly() for t in r}) == 2 or \
                     not a.is_integral():
