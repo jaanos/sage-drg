@@ -15,6 +15,16 @@ refs = {
         "year": 1989,
         "pages": ("xviii", 495)
     },
+    "BCN94": {
+        "type": "misc",
+        "authors": [("Brouwer", ("Andries", "E.")),
+                    ("Cohen", ("Arjeh", "M.")),
+                    ("Neumaier", ("Arnold", ))],
+        "title": "Corrections and additions to the book "
+                 "`Distance-regular graphs'",
+        "year": 1994,
+        "url": "http://www.win.tue.nl/~aeb/drg/"
+    },
     "Coolsaet95": {
         "type": "article",
         "authors": [("Coolsaet", ("Kris", ))],
@@ -185,6 +195,18 @@ refs = {
         "number": 4,
         "pages": (373, 379),
         "year": 1990
+    },
+    u"JurišićKoolen00": {
+        "type": "article",
+        "authors": [(u"Jurišić", ("Aleksandar", )), ("Koolen", ("Jack", ))],
+        "title": "Nonexistence of some antipodal distance-regular graphs "
+                 "of diameter four",
+        "journal": "European J. Combin.",
+        "fjournal": "European Journal of Combinatorics",
+        "volume": 21,
+        "number": 8,
+        "pages": (1039, 1046),
+        "year": 2000
     },
     u"JurišićVidali12": {
         "type": "article",

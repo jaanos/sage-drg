@@ -102,6 +102,7 @@ class DRGParameters:
         assert all(checkPos(x) for x in self.b[:-1]), \
             "b sequence not positive"
         self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
+        self.subgraphs = {}
         self.a = tuple(full_simplify(b[0]-x-y)
                        for x, y in zip(self.b, self.c))
         assert self.c[1] == 1, "Invalid c[1] value"
@@ -518,6 +519,11 @@ class DRGParameters:
                 self.complement().check_feasible(checked)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = "complement")
+        for ia, part in self.subgraphs.items():
+            try:
+                DRGParameters(*ia).check_feasible(checked)
+            except:
+                raise InfeasibleError(ex, part = part)
         for idx in subsets(range(1, self.d + 1)):
             if len(idx) > 0 and len(idx) < self.d and idx != [1]:
                 try:
@@ -581,11 +587,39 @@ class DRGParameters:
                          if th != self.k[1])
             thd, j = min((th, h) for h, th in enumerate(self.theta)
                          if th != self.k[1])
-            if (self.b[1]/(th1+1) < 1 and self.c[2] != 1) or \
-                    (self.b[1]/(thd+1) > -2 and self.a[1] != 0):
+            bm = -1 - self.b[1]/(th1+1)
+            bp = -1 - self.b[1]/(thd+1)
+            if (bm > -2 and self.c[2] != 1) or (bp < 1 and self.a[1] != 0):
                 raise InfeasibleError("local eigenvalues "
                                       "not in allowed range",
                                       ("BCN", "Thm. 4.4.3."))
+            if not self.bipartite:
+                mu = self.a[1] + bp*bm
+                bd = self.k[1] * mu - (self.a[1] - bp) * (self.a[1] - bm)
+                if bd > 0:
+                    raise InfeasibleError("bound on local eigenvalues "
+                                          "exceeded", u"JurišićKoolen00")
+                elif bd == 0:
+                    try:
+                        integralize(self.c[2]*mu/2)
+                        if self.c[2] < mu + 1:
+                            raise TypeError
+                    except TypeError:
+                        raise InfeasibleError("local graph strongly regular",
+                                              u"JurišićKoolen00")
+                    if self.d == 4 and self.antipodal:
+                        try:
+                            bm = integralize(bm)
+                            bp = integralize(bp)
+                            integralize((bp - bm) / self.r)
+                            if bp < 1 or bm > -2:
+                                raise TypeError
+                        except TypeError:
+                            raise InfeasibleError("locally strongly regular "
+                                                  "antipodal graph with d=4",
+                                                  u"JurišićKoolen00")
+                    self.subgraphs[(self.a[1], -(bp+1)*(bm+1)),
+                                   (1, mu)] = "local graph"
             def checkMul(h):
                 if self.antipodal and self.omega[h, self.d] != 1 and \
                       self.m[h] < self.k[1] + self.r - 2:
