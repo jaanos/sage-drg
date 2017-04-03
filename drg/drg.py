@@ -489,6 +489,7 @@ class DRGParameters:
         if ia in checked:
             return
         self.check_sporadic()
+        self.check_family()
         self.check_combinatorial()
         self.check_conference()
         self.check_geodeticEmbedding()
@@ -585,11 +586,24 @@ class DRGParameters:
                 raise InfeasibleError("local eigenvalues "
                                       "not in allowed range",
                                       ("BCN", "Thm. 4.4.3."))
-            s = {h for h, m in enumerate(self.m)
-                 if self.theta[h] != self.k[1] and m < self.k[1]}
-            if not s.issubset({i, j}):
-                raise InfeasibleError("m[i] < k for i != 2, d",
-                                      ("BCN", "Thm. 4.4.4."))
+            def checkMul(h):
+                if self.antipodal and self.omega[h, self.d] != 1 and \
+                      self.m[h] < self.k[1] + self.r - 2:
+                    return ("m[%d] < k+r-2" % h, "GodsilHensel92")
+                elif self.a[self.d] == 0 and \
+                        1 not in [self.omega[h, 2], self.omega[h, self.d]] \
+                        and self.m[h] < self.k[1] + self.b[self.d-1] - 1:
+                    return ("m[%d] < k+b[d-1]-1" % h, "GodsilKoolen95")
+                elif self.m[h] < self.k[1]:
+                    return ("m[%d] < k" % h, ("BCN", "Thm. 4.4.4."))
+                else:
+                    return None
+            d = {h: checkMul(h) for h in range(1, self.d)}
+            s = {h for h, v in d.items() if v is not None}
+            if not s.issubset([i, j]):
+                m, k = min((self.m[h], h) for h in s if h not in [i, j])
+                reason, ref = d[k]
+                raise InfeasibleError(reason, ref)
             r = []
             for h in s:
                 t = self.b[1] / (self.theta[h] + 1)
@@ -600,14 +614,15 @@ class DRGParameters:
             if len(r) == 0:
                 return
             p = next(iter(r)).minpoly()
-            k = NumberField(p, names = ('a', ))
-            a, = k.gen()
+            a, = NumberField(p, names = ('a', )).gen()
             if len(r) == 1 or p.degree() != 2 or \
-                    len({t.minpoly() for t in r}) == 2 or not a.is_integral():
-                raise InfeasibleError("m[i] < k, b[1]/(theta[1]+1) and "
+                    len({t.minpoly() for t in r}) == 2 or \
+                    not a.is_integral():
+                m, k = min((self.m[h], h) for h in s)
+                reason, ref = d[k]
+                raise InfeasibleError(reason + ", b[1]/(theta[1]+1) and "
                                       "b[1]/(theta[d]+1) not integers "
-                                      "or algebraic conjugates",
-                                      ("BCN", "Thm. 4.4.4."))
+                                      "or algebraic conjugates", ref)
 
     def check_secondEigenvalue(self):
         """

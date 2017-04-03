@@ -149,6 +149,30 @@ refs = {
         "pages": (13, 30),
         "year": 2013
     },
+    "GodsilHensel92": {
+        "type": "article",
+        "authors": [("Godsil", ("Christopher", "D.")),
+                    ("Hensel", ("A.", "D."))],
+        "title": "Distance regular covers of the complete graph",
+        "journal": "J. Combin. Theory Ser. B",
+        "fjournal": "Journal of Combinatorial Theory, Series B",
+        "volume": 56,
+        "number": 2,
+        "pages": (205, 238),
+        "year": 1992
+    },
+    "GodsilKoolen95": {
+        "type": "article",
+        "authors": [("Godsil", ("Christopher", "D.")),
+                    ("Koolen", ("Jacobus", "Hendricus"))],
+        "title": "On the multiplicity of eigenvalues "
+                 "of distance-regular graphs",
+        "journal": "Linear Algebra Appl.",
+        "fjournal": "Linear Algebra and its Applications",
+        "volume": (226, 228),
+        "pages": (273, 275),
+        "year": 1995
+    },
     "IvanovShpectorov90": {
         "type": "article",
         "authors": [("Ivanov", ("Aleksandr", "Anatol'evich")),
