@@ -54,6 +54,8 @@ families = {
      (1, r*(t+1), (r**2-1)*(r*t+1), r**2*(r*t+t+1))):
          ([r >= 3, (r != 3, [t != 1, t != 3]), (r != 4, t != 2)],
           u"JurišićKoolen11"),
+    ((2*r**2+r, 2*r**2+r-1, r**2, r, 1), (1, r, r**2, 2*r**2+r-1, 2*r**2+r)):
+        (r >= 2, "CJK08")
 }
 
 def checkConditions(cond, sol):

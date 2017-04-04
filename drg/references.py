@@ -61,6 +61,19 @@ refs = {
         "pages": (1086, 1095),
         "year": 2008
     },
+    "CJK08": {
+        "type": "article",
+        "authors": [("Coolsaet", ("Kris", )), (u"Jurišić", ("Aleksandar", )),
+                    ("Koolen", ("Jack", ))],
+        "title": "On triangle-free distance-regular graphs "
+                 "with an eigenvalue multiplicity equal to the valency",
+        "journal": "European J. Combin.",
+        "fjournal": "European Journal of Combinatorics",
+        "volume": 29,
+        "number": 5,
+        "pages": (1186, 1199),
+        "year": 2008
+    },
     "DeBruyn10": {
         "type": "article",
         "authors": [("De Bruyn", ("Bart", ))],
