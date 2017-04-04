@@ -334,7 +334,8 @@ class DRGParameters:
                         any(self.c[j] > 1 or self.a[j] >= self.c[i+j]
                             for j in range(1, self.d - i + 1)) or \
                         (self.d >= 2*i and self.c[2*i] == 1) or \
-                        any(a[j] > 0 for j in range(1, self.d - 2*i + 1)) or \
+                        any(self.a[j] > 0 for j
+                            in range(1, self.d - 2*i + 1)) or \
                         (i < self.d and (self.c[2] - 1)*self.a[i+1]
                                         + self.a[1] > self.a[i]):
                     raise InfeasibleError("Godsil's diameter bound "
@@ -725,16 +726,17 @@ class DRGParameters:
                                       ("KoolenPark10", "Thm. 3."))
             elif v == 0:
                 if small and not self.is_locallyPetersen() and \
-                        not self.match(((2, 1), (1, 1)), ((5, 4), (1, 1)),
+                        not self.match(((2, 1), (1, 1)), ((3, 2), (1, 1)),
                                        ((5, 2, 1), (1, 2, 5))):
-                    raise InfeasibleError("too small for a Terwilliger graph",
+                    raise InfeasibleError("too small for a "
+                                          "Terwilliger graph",
                                           ("BCN", "Cor. 1.16.6."))
                 return
-        if self.c[2] <= 2 and (small
+        if self.c[2] >= 2 and (small
                 or self.b[1]*(self.c[1]-1) > self.a[1]*(self.a[1]-1)
                 or (self.d >= 3 and self.c[3] > 1
                                 and 2*self.c[2] > self.c[3])) and \
-                any(self.c[i] + self.a[1]+ self.b[i+1] + 2
+                any(self.c[i] + self.a[1] + self.b[i+1] + 2
                     > self.b[i] + self.c[i+1]
                     for i in range(self.d)):
             raise InfeasibleError("Terwilliger's diameter bound not reached",
