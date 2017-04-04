@@ -74,20 +74,9 @@ refs = {
         "pages": (1186, 1199),
         "year": 2008
     },
-    "DeBruyn10": {
-        "type": "article",
-        "authors": [("De Bruyn", ("Bart", ))],
-        "title": "The nonexistence of regular near octagons with parameters "
-                 "$(s, t, t_2, t_3) = (2, 24, 0, 8)$",
-        "journal": "Electron. J. Combin.",
-        "fjournal": "Electronic Journal of Combinatorics",
-        "volume": 17,
-        "pages": "R149",
-        "year": 2010
-    },
     "DeBruynVanhove15": {
         "type": "article",
-        "authors": [("De Bruyn", ("Bart", )), ("Vanhove", ("Frederic", ))],
+        "authors": [("De Bruyn", ("Bart", )), ("Vanhove", (u"Frédéric", ))],
         "title": "On $Q$-polynomial regular near $2d$-gons",
         "journal": "Combinatorica",
         "fjournal": "Combinatorica",

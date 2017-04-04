@@ -3,20 +3,25 @@ from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
+from sage.combinat.q_analogues import q_int
 from sage.functions.other import ceil
 from sage.functions.other import floor
+from sage.functions.other import sqrt
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
 from sage.misc.misc import subsets
+from sage.misc.misc import uniq
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
+from sage.symbolic.expression import Expression
 from sage.symbolic.relation import solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .coefflist import CoefficientList
 from .nonex import checkConditions
+from .nonex import classicalFamilies
 from .nonex import families
 from .nonex import sporadic
 from .util import checkNonneg
@@ -79,7 +84,7 @@ class DRGParameters:
     and checking their feasibility.
     """
 
-    def __init__(self, b, c):
+    def __init__(self, b, c, alpha = None, beta = None):
         """
         Object constructor.
 
@@ -88,8 +93,27 @@ class DRGParameters:
         ``{b[0], b[1], ..., b[d-1]; c[1], c[2], ..., c[d]}``.
         The basic checks on integrality and nonnegativity
         of the intersection array are performed.
+
+        If three parameters are given,
+        they are understood as the valency and numbers of common neighbours
+        of two adjacent and two nonadjacent vertices, respectively,
+        in a strongly regular graph.
+        If four parameters are given,
+        they are understood as the classical parameters.
         """
-        self.d = Integer(len(b))
+        if alpha is not None:
+            if beta is not None:
+                self.d = Integer(b)
+                q = c
+                b = [(q_int(self.d, q) - q_int(i, q)) *
+                     (beta - alpha * q_int(i, q)) for i in range(self.d)]
+                c = [q_int(i, q) * (1 + alpha * q_int(i-1, q))
+                     for i in range(1, self.d + 1)]
+            else:
+                self.d = Integer(2)
+                b, c = (b, b-c-1), (1, alpha)
+        else:
+            self.d = Integer(len(b))
         assert self.d == len(c), "parameter length mismatch"
         try:
             self.c = tuple([Integer(0)] + map(integralize, c))
@@ -319,6 +343,27 @@ class DRGParameters:
                                       "of even diameter",
                                       ("BCN", "Prop. 4.2.7."))
 
+    def check_classical(self):
+        """
+        Check whether the graph has classical parameters for which
+        nonexistence has been shown as a part of an infinite family.
+        """
+        clas = self.is_classical()
+        if not clas:
+            return
+        for cl, (cond, ref) in classicalFamilies.items():
+            vars = tuple(set(sum(map(variables, cl), ())))
+            for c in clas:
+                sols = solve([SR(l) == r for l, r in zip(c, cl)], vars)
+                if all(isinstance(e, Expression) for e in sols):
+                    sols = [uniq(sum([solve(e, e.variables()) for e in sols],
+                                 []))]
+                try:
+                    if any(checkConditions(cond, sol) for sol in sols):
+                        raise InfeasibleError(refs = ref)
+                except ValueError:
+                    pass
+
     def check_combinatorial(self):
         """
         Check for various combinatorial conditions.
@@ -493,6 +538,7 @@ class DRGParameters:
             return
         self.check_sporadic()
         self.check_family()
+        self.check_classical()
         self.check_combinatorial()
         self.check_conference()
         self.check_geodeticEmbedding()
@@ -897,6 +943,37 @@ class DRGParameters:
         Check whether the graph is bipartite.
         """
         return self.bipartite
+
+    def is_classical(self):
+        """
+        Check whether the graph is classical,
+        and return all sets of classical parameters if it is.
+        """
+        if "classical" not in self.__dict__:
+            clas = []
+            if self.d == 1:
+                bs = {}
+            elif self.d == 2:
+                e = self.c[2] - self.a[1] - 2
+                d = sqrt(4*self.b[1] + e**2)
+                bs = {(e+d)/2, (e-d)/2}
+            elif all(self.a[i] == self.a[1] * self.c[i]
+                     for i in range(2, self.d+1)):
+                bs = {self.c[2] - 1, -self.a[1] - 1}
+            else:
+                bs = {(self.a[2]*self.c[3] - self.c[2]*self.a[3])
+                      / (self.a[1] * self.c[3] - self.a[3])}
+            for b in bs:
+                alpha = self.c[2] / (b+1) - 1
+                beta = self.k[1] / q_int(self.d, b)
+                if all(self.b[i] == (q_int(self.d, b) - q_int(i, b))
+                                  * (beta - alpha * q_int(i, b)) and
+                       self.c[i+1] == q_int(i+1, b)
+                                    * (1 + alpha * q_int(i, b))
+                       for i in range(self.d)):
+                    clas.append((self.d, b, alpha, beta))
+            self.classical = False if len(clas) == 0 else clas
+        return self.classical
 
     def is_formallySelfDual(self):
         """
