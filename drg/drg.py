@@ -522,7 +522,7 @@ class DRGParameters:
         for ia, part in self.subgraphs.items():
             try:
                 DRGParameters(*ia).check_feasible(checked)
-            except:
+            except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
         for idx in subsets(range(1, self.d + 1)):
             if len(idx) > 0 and len(idx) < self.d and idx != [1]:
@@ -596,10 +596,16 @@ class DRGParameters:
             if not self.bipartite:
                 mu = self.a[1] + bp*bm
                 bd = self.k[1] * mu - (self.a[1] - bp) * (self.a[1] - bm)
+                fb = self.k[1] * self.a[1] * self.b[1] + \
+                    (th1 * (self.a[1] + 1) + self.k[1]) * \
+                    (thd * (self.a[1] + 1) + self.k[1])
                 if bd > 0:
                     raise InfeasibleError("bound on local eigenvalues "
                                           "exceeded", u"JurišićKoolen00")
-                elif bd == 0:
+                if fb < 0:
+                    raise InfeasibleError("fundamental bound exceeded",
+                                          "JKT00")
+                elif bd == 0 or fb == 0:
                     try:
                         integralize(self.c[2]*mu/2)
                         if self.c[2] < mu + 1:
