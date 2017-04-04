@@ -16,6 +16,7 @@ from sage.symbolic.relation import solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .coefflist import CoefficientList
+from .nonex import checkConditions
 from .nonex import families
 from .nonex import sporadic
 from .util import checkNonneg
@@ -477,7 +478,7 @@ class DRGParameters:
             vars = tuple(set(sum(map(variables, b + c), ())))
             sols = solve([SR(l) == r for l, r
                           in zip(self.b[:-1] + self.c[1:], b + c)], vars)
-            if any(all(cnd.subs(sol) for cnd in cond) for sol in sols):
+            if any(checkConditions(cond, sol) for sol in sols):
                 raise InfeasibleError(refs = ref)
 
     def check_feasible(self, checked = set()):

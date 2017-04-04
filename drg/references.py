@@ -208,6 +208,18 @@ refs = {
         "pages": (1039, 1046),
         "year": 2000
     },
+    u"JurišićKoolen11": {
+        "type": "article",
+        "authors": [(u"Jurišić", ("Aleksandar", )), ("Koolen", ("Jack", ))],
+        "title": r"Classification of the family $\rm{AT4}(qs,q,q)$ "
+                 "of antipodal tight graphs",
+        "journal": "J. Combin. Theory Ser. A",
+        "fjournal": "Journal of Combinatorial Theory, Series A",
+        "volume": 118,
+        "number": 3,
+        "pages": (842, 852),
+        "year": 2011
+    },
     u"JurišićVidali12": {
         "type": "article",
         "authors": [(u"Jurišić", ("Aleksandar", )), ("Vidali", (u"Janoš", ))],
@@ -226,6 +238,18 @@ refs = {
         "title": "Restrictions on classical distance-regular graphs",
         "note": "submitted",
         "year": 2017
+    },
+    "JKT00": {
+        "type": "article",
+        "authors": [(u"Jurišić", ("Aleksandar", )), ("Koolen", ("Jack", )),
+                    ("Terwilliger", ("Paul", ))],
+        "title": "Tight distance-regular graphs",
+        "journal": "J. Algebraic Combin.",
+        "fjournal": "Journal of Algebraic Combinatorics",
+        "volume": 12,
+        "number": 2,
+        "pages": (163, 197),
+        "year": 2000
     },
     "Koolen92": {
         "type": "article",

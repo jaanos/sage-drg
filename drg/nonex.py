@@ -39,14 +39,29 @@ t = SR.symbol("__t")
 
 families = {
     ((4*r**3 + 8*r**2 + 6*r + 1, 2*r*(r+1)*(2*r+1), 2*r**2 + 2*r + 1),
-     (1, 2*r*(r+1), (2*r+1)*(2*r**2+2*r+1))): ([r >= 1],
+     (1, 2*r*(r+1), (2*r+1)*(2*r**2+2*r+1))): (r >= 1,
                                                u"CoolsaetJurišić08"),
     (((2*r**2 - 1)*(2*r+1), 4*r*(r**2-1), 2*r**2),
-     (1, 2*(r**2-1), r*(4*r**2-2))): ([r >= 2], u"JurišićVidali12"),
+     (1, 2*(r**2-1), r*(4*r**2-2))): (r >= 2, u"JurišićVidali12"),
     ((2*r**2*(2*r+1), (2*r-1)*(2*r**2+r+1), 2*r**2),
-     (1, 2*r**2, r*(4*r**2-1))): ([r >= 2], u"JurišićVidali12"),
+     (1, 2*r**2, r*(4*r**2-1))): (r >= 2, u"JurišićVidali12"),
     (((2*r+1)*(4*r+1)*(4*t-1), 8*r*(4*r*t-r+2*t), (r+t)*(4*r+1)),
      (1, (r+t)*(4*r+1), 4*r*(2*r+1)*(4*t-1))): ([r >= 1, t >= 1], "Vidali13"),
     (((r+1)*(r**3-1), r*(r-1)*(r**2+r-1), r**2-1),
-     (1, r*(r+1), (r**2-1)*(r**2+r-1))): ([r >= 3], "Urlep12")
+     (1, r*(r+1), (r**2-1)*(r**2+r-1))): (r >= 3, "Urlep12"),
+    ((r**2*(r*t+t+1), (r**2-1)*(r*t+1), r*(r-1)*(t+1), 1),
+     (1, r*(t+1), (r**2-1)*(r*t+1), r**2*(r*t+t+1))):
+         ([r >= 3, (r != 3, [t != 1, t != 3]), (r != 4, t != 2)],
+          u"JurišićKoolen11"),
 }
+
+def checkConditions(cond, sol):
+    """
+    Check whether the given conditions hold for the given values of variables.
+    """
+    if isinstance(cond, list):
+        return all(checkConditions(cnd, sol) for cnd in cond)
+    elif isinstance(cond, tuple):
+        return any(checkConditions(cnd, sol) for cnd in cond)
+    else:
+        return cond.subs(sol)
