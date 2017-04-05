@@ -375,8 +375,10 @@ class DRGParameters:
             for c in clas:
                 sols = solve([SR(l) == r for l, r in zip(c, cl)], vars)
                 if all(isinstance(e, Expression) for e in sols):
-                    sols = [uniq(sum([solve(e, e.variables()) for e in sols],
-                                 []))]
+                    sols = [solve(e, e.variables()) for e in sols]
+                    sols = uniq(sum((s if all(isinstance(e, Expression)
+                                              for e in s)
+                                       else sum(s, []) for s in sols), []))
                 try:
                     if any(checkConditions(cond, sol) for sol in sols):
                         raise InfeasibleError(refs = ref)
