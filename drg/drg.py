@@ -215,6 +215,22 @@ class DRGParameters:
                     "intersection number p[%d, %d, %d] is negative" % \
                     (self.d, i, j)
 
+    def __hash__(self):
+        """
+        Return the hash value.
+        """
+        return hash(self.intersectionArray())
+
+    def __eq__(self, other):
+        """
+        Compare self to other.
+        """
+        ia = self.intersectionArray()
+        if isinstance(other, DRGParameters):
+            return ia == other.intersectionArray()
+        else:
+            return ia == other
+
     def __len__(self, expand = False, factor = False, simplify = False):
         """
         Return the number of vertices.
@@ -530,13 +546,15 @@ class DRGParameters:
             if any(checkConditions(cond, sol) for sol in sols):
                 raise InfeasibleError(refs = ref)
 
-    def check_feasible(self, checked = set()):
+    def check_feasible(self, checked = None):
         """
         Check whether the intersection array is feasible.
         """
         if self.d == 1 or self.k[1] == 2:
             return
         ia = self.intersectionArray()
+        if checked is None:
+            checked = set()
         if ia in checked:
             return
         self.check_sporadic()
@@ -572,17 +590,25 @@ class DRGParameters:
                 raise InfeasibleError(ex, part = "complement")
         for ia, part in self.subgraphs.items():
             try:
-                DRGParameters(*ia).check_feasible(checked)
+                if not isinstance(ia, DRGParameters):
+                    del self.subgraphs[ia]
+                    ia = DRGParameters(*ia)
+                    self.subgraphs[ia] = part
+                ia.check_feasible(checked)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
         for idx in subsets(range(1, self.d + 1)):
             if len(idx) > 0 and len(idx) < self.d and idx != [1]:
+                part = "distance-%s graph" % (idx if len(idx) > 1
+                                                  else idx[0])
                 try:
-                    self.mergeClasses(*idx).check_feasible(checked)
+                    dg = self.mergeClasses(*idx)
+                    if dg in self.subgraphs:
+                        dg = next(g for g in self.subgraphs if g == dg)
+                    dg.check_feasible(checked)
+                    self.subgraphs[dg] = part
                 except (InfeasibleError, AssertionError) as ex:
-                    raise InfeasibleError(ex,
-                        part = "distance-%s graph" % (idx if len(idx) > 1
-                                                      else idx[0]))
+                    raise InfeasibleError(ex, part = part)
                 except IndexError:
                     pass
 
@@ -675,8 +701,9 @@ class DRGParameters:
                             raise InfeasibleError("locally strongly regular "
                                                   "antipodal graph with d=4",
                                                   u"JurišićKoolen00")
-                    self.subgraphs[(self.a[1], -(bp+1)*(bm+1)),
-                                   (1, mu)] = "local graph"
+                    ia = ((self.a[1], -(bp+1)*(bm+1)), (1, mu))
+                    if ia not in self.subgraphs:
+                        self.subgraphs[ia] = "local graph"
             def checkMul(h):
                 if self.antipodal and self.omega[h, self.d] != 1 and \
                       self.m[h] < self.k[1] + self.r - 2:
