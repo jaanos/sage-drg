@@ -109,6 +109,9 @@ class DRGParameters:
                      (beta - alpha * q_int(i, q)) for i in range(self.d)]
                 c = [q_int(i, q) * (1 + alpha * q_int(i-1, q))
                      for i in range(1, self.d + 1)]
+            elif b - c == 1:
+                self.d = Integer(1)
+                b, c = (b, ), (1, )
             else:
                 self.d = Integer(2)
                 b, c = (b, b-c-1), (1, alpha)
@@ -964,6 +967,8 @@ class DRGParameters:
                 bs = {(self.a[2]*self.c[3] - self.c[2]*self.a[3])
                       / (self.a[1] * self.c[3] - self.a[3])}
             for b in bs:
+                if b in [0, -1]:
+                    continue
                 alpha = self.c[2] / (b+1) - 1
                 beta = self.k[1] / q_int(self.d, b)
                 if all(self.b[i] == (q_int(self.d, b) - q_int(i, b))
