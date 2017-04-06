@@ -1,6 +1,22 @@
 # -*- coding: utf-8 -*-
 
 refs = {
+    "AzarijaMarc15": {
+        "type": "unpublished",
+        "authors": [("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
+        "title": "There is no (75,32,10,16) strongly regular graph",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1509.05933",
+        "year": 2015
+    },
+    "AzarijaMarc16": {
+        "type": "unpublished",
+        "authors": [("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
+        "title": "There is no (95,40,12,20) strongly regular graph",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1603.02032",
+        "year": 2016
+    },
     "BCN": {
         "type": "book",
         "authors": [("Brouwer", ("Andries", "E.")),
@@ -24,6 +40,29 @@ refs = {
                  "`Distance-regular graphs'",
         "year": 1994,
         "url": "http://www.win.tue.nl/~aeb/drg/"
+    },
+    "BHMW89": {
+        "type": "article",
+        "authors": [("Bussemaker", ("Frans", "C.")),
+                    ("Haemers", ("Willem", "H.")),
+                    ("Mathon", ("Rudolf", "A.")),
+                    ("Wilbrink", ("Hendrikus", "Adrianus"))],
+        "title": "A $(49, 16, 3, 6)$ strongly regular graph does not exist",
+        "journal": "European J. Combin.",
+        "fjournal": "European Journal of Combinatorics",
+        "volume": 10,
+        "number": 5,
+        "pages": (413, 418),
+        "year": 1989
+    },
+    "BPR14": {
+        "type": "unpublished",
+        "authors": [("Bondarenko", ("A.", "V.")), ("Prymak", ("A.", )),
+                    ("Radchenko", ("D.", ))],
+        "title": "Non-existence of (76,30,8,14) strongly regular graph",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1410.6748",
+        "year": 2014
     },
     "Coolsaet95": {
         "type": "article",
@@ -84,6 +123,14 @@ refs = {
         "number": 2,
         "pages": (181, 208),
         "year": 2015
+    },
+    "Degraer07": {
+        "type": "phdthesis",
+        "authors": [("Degraer", ("Jan", ))],
+        "title": "Isomorph-free exhaustive generation algorithms "
+                 "for association schemes",
+        "school": "Ghent University",
+        "year": 2007
     },
     "Fon-Der-Flaass93a": {
         "type": "article",
@@ -184,6 +231,17 @@ refs = {
         "volume": (226, 228),
         "pages": (273, 275),
         "year": 1995
+    },
+    "Haemers93": {
+        "type": "incollection",
+        "authors": [("Haemers", ("Willem", "H."))],
+        "title": "There exists no $(76, 21, 2, 7)$ strongly regular graph",
+        "booktitle": "Finite geometry and combinatorics",
+        "series": "London Mathematical Society Lecture Note Series",
+        "publisher": "Cambridge Univ. Press",
+        "address": "Cambridge",
+        "pages": (175, 176),
+        "year": 1993
     },
     "IvanovShpectorov90": {
         "type": "article",
@@ -288,7 +346,7 @@ refs = {
     },
     "Soicher15": {
         "type": "unpublished",
-        "authors": ["Soicher", ("Leonard", "H.")],
+        "authors": [("Soicher", ("Leonard", "H."))],
         "title": "The uniqueness of a distance-regular graph "
                  r"with intersection array $\{32, 27, 8, 1; 1, 4, 27, 32\}$ "
                  "and related results",
@@ -310,14 +368,14 @@ refs = {
     },
     "Vidali13": {
         "type": "phdthesis",
-        "authors": ["Vidali", (u"Janoš", )],
+        "authors": [("Vidali", (u"Janoš", ))],
         "title": "Codes in distance-regular graphs",
         "school": "University of Ljubljana",
         "year": 2013
     },
     "Vidali13a": {
         "type": "unpublished",
-        "authors": ["Vidali", (u"Janoš", )],
+        "authors": [("Vidali", (u"Janoš", ))],
         "title": "There is no distance-regular graph with intersection array "
                  r"$\{55, 54, 50, 35, 10; 1, 5, 20, 45, 55\}$",
         "note": "manuscript",
@@ -325,8 +383,21 @@ refs = {
     },
     "Vidali16": {
         "type": "unpublished",
-        "authors": ["Vidali", (u"Janoš", )],
+        "authors": [("Vidali", (u"Janoš", ))],
         "note": "unpublished result",
         "year": 2016
+    },
+    "WilbrinkBrouwer83": {
+        "type": "article",
+        "authors": [("Wilbrink", ("Hendrikus", "Adrianus")),
+                    ("Brouwer", ("Andries", "E."))],
+        "title": "A $(57, 14, 1)$ strongly regular graph does not exist",
+        "journal": "Nederl. Akad. Wetensch. Indag. Math.",
+        "fjournal": "Koninklijke Nederlandse Akademie van Wetenschappen. "
+                    "Indagationes Mathematicae",
+        "volume": 45,
+        "number": 1,
+        "pages": (117, 121),
+        "year": 1983
     }
 }

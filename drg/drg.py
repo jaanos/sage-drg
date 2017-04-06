@@ -140,6 +140,10 @@ class DRGParameters:
                    for i in range(self.d)), "c sequence not non-descending"
         assert all(checkNonneg(x) for x in self.a), \
             "a values negative"
+        if any(any(self.b[j] < self.c[i]
+                   for j in range(self.d-i+1)) for i in range(self.d+1)):
+            raise InfeasibleError("b[j] < c[i] with i+j <= d",
+                                  ("BCN", "Proposition 4.1.6.(ii)"))
         m = floor(self.d / 2)
         self.antipodal = all(full_simplify(self.b[i] - self.c[self.d - i])
                              == 0 for i in range(self.d) if i != m)

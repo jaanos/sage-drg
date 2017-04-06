@@ -2,6 +2,13 @@
 from sage.symbolic.ring import SR
 
 sporadic = {
+    ((14, 12), (1, 4)): "WilbrinkBrouwer83",
+    ((16, 12), (1, 6)): "BHMW89",
+    ((21, 18), (1, 7)): "Haemers93",
+    ((30, 21), (1, 14)): "BPR14",
+    ((32, 21), (1, 16)): "AzarijaMarc15",
+    ((38, 27), (1, 18)): "Degraer07",
+    ((40, 27), (1, 20)): "AzarijaMarc16",
     ((57, 56), (1, 12)): "GavrilyukMakhnev05",
     ((5, 4, 3), (1, 1, 2)): "Fon-Der-Flaass93b",
     ((13, 10, 7), (1, 2, 7)): "Coolsaet95",
