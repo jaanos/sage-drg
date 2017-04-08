@@ -677,6 +677,19 @@ class DRGParameters:
                 if isinstance(m, Integer) and (m == 10 or m % 8 == 6):
                     raise InfeasibleError("PG(2, q) does not exist "
                                           "for q = 10 or q = 8n+6")
+        if self.antipodal and self.d == 3 and \
+                self.b[0] == (self.r - 1) * (self.c[2] + 1):
+            try:
+                if (self.r == 7 and self.c[2] == 2) or \
+                        self.r - 1 > self.c[2] * (self.c[2] + 1):
+                    raise TypeError
+                integralize((self.r - 1) * (self.c[2] + 1) *
+                            self.r * (self.c[2] + 2))
+            except TypeError:
+                raise InfeasibleError("no spread in corresponding "
+                                      "generalized quadrangle",
+                                      [("BCN", "Prop. 12.5.2."),
+                                       ("PayneThas09", "1.8.3.")])
 
     def check_geodeticEmbedding(self):
         """

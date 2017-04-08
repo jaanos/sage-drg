@@ -344,6 +344,17 @@ refs = {
         "pages": (53, 54),
         "year": 1993
     },
+    "PayneThas09": {
+        "type": "book",
+        "authors": [("Payne", ("Stanley", "E.")), ("Thas", ("Joseph", "A."))],
+        "title": "Finite generalized quadrangles",
+        "edition": "Second",
+        "series": "EMS Series of Lectures in Mathematics",
+        "publisher": "European Mathematical Society (EMS)",
+        "address": u"Zürich",
+        "year": 2009,
+        "pages": ("xii", 287)
+    },
     "Soicher15": {
         "type": "unpublished",
         "authors": [("Soicher", ("Leonard", "H."))],
