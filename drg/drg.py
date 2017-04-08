@@ -84,7 +84,7 @@ class DRGParameters:
     and checking their feasibility.
     """
 
-    def __init__(self, b, c, alpha = None, beta = None):
+    def __init__(self, b, c, alpha = None, beta = None, complement = None):
         """
         Object constructor.
 
@@ -126,11 +126,13 @@ class DRGParameters:
             self.b = tuple(map(integralize, b) + [Integer(0)])
         except TypeError:
             raise InfeasibleError("b sequence not integral")
-        assert all(checkPos(x) for x in self.c[1:]), "c sequence not positive"
+        assert all(checkPos(x) for x in self.c[1:]), \
+            "c sequence not positive"
         assert all(checkPos(x) for x in self.b[:-1]), \
             "b sequence not positive"
         self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
         self.subgraphs = {}
+        self.distance_graphs = {}
         self.a = tuple(full_simplify(b[0]-x-y)
                        for x, y in zip(self.b, self.c))
         assert self.c[1] == 1, "Invalid c[1] value"
@@ -147,21 +149,8 @@ class DRGParameters:
         m = floor(self.d / 2)
         self.antipodal = all(full_simplify(self.b[i] - self.c[self.d - i])
                              == 0 for i in range(self.d) if i != m)
-        if self.antipodal:
-            try:
-                self.r = integralize(1 + self.b[m] / self.c[self.d - m])
-            except TypeError:
-                raise InfeasibleError("covering index not integral")
         self.bipartite = all(a == 0 for a in self.a)
-        if self.bipartite:
-            try:
-                for i in range(m):
-                    integralize(self.b[2*i]*self.b[2*i+1]/self.c[2])
-                    integralize(self.c[2*i+1]*self.c[2*i+2]/self.c[2])
-            except TypeError:
-                raise InfeasibleError("intersection array of halved graph "
-                                      "not integral")
-        k = [1]
+        k = [Integer(1)]
         try:
             for i in range(self.d):
                 k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
@@ -218,6 +207,35 @@ class DRGParameters:
                 assert checkNonneg(self.p[self.d, i, j]), \
                     "intersection number p[%d, %d, %d] is negative" % \
                     (self.d, i, j)
+        if self.antipodal:
+            try:
+                self.r = integralize(1 + self.b[m] / self.c[self.d - m])
+            except TypeError:
+                raise InfeasibleError("covering index not integral")
+            if self.d == 2:
+                b = [self.b[0]/(self.b[1]+1)]
+                c = [Integer(1)]
+            elif self.d >= 3:
+                m = floor(self.d / 2)
+                b = self.b[:m]
+                c = list(self.c[1:m+1])
+                if self.d % 2 == 0:
+                    c[-1] *= self.r
+            if self.d >= 2:
+                self.quotient = self.add_subgraph((tuple(b), tuple(c)),
+                                                  "antipodal quotient")
+        if self.bipartite and self.d >= 2:
+            m = floor(self.d / 2)
+            b = tuple(self.b[2*i]*self.b[2*i+1]/self.c[2] for i in range(m))
+            c = tuple(self.c[2*i+1]*self.c[2*i+2]/self.c[2]
+                      for i in range(m))
+            self.half = self.add_subgraph((b, c), "bipartite half")
+        if self.d == 2 and checkPos(self.b[0] - self.c[2]):
+            if complement is None:
+                complement = DRGParameters((self.k[2], self.p[2, 2, 1]),
+                                           (Integer(1), self.p[1, 2, 2]),
+                                           complement = self)
+            self.complement = self.add_subgraph(complement, "complement")
 
     def __hash__(self):
         """
@@ -261,22 +279,31 @@ class DRGParameters:
                               simplify = simplify)
         return self.a[1:]
 
+    def add_subgraph(self, ia, part):
+        """
+        Add a derived graph into the list.
+        """
+        if ia in self.distance_graphs:
+            return next(g for g in self.distance_graphs if g == ia)
+        elif ia in self.subgraphs:
+            return next(g for g in self.subgraphs if g == ia)
+        elif not isinstance(ia, DRGParameters):
+            try:
+                ia = DRGParameters(*ia)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = part)
+        if ia.n == self.n:
+            self.distance_graphs[ia] = part
+        else:
+            self.subgraphs[ia] = part
+        return ia
+
     def antipodalQuotient(self):
         """
         Return the parameters of the antipodal quotient.
         """
-        if "quotient" not in self.__dict__:
-            assert self.antipodal, "graph not antipodal"
-            if self.d == 2:
-                self.quotient = DRGParameters([self.b[0]/(self.b[1]+1)],
-                                              [Integer(1)])
-            else:
-                m = floor(self.d / 2)
-                b = self.b[:m]
-                c = list(self.c[1:m+1])
-                if self.d % 2 == 0:
-                    c[-1] *= self.r
-                self.quotient = DRGParameters(b, c)
+        assert self.antipodal, "graph not antipodal"
+        assert self.d >= 2, "quotient of complete graph has diameter 0"
         return self.quotient
 
     def bTable(self, expand = False, factor = False, simplify = False):
@@ -292,12 +319,8 @@ class DRGParameters:
         """
         Return the parameters of the bipartite half.
         """
-        if "half" not in self.__dict__:
-            assert self.bipartite, "graph not bipartite"
-            m = floor(self.d / 2)
-            b = [self.b[2*i]*self.b[2*i+1]/self.c[2] for i in range(m)]
-            c = [self.c[2*i+1]*self.c[2*i+2]/self.c[2] for i in range(m)]
-            self.half = DRGParameters(b, c)
+        assert self.bipartite, "graph not bipartite"
+        assert self.d >= 2, "bipartite half of complete graph has diameter 0"
         return self.half
 
     def cTable(self, expand = False, factor = False, simplify = False):
@@ -327,6 +350,29 @@ class DRGParameters:
             if not ok:
                 raise InfeasibleError("no corresponding 2-design",
                                       ("BCN", "Prop. 1.10.5."))
+
+    def check_2graph(self):
+        """
+        For a strongly regular or Taylor graph,
+        check whether a regular 2-graph can be derived.
+        """
+        if self.d == 2 and self.n == 2*(2*self.b[0] - self.a[1] - self.c[2]):
+            mu = self.b[0] - self.c[2]
+            if checkPos(mu):
+                self.add_subgraph(((2*mu, self.b[1]), (Integer(1), mu)),
+                                  "2-graph derivation")
+        elif self.d == 3 and self.antipodal and \
+                self.r == 2 and self.a[1] > 0:
+            try:
+                mu = integralize(self.a[1] / 2)
+                n = integralize(self.n / 4)
+            except TypeError:
+                raise InfeasibleError("Taylor graph with a[1] > 0 odd "
+                                      "or cover of K_n with n odd",
+                                      ("BCN", "Thm. 1.5.3."))
+            self.local_graph = self.add_subgraph(((self.a[1], n - mu - 1),
+                                                  (Integer(1), mu)),
+                                                 "local graph")
 
     def check_absoluteBound(self):
         """
@@ -565,6 +611,7 @@ class DRGParameters:
             return
         self.check_sporadic()
         self.check_family()
+        self.check_2graph()
         self.check_classical()
         self.check_combinatorial()
         self.check_conference()
@@ -577,42 +624,23 @@ class DRGParameters:
         self.check_localEigenvalues()
         self.check_absoluteBound()
         checked.add(ia)
-        if self.bipartite:
-            try:
-                self.bipartiteHalf().check_feasible(checked)
-            except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = "bipartite half")
-        if self.antipodal:
-            if self.bipartite:
-                recurse = False
-            try:
-                self.antipodalQuotient().check_feasible(checked)
-            except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = "antipodal quotient")
-        if self.d == 2 and self.b[0] != self.c[2]:
-            try:
-                self.complement().check_feasible(checked)
-            except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = "complement")
         for ia, part in self.subgraphs.items():
             try:
-                if not isinstance(ia, DRGParameters):
-                    del self.subgraphs[ia]
-                    ia = DRGParameters(*ia)
-                    self.subgraphs[ia] = part
                 ia.check_feasible(checked)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
+        if "complement" in self.__dict__:
+            try:
+                self.complement.check_feasible(checked)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = "complement")
         for idx in subsets(range(1, self.d + 1)):
             if len(idx) > 0 and len(idx) < self.d and idx != [1]:
                 part = "distance-%s graph" % (idx if len(idx) > 1
                                                   else idx[0])
                 try:
-                    dg = self.mergeClasses(*idx)
-                    if dg in self.subgraphs:
-                        dg = next(g for g in self.subgraphs if g == dg)
+                    dg = self.add_subgraph(self.mergeClasses(*idx), part)
                     dg.check_feasible(checked)
-                    self.subgraphs[dg] = part
                 except (InfeasibleError, AssertionError) as ex:
                     raise InfeasibleError(ex, part = part)
                 except IndexError:
@@ -707,9 +735,10 @@ class DRGParameters:
                             raise InfeasibleError("locally strongly regular "
                                                   "antipodal graph with d=4",
                                                   u"JurišićKoolen00")
-                    ia = ((self.a[1], -(bp+1)*(bm+1)), (1, mu))
-                    if ia not in self.subgraphs:
-                        self.subgraphs[ia] = "local graph"
+                    self.local_graph = self.add_subgraph(((self.a[1],
+                                                           -(bp+1)*(bm+1)),
+                                                          (Integer(1), mu)),
+                                                         "local graph")
             def checkMul(h):
                 if self.antipodal and self.omega[h, self.d] != 1 and \
                       self.m[h] < self.k[1] + self.r - 2:
@@ -824,14 +853,13 @@ class DRGParameters:
             raise InfeasibleError("Terwilliger's diameter bound not reached",
                                   ("BCN", "Thm. 5.2.1."))
 
-    def complement(self):
+    def complementaryGraph(self):
         """
         Return the parameters of the complement of a strongly regular graph.
         """
-        if self.d != 2 or self.b[0] == self.c[2]:
-            raise ValueError("the complement is not distance-regular")
-        return DRGParameters((self.k[2], self.p[2, 2, 1]),
-                             (1, self.p[1, 2, 2]))
+        assert self.d == 2 and checkPos(self.b[0] - self.c[2]), \
+            "the complement is not distance-regular"
+        return self.complement
 
     def cosineSequences(self, index = None, ev = None, expand = False,
                         factor = False, simplify = False):
@@ -1096,6 +1124,19 @@ class DRGParameters:
             self.q = q
         self.q.rewrite(expand = expand, factor = factor, simplify = simplify)
         return self.q
+
+    def localGraph(self):
+        """
+        Return parameters of the local graph
+        if it is known to be distance-regular.
+        """
+        if "local_graph" not in self.__dict__:
+            self.check_2graph()
+        if "local_graph" not in self.__dict__:
+            self.check_localEigenvalues()
+        assert "local_graph" in self.__dict__, \
+            "local graph is not known to be distance-regular"
+        return self.local_graph
 
     def match(self, *ial):
         """
