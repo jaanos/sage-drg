@@ -461,6 +461,12 @@ class DRGParameters:
                 (self.d != 3 or self.b[2] + self.c[2] > self.c[3]):
             raise InfeasibleError("intersection number c[3] too small",
                                   ("BCN", "Thm. 5.4.1."))
+        for i in range(2, self.d):
+            if self.b[i] != self.b[1]:
+                break
+            if self.c[i] != 1:
+                raise InfeasibleError("impossible arrangement of lines",
+                                      ("BCN", "Thm. 5.4.4."))
         if self.a[1] > 0 and \
                 any(self.a[1] + 1 > 2*self.a[i] or
                     ((i < self.d-1 or self.a[self.d] > 0 or
