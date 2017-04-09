@@ -439,6 +439,7 @@ class DRGParameters:
         """
         Check for various combinatorial conditions.
         """
+        self.maxCliques = False
         if checkPos(self.b[0] - 2):
             if self.b[1] == 1 and (self.d != 2 or self.c[2] != self.b[0]):
                 raise InfeasibleError("b1 = 1 and not a cycle "
@@ -578,6 +579,7 @@ class DRGParameters:
                                         (self.a[1]+2)/(1 + self.a[1]) > vkll):
                     raise InfeasibleError("graph with maximal cliques",
                                           ("BCN", "Prop. 4.3.3."))
+                self.maxCliques = True
 
     def check_conference(self):
         """
@@ -657,6 +659,10 @@ class DRGParameters:
         For a graph with parameters of a generalized polygon,
         check whether its parameters satisfy the restrictions.
         """
+        if "maxCliques" not in self.__dict__:
+            self.check_combinatorial()
+        if not self.maxCliques:
+            return
         g, s, t = self.genPoly_parameters()
         if g:
             try:
@@ -669,27 +675,42 @@ class DRGParameters:
                      (g == 8 and (not st2.is_square() or
                                   s > t**2 or t > s**2)) or
                      (g == 6 and (not st.is_square()
-                                  or s > t**3 or t > s**3)))):
+                                  or s > t**3 or t > s**3)) or
+                     (g == 4 and (s > t**2 or t > s**2)))):
                 raise InfeasibleError("no corresponding generalized polygon",
                                       ("BCN", "Thm. 6.5.1."))
-            if g == 6 and 1 in [s, t]:
+            if g == 4:
+                try:
+                    integralize(s*t*(s+1)*(t+1) / (s+t))
+                except TypeError:
+                    raise InfeasibleError("infeasible parameters "
+                                          "for generalized quadrangle",
+                                          ("PayneThas", "1.2.2."))
+            elif g == 6 and 1 in [s, t]:
                 m = next(x for x in [s, t] if x != 1)
-                if isinstance(m, Integer) and (m == 10 or m % 8 == 6):
-                    raise InfeasibleError("PG(2, q) does not exist "
-                                          "for q = 10 or q = 8n+6")
+                if isinstance(m, Integer) and m % 4 in [1, 2] and \
+                        not is_squareSum(m):
+                    raise InfeasibleError("Bruck-Ryser theorem",
+                                          ("BCN", "Thm. 1.10.4."))
         if self.antipodal and self.d == 3 and \
                 self.b[0] == (self.r - 1) * (self.c[2] + 1):
-            try:
-                if (self.r == 7 and self.c[2] == 2) or \
-                        self.r - 1 > self.c[2] * (self.c[2] + 1):
-                    raise TypeError
-                integralize((self.r - 1) * (self.c[2] + 1) *
-                            self.r * (self.c[2] + 2))
-            except TypeError:
+            s = self.r - 1
+            t = self.c[2] + 1
+            if s > t**2 or t > s**2:
+                raise InfeasibleError("no corresponding "
+                                      "generalized quadrangle",
+                                      ("BCN", "Thm. 6.5.1."))
+            if s > t * (t-1):
                 raise InfeasibleError("no spread in corresponding "
                                       "generalized quadrangle",
                                       [("BCN", "Prop. 12.5.2."),
-                                       ("PayneThas09", "1.8.3.")])
+                                       ("PayneThas", "1.8.3.")])
+            try:
+                integralize(s*t*(s+1)*(t+1) / (s+t))
+            except TypeError:
+                raise InfeasibleError("infeasible parameters "
+                                      "for generalized quadrangle",
+                                      ("PayneThas", "1.2.2."))
 
     def check_geodeticEmbedding(self):
         """

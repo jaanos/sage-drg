@@ -344,7 +344,19 @@ refs = {
         "pages": (53, 54),
         "year": 1993
     },
-    "PayneThas09": {
+    "LTS89": {
+        "type": "article",
+        "authors": [("Lam", ("Clement", "Wing", "Hong")),
+                    ("Thiel", ("Larry", )), ("Swiercz", ("S.", ))],
+        "title": "The nonexistence of finite projective planes of order $10$",
+        "journal": "Canad. J. Math.",
+        "fjournal": "Canadian Journal of Mathematics",
+        "volume": 41,
+        "number": 6,
+        "pages": (1117, 1123),
+        "year": 1989
+    },
+    "PayneThas": {
         "type": "book",
         "authors": [("Payne", ("Stanley", "E.")), ("Thas", ("Joseph", "A."))],
         "title": "Finite generalized quadrangles",
