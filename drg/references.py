@@ -55,10 +55,33 @@ refs = {
         "pages": (413, 418),
         "year": 1989
     },
+    "BondarenkoRadchenko13": {
+        "type": "article",
+        "authors": [("Bondarenko", ("Andriy", "V.")),
+                    ("Radchenko", ("Danylo", "V."))],
+        "title": r"On a family of strongly regular graphs with $\lambda = 1$",
+        "journal": "J. Combin. Theory Ser. B",
+        "fjournal": "Journal of Combinatorial Theory, Series B",
+        "volume": 103,
+        "number": 4,
+        "pages": (521, 531),
+        "year": 2013
+    },
+    "BMPRV15": {
+        "type": "unpublished",
+        "authors": [("Bondarenko", ("Andriy", "V.")), ("Mellit", "A."),
+                    ("Prymak", ("A.", )), ("Radchenko", ("Danylo", )),
+                    ("Viazovska", "M.")],
+        "title": "There is no strongly regular graph with parameters "
+                 "(460,153,32,60)",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1509.06286",
+        "year": 2015
+    },
     "BPR14": {
         "type": "unpublished",
-        "authors": [("Bondarenko", ("A.", "V.")), ("Prymak", ("A.", )),
-                    ("Radchenko", ("D.", ))],
+        "authors": [("Bondarenko", ("Andriy", "V.")), ("Prymak", ("A.", )),
+                    ("Radchenko", ("Danylo", ))],
         "title": "Non-existence of (76,30,8,14) strongly regular graph",
         "note": "manuscript",
         "url": "https://arxiv.org/abs/1410.6748",
@@ -355,6 +378,18 @@ refs = {
         "number": 6,
         "pages": (1117, 1123),
         "year": 1989
+    },
+    "Makhnev02": {
+        "type": "article",
+        "authors": [("Makhnev", ("Alexander", "Alexeevich"))],
+        "title": "On the nonexistence of strongly regular graphs "
+                 "with the parameters $(486, 165, 36, 66)$",
+        "journal": "Ukrain. Mat. Zh.",
+        "fjournal": u"Ukraïns′kiĭ Matematichniĭ Zhurnal",
+        "volume": 54,
+        "number": 7,
+        "pages": (941, 949),
+        "year": 2002
     },
     "PayneThas": {
         "type": "book",
