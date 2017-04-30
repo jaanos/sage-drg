@@ -16,7 +16,7 @@ from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
 from sage.symbolic.expression import Expression
-from sage.symbolic.relation import solve
+from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .coefflist import CoefficientList
@@ -131,6 +131,7 @@ class DRGParameters:
         assert all(checkPos(x) for x in self.b[:-1]), \
             "b sequence not positive"
         self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
+        self.prefix = "v%x" % (hash(self) % Integer(2)**32)
         self.subgraphs = {}
         self.distance_graphs = {}
         self.a = tuple(full_simplify(b[0]-x-y)
@@ -423,9 +424,9 @@ class DRGParameters:
         for cl, (cond, ref) in classicalFamilies.items():
             vars = tuple(set(sum(map(variables, cl), ())))
             for c in clas:
-                sols = solve([SR(l) == r for l, r in zip(c, cl)], vars)
+                sols = _solve([SR(l) == r for l, r in zip(c, cl)], vars)
                 if all(isinstance(e, Expression) for e in sols):
-                    sols = [solve(e, e.variables()) for e in sols]
+                    sols = [_solve(e, e.variables()) for e in sols]
                     sols = uniq(sum((s if all(isinstance(e, Expression)
                                               for e in s)
                                        else sum(s, []) for s in sols), []))
@@ -601,8 +602,8 @@ class DRGParameters:
             if len(b) != self.d:
                 continue
             vars = tuple(set(sum(map(variables, b + c), ())))
-            sols = solve([SR(l) == r for l, r
-                          in zip(self.b[:-1] + self.c[1:], b + c)], vars)
+            sols = _solve([SR(l) == r for l, r
+                           in zip(self.b[:-1] + self.c[1:], b + c)], vars)
             if any(checkConditions(cond, sol) for sol in sols):
                 raise InfeasibleError(refs = ref)
 
@@ -1099,28 +1100,29 @@ class DRGParameters:
         b2 = [SR(x) == (self.d-i) * (2*(self.d-i) + 1)
               for i, x in enumerate(self.b[:-1])]
         c = [SR(x) == (i+1) * (2*i + 1) for i, x in enumerate(self.c[1:])]
-        return len(solve(b1 + c, self.vars)) > 0 or \
-               len(solve(b2 + c, self.vars)) > 0
+        return len(_solve(b1 + c, self.vars)) > 0 or \
+               len(_solve(b2 + c, self.vars)) > 0
 
     def is_hamming(self):
         """
         Check whether the graph can be a Hamming (or Doob) graph.
         """
         z = SR.symbol()
-        return len(solve([SR(x) == (self.d-i) * z
-                          for i, x in enumerate(self.b[:-1])] +
-                          [SR(x) == i+1 for i, x in enumerate(self.c[1:])],
-                         self.vars + (z, ))) > 0
+        return len(_solve([SR(x) == (self.d-i) * z
+                           for i, x in enumerate(self.b[:-1])] +
+                           [SR(x) == i+1 for i, x in enumerate(self.c[1:])],
+                          self.vars + (z, ))) > 0
 
     def is_johnson(self):
         """
         Check whether the graph can be a Johnson graph.
         """
         z = SR.symbol()
-        return len(solve([SR(x) == (self.d-i) * (self.d - z - i)
-                          for i, x in enumerate(self.b[:-1])] +
-                          [SR(x) == (i+1)**2 for i, x
-                           in enumerate(self.c[1:])], self.vars + (z, ))) > 0
+        return len(_solve([SR(x) == (self.d-i) * (self.d - z - i)
+                           for i, x in enumerate(self.b[:-1])] +
+                           [SR(x) == (i+1)**2 for i, x
+                            in enumerate(self.c[1:])],
+                          self.vars + (z, ))) > 0
 
     def is_locallyPetersen(self):
         """
@@ -1186,9 +1188,9 @@ class DRGParameters:
             assert len(b) == len(c), "parameter length mismatch"
             if self.d != len(b):
                 continue
-            if len(solve([SR(l) == r for l, r
-                         in zip(self.b[:-1] + self.c[1:],
-                                tuple(b) + tuple(c))], self.vars)) > 0:
+            if len(_solve([SR(l) == r for l, r
+                          in zip(self.b[:-1] + self.c[1:],
+                                 tuple(b) + tuple(c))], self.vars)) > 0:
                 return True
         return False
 
@@ -1283,6 +1285,152 @@ class DRGParameters:
         if "fsd" in self.__dict__:
             del self.fsd
         return self.theta
+
+    def tripleEquations(self, u, v, w, krein = None, params = None,
+                        solve = True):
+        """
+        Solve equations for triples of vertices at distances u, v, w.
+
+        If krein is a list of triples, the corresponding equations are used;
+        otherwise, equations for zero Krein parameters are used.
+        If params is a dictionary mapping strings to triples,
+        the keys will be used as variables mapped to triple intersection
+        numbers for corresponding triples.
+        If solve is False, only a list of equations and a set of variables
+        is returned, without solving the equations.
+        """
+        assert checkPos(self.p[u, v, w]), \
+            "no triple of vertices at distances %d, %d, %d" % (u, v, w)
+        if "Q" not in self.__dict__:
+            self.dualEigenmatrix()
+        if "q" not in self.__dict__:
+            self.kreinParameters()
+        out = []
+        r = range(self.d+1)
+        s = [[[Integer(1) if (i, j, h) in [(v, w, 0), (u, 0, w), (0, u, v)]
+               else SR.symbol("%s_%d_%d_%d_%d_%d_%d" %
+                              (self.prefix, u, v, w, h, i, j))
+               for j in r] for i in r] for h in r]
+        for i in r:
+            for j in r:
+                if self.p[u, i, j] == sum(s[i][j][t] for t in r
+                                        if isinstance(s[i][j][t], Integer)):
+                    for t in r:
+                        if not isinstance(s[i][j][t], Integer):
+                            s[i][j][t] = Integer(0)
+                if self.p[v, i, j] == sum(s[i][t][j] for t in r
+                                        if isinstance(s[i][t][j], Integer)):
+                    for t in r:
+                        if not isinstance(s[i][t][j], Integer):
+                            s[i][t][j] = Integer(0)
+                if self.p[w, i, j] == sum(s[t][i][j] for t in r
+                                        if isinstance(s[t][i][j], Integer)):
+                    for t in r:
+                        if not isinstance(s[t][i][j], Integer):
+                            s[t][i][j] = Integer(0)
+        vars = set(x for x in sum([sum(l, []) for l in s], [])
+                   if not isinstance(x, Integer))
+        c = [[[len([t for t in r if not isinstance(s[i][j][t], Integer)])
+               for j in r] for i in r],
+             [[len([t for t in r if not isinstance(s[i][t][j], Integer)])
+               for j in r] for i in r],
+             [[len([t for t in r if not isinstance(s[t][i][j], Integer)])
+               for j in r] for i in r]]
+        q = []
+        for h, ch in enumerate(c):
+            for i, ci in enumerate(ch):
+                for j, n in enumerate(ci):
+                    if n == 1:
+                        q.append((h, i, j))
+        while len(q) > 0:
+            l, i, j = q.pop()
+            h, i, j = [(None, i, j), (i, None, j), (i, j, None)][l]
+            if j is None:
+                j = next(t for t in r if not isinstance(s[h][i][t], Integer))
+                s[h][i][j] = self.p[u, h, i] - sum(s[h][i][t] for t in r
+                                                   if t != j)
+                c[1][h][j] -= 1
+                c[2][i][j] -= 1
+                if c[1][h][j] == 1:
+                    q.append((1, h, j))
+                if c[2][i][j] == 1:
+                    q.append((2, i, j))
+            elif i is None:
+                i = next(t for t in r if not isinstance(s[h][t][j], Integer))
+                s[h][i][j] = self.p[v, h, j] - sum(s[h][t][j] for t in r
+                                                   if t != i)
+                c[0][h][i] -= 1
+                c[2][i][j] -= 1
+                if c[0][h][i] == 1:
+                    q.append((0, h, i))
+                if c[2][i][j] == 1:
+                    q.append((2, i, j))
+            elif h is None:
+                h = next(t for t in r if not isinstance(s[t][i][j], Integer))
+                s[h][i][j] = self.p[w, i, j] - sum(s[t][i][j] for t in r
+                                                   if t != h)
+                c[0][h][i] -= 1
+                c[1][j][j] -= 1
+                if c[0][h][i] == 1:
+                    q.append((0, h, i))
+                if c[1][h][j] == 1:
+                    q.append((1, h, j))
+        for i in r:
+            for j in r:
+                l = sum(s[i][j][t] for t in r)
+                if isinstance(l, Integer):
+                    assert self.p[u, i, j] == l, \
+                        "value of p[%d, %d, %d] exceeded" % (u, i, j)
+                else:
+                    out.append(self.p[u, i, j] == l)
+                l = sum(s[i][t][j] for t in r)
+                if isinstance(l, Integer):
+                    assert self.p[v, i, j] == l, \
+                        "value of p[%d, %d, %d] exceeded" % (v, i, j)
+                else:
+                    out.append(self.p[v, i, j] == l)
+                l = sum(s[t][i][j] for t in r)
+                if isinstance(l, Integer):
+                    assert self.p[w, i, j] == l, \
+                        "value of p[%d, %d, %d] exceeded" % (w, i, j)
+                else:
+                    out.append(self.p[w, i, j] == l)
+        if krein is None:
+            krein = []
+            for h in range(1, self.d+1):
+                for i in range(1, self.d+1):
+                    for j in range(1, self.d+1):
+                        if self.q[h, i, j] == 0:
+                            krein.append((h, i, j))
+        if krein:
+            for h, i, j in krein:
+                l = sum(sum(sum(self.Q[th, h] * self.Q[ti, i] *
+                                self.Q[tj, j] * s[th][ti][tj]
+                                for tj in r) for ti in r) for th in r)
+                if isinstance(l, Integer):
+                    assert l == 0, \
+                        "Krein equation for (%d, %d, %d) not satisfied" % \
+                        (h, i, j)
+                else:
+                    out.append(l == 0)
+        if params:
+            for a, (h, i, j) in params.items():
+                x = SR.symbol(a)
+                out.append(s[h][i][j] == x)
+        vars.intersection_update(sum([sum(l, []) for l in s], []))
+        if not solve:
+            return (out, vars)
+        sol = _solve(out, vars)
+        assert len(sol) > 0, "system of equations has no solution"
+        S = Array3D(self.d + 1)
+        for h in r:
+            for i in r:
+                for j in r:
+                    if isinstance(s[h][i][j], Integer):
+                        S[h, i, j] = s[h][i][j]
+                    else:
+                        S[h, i, j] = s[h][i][j].subs(sol[0])
+        return S
 
     def valency(self):
         """
