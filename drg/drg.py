@@ -607,7 +607,7 @@ class DRGParameters:
             if any(checkConditions(cond, sol) for sol in sols):
                 raise InfeasibleError(refs = ref)
 
-    def check_feasible(self, checked = None):
+    def check_feasible(self, checked = None, skip = None):
         """
         Check whether the intersection array is feasible.
         """
@@ -618,20 +618,31 @@ class DRGParameters:
             checked = set()
         if ia in checked:
             return
-        self.check_sporadic()
-        self.check_family()
-        self.check_2graph()
-        self.check_classical()
-        self.check_combinatorial()
-        self.check_conference()
-        self.check_geodeticEmbedding()
-        self.check_2design()
-        self.check_antipodal()
-        self.check_genPoly()
-        self.check_terwilliger()
-        self.check_secondEigenvalue()
-        self.check_localEigenvalues()
-        self.check_absoluteBound()
+        checks = [
+            ("sporadic", self.check_sporadic),
+            ("family", self.check_family),
+            ("2graph", self.check_2graph),
+            ("classical", self.check_classical),
+            ("combinatorial", self.check_combinatorial),
+            ("conference", self.check_conference),
+            ("geodeticEmbedding", self.check_geodeticEmbedding),
+            ("2design", self.check_2design),
+            ("antipodal", self.check_antipodal),
+            ("genPoly", self.check_genPoly),
+            ("terwilliger", self.check_terwilliger),
+            ("secondEigenvalue", self.check_secondEigenvalue),
+            ("localEigenvalues", self.check_localEigenvalues),
+            ("absoluteBound", self.check_absoluteBound),
+        ]
+        if skip is None:
+            skip = set()
+        elif isinstance(skip, str):
+            skip = {skip}
+        else:
+            skip = set(skip)
+        for name, check in checks:
+            if name not in skip:
+                check()
         checked.add(ia)
         for ia, part in self.subgraphs.items():
             try:
