@@ -135,6 +135,14 @@ def rewriteTuple(t, expand = False, factor = False, simplify = False):
         t = tuple(map(_simplify, t))
     return t
 
+def subs(exp, s):
+    """
+    Substitute the given subexpressions in the expression.
+    """
+    if isinstance(exp, Expression):
+        return exp.subs(s)
+    return exp
+
 def variables(exp):
     """
     Return a list of variables in an expression.

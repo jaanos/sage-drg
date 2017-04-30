@@ -103,3 +103,14 @@ class Array3D:
             self.map(full_simplify)
         elif simplify:
             self.map(_simplify)
+
+    def subs(self, exp):
+        """
+        Substitute the given subexpressions in the array.
+        """
+        A = Array3D(self.n)
+        for i, M in enumerate(self.A):
+            A.A[i] = M.subs(exp)
+        return A
+
+    substitute = subs
