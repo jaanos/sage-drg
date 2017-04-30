@@ -39,7 +39,14 @@ from .util import subs
 from .util import variables
 
 class InfeasibleError(Exception):
+    """
+    Infeasibility of a parameter set.
+    """
+
     def __init__(self, reason = None, refs = None, part = None):
+        """
+        Exception constructor.
+        """
         part = () if part is None else (part, )
         if isinstance(reason, InfeasibleError):
             self.reason = reason.reason
@@ -73,6 +80,9 @@ class InfeasibleError(Exception):
 
     @staticmethod
     def formatRef(ref):
+        """
+        Format reason for nonexistence.
+        """
         pap, thm = ref
         if thm is None:
             return pap
