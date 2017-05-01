@@ -35,10 +35,18 @@ from .util import matrixMap
 from .util import rewriteExp
 from .util import rewriteMatrix
 from .util import rewriteTuple
+from .util import subs
 from .util import variables
 
 class InfeasibleError(Exception):
+    """
+    Infeasibility of a parameter set.
+    """
+
     def __init__(self, reason = None, refs = None, part = None):
+        """
+        Exception constructor.
+        """
         part = () if part is None else (part, )
         if isinstance(reason, InfeasibleError):
             self.reason = reason.reason
@@ -72,6 +80,9 @@ class InfeasibleError(Exception):
 
     @staticmethod
     def formatRef(ref):
+        """
+        Format reason for nonexistence.
+        """
         pap, thm = ref
         if thm is None:
             return pap
@@ -131,6 +142,7 @@ class DRGParameters:
         assert all(checkPos(x) for x in self.b[:-1]), \
             "b sequence not positive"
         self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
+        self.vars_ordered = len(self.vars) <= 1
         self.prefix = "v%x" % (hash(self) % Integer(2)**32)
         self.subgraphs = {}
         self.distance_graphs = {}
@@ -231,7 +243,8 @@ class DRGParameters:
             c = tuple(self.c[2*i+1]*self.c[2*i+2]/self.c[2]
                       for i in range(m))
             self.half = self.add_subgraph((b, c), "bipartite half")
-        if self.d == 2 and checkPos(self.b[0] - self.c[2]):
+        if self.d == 2 and checkPos(self.b[0] - self.c[2]) \
+                and complement is not False:
             if complement is None:
                 complement = DRGParameters((self.k[2], self.p[2, 2, 1]),
                                            (Integer(1), self.p[1, 2, 2]),
@@ -1008,7 +1021,7 @@ class DRGParameters:
                     warn(Warning("Sorting of eigenvalues failed - "
                                  "you may want to sort theta manually"))
                 else:
-                    if len(self.vars) > 1:
+                    if not self.vars_ordered:
                         warn(Warning("More than one variable is used - "
                                      "please check that the ordering "
                                      "of the eigenvalues is correct"))
@@ -1151,8 +1164,8 @@ class DRGParameters:
                               simplify = simplify)
         return self.k
 
-    def kreinParameters(self, expand = False, factor = False,
-                        simplify = False):
+    def kreinParameters(self, compute = True, expand = False,
+                        factor = False, simplify = False):
         """
         Compute and return the Krein parameters.
         """
@@ -1164,7 +1177,8 @@ class DRGParameters:
             for h in range(self.d + 1):
                 for i in range(self.d + 1):
                     for j in range(self.d + 1):
-                        q[h, i, j] = full_simplify(
+                        if compute:
+                            q[h, i, j] = full_simplify(
                                             sum(self.k[t] * self.omega[h, t]
                                                           * self.omega[i, t]
                                                           * self.omega[j, t]
@@ -1297,6 +1311,58 @@ class DRGParameters:
             del self.fsd
         return self.theta
 
+    def set_vars(self, vars):
+        """
+        Set the order of the variables for eigenvalue sorting.
+        """
+        if vars is False:
+            self.vars_ordered = False
+        else:
+            self.vars = tuple(vars) + tuple(x for x in self.vars
+                                            if x not in vars)
+            self.vars_ordered = True
+
+    def subs(self, exp, complement = False):
+        """
+        Substitute the given subexpressions in the parameters.
+        """
+        p = DRGParameters(*[[subs(x, exp) for x in l]
+                            for l in self.intersectionArray()],
+                          complement = complement)
+        if "theta" in self.__dict__:
+            p.theta = tuple(subs(th, exp) for th in self.theta)
+        if "omega" in self.__dict__:
+            p.omega = self.omega.subs(exp)
+        if "P" in self.__dict__:
+            p.P = self.P.subs(exp)
+        if "Q" in self.__dict__:
+            p.Q = self.Q.subs(exp)
+        if "q" in self.__dict__:
+            p.q = self.q.subs(exp)
+            p.kreinParameters(compute = False)
+        if "local_graph" in self.__dict__:
+            try:
+                p.local_graph = p.add_subgraph(self.local_graph.subs(exp),
+                                               "local graph")
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = "local graph")
+        if "complement" in self.__dict__:
+            try:
+                p.complement = self.complement.subs(exp, complement = p)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = "complement")
+        for ia, part in self.subgraphs.items():
+            try:
+                p.add_subgraph(ia.subs(exp), part)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = part)
+        for ia, part in self.distance_graphs.items():
+            try:
+                p.add_subgraph(ia.subs(exp), part)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = part)
+        return p
+
     def tripleEquations(self, u, v, w, krein = None, params = None,
                         solve = True):
         """
@@ -1318,7 +1384,7 @@ class DRGParameters:
             self.kreinParameters()
         out = []
         r = range(self.d+1)
-        s = [[[Integer(1) if (i, j, h) in [(v, w, 0), (u, 0, w), (0, u, v)]
+        s = [[[Integer(1) if (h, i, j) in [(v, w, 0), (u, 0, w), (0, u, v)]
                else SR.symbol("%s_%d_%d_%d_%d_%d_%d" %
                               (self.prefix, u, v, w, h, i, j))
                for j in r] for i in r] for h in r]
@@ -1456,3 +1522,4 @@ class DRGParameters:
         return self.vars
 
     order = __len__
+    substitute = subs
