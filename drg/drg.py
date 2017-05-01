@@ -1384,7 +1384,7 @@ class DRGParameters:
             self.kreinParameters()
         out = []
         r = range(self.d+1)
-        s = [[[Integer(1) if (i, j, h) in [(v, w, 0), (u, 0, w), (0, u, v)]
+        s = [[[Integer(1) if (h, i, j) in [(v, w, 0), (u, 0, w), (0, u, v)]
                else SR.symbol("%s_%d_%d_%d_%d_%d_%d" %
                               (self.prefix, u, v, w, h, i, j))
                for j in r] for i in r] for h in r]
