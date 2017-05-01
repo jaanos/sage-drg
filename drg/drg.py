@@ -142,6 +142,7 @@ class DRGParameters:
         assert all(checkPos(x) for x in self.b[:-1]), \
             "b sequence not positive"
         self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
+        self.vars_ordered = len(self.vars) <= 1
         self.prefix = "v%x" % (hash(self) % Integer(2)**32)
         self.subgraphs = {}
         self.distance_graphs = {}
@@ -1020,7 +1021,7 @@ class DRGParameters:
                     warn(Warning("Sorting of eigenvalues failed - "
                                  "you may want to sort theta manually"))
                 else:
-                    if len(self.vars) > 1:
+                    if not self.vars_ordered:
                         warn(Warning("More than one variable is used - "
                                      "please check that the ordering "
                                      "of the eigenvalues is correct"))
@@ -1309,6 +1310,17 @@ class DRGParameters:
         if "fsd" in self.__dict__:
             del self.fsd
         return self.theta
+
+    def set_vars(self, vars):
+        """
+        Set the order of the variables for eigenvalue sorting.
+        """
+        if vars is False:
+            self.vars_ordered = False
+        else:
+            self.vars = tuple(vars) + tuple(x for x in self.vars
+                                            if x not in vars)
+            self.vars_ordered = True
 
     def subs(self, exp, complement = False):
         """
