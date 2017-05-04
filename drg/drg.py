@@ -1352,6 +1352,8 @@ class DRGParameters:
                 p.complement = self.complement.subs(exp, complement = p)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = "complement")
+        for k, v in self.triple.items():
+            p.triple[k] = v.subs(exp)
         for ia, part in self.subgraphs.items():
             try:
                 p.add_subgraph(ia.subs(exp), part)
