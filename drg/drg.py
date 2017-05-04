@@ -24,6 +24,7 @@ from .nonex import checkConditions
 from .nonex import classicalFamilies
 from .nonex import families
 from .nonex import sporadic
+from .partition import PartitionGraph
 from .util import checkNonneg
 from .util import checkPos
 from .util import _factor
@@ -281,9 +282,8 @@ class DRGParameters:
         String representation.
         """
         return "Parameters of a distance-regular graph " \
-               "with intersection array {%s; %s}" % \
-               tuple(', '.join(str(x) for x in l)
-                     for l in self.intersectionArray())
+               "with intersection array %s" % \
+               self.format_intersectionArray()
 
     def aTable(self, expand = False, factor = False, simplify = False):
         """
@@ -962,6 +962,14 @@ class DRGParameters:
         """
         return self.d
 
+    def distancePartition(self, h = 0):
+        """
+        Return the diagram of the distance partition
+        corresponding to a vertex (if h = 0)
+        or two vertices at distance h.
+        """
+        return PartitionGraph(self, h)
+
     def dualEigenmatrix(self, expand = False, factor = False,
                         simplify = False):
         """
@@ -1031,6 +1039,13 @@ class DRGParameters:
                                   factor = factor, simplify = simplify)
         return self.theta
 
+    def format_intersectionArray(self):
+        """
+        Return a string representation of the intersection array.
+        """
+        return "{%s; %s}" % tuple(', '.join(str(x) for x in l)
+                                  for l in self.intersectionArray())
+
     def genPoly_parameters(self, expand = False, factor = False,
                            simplify = False):
         """
@@ -1050,6 +1065,30 @@ class DRGParameters:
             return (2*self.d, s, t)
         except TypeError:
             return (False, None, None)
+
+    def has_edges(self, h, i1, j1, i2, j2):
+        """
+        Determine if there can be edges between sets of vertices
+        at distances (i1, j1) and (i2, j2) from two vertices at distance h
+        using the currently known triple intersection numbers.
+        """
+        if j1 is None:
+            return abs(i1 - i2) <= 1
+        assert all(x >= 0 and x <= self.d for x in [h, i1, j1, i2, j2]), \
+            "distance not in feasible range"
+        if abs(i1 - i2) > 1 or abs(j1 - j2) > 1:
+            return False
+        tperms = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
+                  [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+        dperms = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
+                  [2, 0, 1], [1, 2, 0], [2, 1, 0]]
+        for t, d in (((h, i1, j1), (i2, j2, 1)), ((h, i2, j2), (i1, j1, 1))):
+            for p, q in zip(tperms, dperms):
+                tp = tuple(t[i] for i in p)
+                if tp in self.triple and \
+                        self.triple[tp][tuple(d[i] for i in q)] == 0:
+                    return False
+        return True
 
     def intersectionArray(self, expand = False, factor = False,
                           simplify = False):
@@ -1322,6 +1361,13 @@ class DRGParameters:
             self.vars = tuple(vars) + tuple(x for x in self.vars
                                             if x not in vars)
             self.vars_ordered = True
+
+    def show_distancePartitions(self):
+        """
+        Show all distance partitions.
+        """
+        for h in range(self.d + 1):
+            self.distancePartition(h).show()
 
     def subs(self, exp, complement = False):
         """
