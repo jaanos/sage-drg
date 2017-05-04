@@ -1425,7 +1425,7 @@ class DRGParameters:
                         q.append((h, i, j))
         while len(q) > 0:
             l, i, j = q.pop()
-            h, i, j = [(None, i, j), (i, None, j), (i, j, None)][l]
+            h, i, j = [(i, j, None), (i, None, j), (None, i, j)][l]
             if j is None:
                 j = next(t for t in r if not isinstance(s[h][i][t], Integer))
                 s[h][i][j] = self.p[u, h, i] - sum(s[h][i][t] for t in r
