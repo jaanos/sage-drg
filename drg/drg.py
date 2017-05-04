@@ -146,6 +146,7 @@ class DRGParameters:
         self.prefix = "v%x" % (hash(self) % Integer(2)**32)
         self.subgraphs = {}
         self.distance_graphs = {}
+        self.triple = {}
         self.a = tuple(full_simplify(b[0]-x-y)
                        for x, y in zip(self.b, self.c))
         assert self.c[1] == 1, "Invalid c[1] value"
@@ -1364,7 +1365,7 @@ class DRGParameters:
         return p
 
     def tripleEquations(self, u, v, w, krein = None, params = None,
-                        solve = True):
+                        solve = True, save = None):
         """
         Solve equations for triples of vertices at distances u, v, w.
 
@@ -1378,6 +1379,9 @@ class DRGParameters:
         """
         assert checkPos(self.p[u, v, w]), \
             "no triple of vertices at distances %d, %d, %d" % (u, v, w)
+        if solve and krein is None and params is None \
+                and (u, v, w) in self.triple:
+            return self.triple[u, v, w]
         if "Q" not in self.__dict__:
             self.dualEigenmatrix()
         if "q" not in self.__dict__:
@@ -1473,6 +1477,8 @@ class DRGParameters:
                 else:
                     out.append(self.p[w, i, j] == l)
         if krein is None:
+            if save is None:
+                save = True
             krein = []
             for h in range(1, self.d+1):
                 for i in range(1, self.d+1):
@@ -1507,6 +1513,8 @@ class DRGParameters:
                         S[h, i, j] = s[h][i][j]
                     else:
                         S[h, i, j] = s[h][i][j].subs(sol[0])
+        if save:
+            self.triple[u, v, w] = S
         return S
 
     def valency(self):
