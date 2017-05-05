@@ -1362,12 +1362,12 @@ class DRGParameters:
                                             if x not in vars)
             self.vars_ordered = True
 
-    def show_distancePartitions(self):
+    def show_distancePartitions(self, **options):
         """
         Show all distance partitions.
         """
         for h in range(self.d + 1):
-            self.distancePartition(h).show()
+            self.distancePartition(h).show(**options)
 
     def subs(self, exp, complement = False):
         """
