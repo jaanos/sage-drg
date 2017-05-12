@@ -1120,18 +1120,20 @@ class DRGParameters:
         """
         if "classical" not in self.__dict__:
             clas = []
-            if self.d == 1:
-                bs = {}
-            elif self.d == 2:
+            bs = set()
+            if self.d == 2:
                 e = self.c[2] - self.a[1] - 2
                 d = sqrt(4*self.b[1] + e**2)
-                bs = {(e+d)/2, (e-d)/2}
+                bs.add((e+d)/2)
+                bs.add((e-d)/2)
             elif all(self.a[i] == self.a[1] * self.c[i]
                      for i in range(2, self.d+1)):
-                bs = {self.c[2] - 1, -self.a[1] - 1}
-            else:
-                bs = {(self.a[2]*self.c[3] - self.c[2]*self.a[3])
-                      / (self.a[1] * self.c[3] - self.a[3])}
+                bs.add(self.c[2] - 1)
+                bs.add(-self.a[1] - 1)
+            elif self.d >= 3:
+                d = self.a[1] * self.c[3] - self.a[3]
+                if d != 0:
+                    bs.add((self.a[2]*self.c[3] - self.c[2]*self.a[3]) / d)
             for b in bs:
                 if b in [0, -1]:
                     continue
