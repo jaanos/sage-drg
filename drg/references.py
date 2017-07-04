@@ -55,6 +55,20 @@ refs = {
         "pages": (413, 418),
         "year": 1989
     },
+    "BSW16": {
+        "type": "article",
+        "authors": [("Brouwer", ("Andries", "E.")),
+                    ("Sumalroj", ("Supalak", )),
+                    ("Worawannotai", ("Chalermpong", ))],
+        "title": "The nonexistence of distance-regular graphs "
+                 r"with intersection arrays $\{27,20,10;1,2,18\}$ "
+                 r"and $\{36,28,4;1,2,24\}$",
+        "journal": "Australas. J. Combin.",
+        "fjournal": "The Australasian Journal of Combinatorics",
+        "volume": 66,
+        "pages": (330, 332),
+        "year": 2016,
+    },
     "BondarenkoRadchenko13": {
         "type": "article",
         "authors": [("Bondarenko", ("Andriy", "V.")),
@@ -411,6 +425,19 @@ refs = {
         "note": "manuscript",
         "url": "https://arxiv.org/abs/1512.05976",
         "year": 2015
+    },
+    "SumalrojWorawannotai16": {
+        "type": "article",
+        "authors": [("Sumalroj", ("Supalak", )),
+                    ("Worawannotai", ("Chalermpong", ))],
+        "title": "The nonexistence of a distance-regular graph "
+                 r"with intersection array $\{22,16,5;1,2,20\}$",
+        "journal": "Electron. J. Combin",
+        "fjournal": "Electronic Journal of Combinatorics",
+        "volume": 23,
+        "number": 1,
+        "pages": "1.32",
+        "year": 2016,
     },
     "Urlep12": {
         "type": "article",
