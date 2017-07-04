@@ -88,22 +88,26 @@ refs = {
     "BMPRV15": {
         "type": "unpublished",
         "authors": [("Bondarenko", ("Andriy", "V.")), ("Mellit", "A."),
-                    ("Prymak", ("A.", )), ("Radchenko", ("Danylo", )),
-                    ("Viazovska", "M.")],
+                    ("Prymak", ("Andriy", "V.")), ("Radchenko", ("Danylo", )),
+                    ("Viazovska", ("Maryna", "S."))],
         "title": "There is no strongly regular graph with parameters "
                  "(460,153,32,60)",
         "note": "manuscript",
         "url": "https://arxiv.org/abs/1509.06286",
         "year": 2015
     },
-    "BPR14": {
-        "type": "unpublished",
-        "authors": [("Bondarenko", ("Andriy", "V.")), ("Prymak", ("A.", )),
+    "BPR17": {
+        "type": "article",
+        "authors": [("Bondarenko", ("Andriy", "V.")),
+                    ("Prymak", ("Andriy", "V.")),
                     ("Radchenko", ("Danylo", ))],
-        "title": "Non-existence of (76,30,8,14) strongly regular graph",
-        "note": "manuscript",
-        "url": "https://arxiv.org/abs/1410.6748",
-        "year": 2014
+        "title": "Non-existence of $(76,30,8,14)$ strongly regular graph",
+        "journal": "Linear Algebra Appl.",
+        "fjournal": "Linear Algebra and its Applications",
+        "volume": 527,
+        "pages": (53, 72),
+        "url": "http://dx.doi.org/10.1016/j.laa.2017.03.033",
+        "year": 2017
     },
     "Coolsaet95": {
         "type": "article",
@@ -444,15 +448,19 @@ refs = {
         "url": "http://dx.doi.org/10.4171/066",
         "pages": ("xii", 287)
     },
-    "Soicher15": {
-        "type": "unpublished",
+    "Soicher17": {
+        "type": "article",
         "authors": [("Soicher", ("Leonard", "H."))],
         "title": "The uniqueness of a distance-regular graph "
                  r"with intersection array $\{32, 27, 8, 1; 1, 4, 27, 32\}$ "
                  "and related results",
-        "note": "manuscript",
-        "url": "https://arxiv.org/abs/1512.05976",
-        "year": 2015
+        "journal": "Des. Codes Cryptogr.",
+        "fjournal": "Designs, Codes and Cryptography",
+        "volume": 84,
+        "number": (1, 2),
+        "pages": (101, 108),
+        "url": "http://dx.doi.org/10.1007/s10623-016-0223-6",
+        "year": 2017
     },
     "SumalrojWorawannotai16": {
         "type": "article",
