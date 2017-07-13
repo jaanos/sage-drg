@@ -641,6 +641,7 @@ class DRGParameters:
             ("conference", self.check_conference),
             ("geodeticEmbedding", self.check_geodeticEmbedding),
             ("2design", self.check_2design),
+            ("hadamard", self.check_hadamard),
             ("antipodal", self.check_antipodal),
             ("genPoly", self.check_genPoly),
             ("terwilliger", self.check_terwilliger),
@@ -749,6 +750,19 @@ class DRGParameters:
                 and self.b[0] > 4:
             raise InfeasibleError("no embedding into a geodetic graph "
                                   "of diameter 2", ("BCN", "Prop. 1.17.3."))
+
+    def check_hadamard(self):
+        """
+        For a graph with intersection array {2c, 2c-1, c, 1; 1, c, 2c-1, 2c},
+        with c > 1, check whether c is even.
+        """
+        if self.d == 4 and self.b[0] > 2 and self.bipartite \
+                and self.antipodal and self.r == 2:
+            try:
+                integralize(self.c[2]/2)
+            except TypeError:
+                raise InfeasibleError("Hadamard graph with odd c[2]",
+                                      ("BCN", "Thm. 1.8.1."))
 
     def check_localEigenvalues(self):
         """
