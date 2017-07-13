@@ -762,7 +762,7 @@ class DRGParameters:
                 integralize(self.c[2]/2)
             except TypeError:
                 raise InfeasibleError("Hadamard graph with odd c[2]",
-                                      ("BCN", "Thm. 1.8.1."))
+                                      ("BCN", "Cor. 1.8.2."))
 
     def check_localEigenvalues(self):
         """
