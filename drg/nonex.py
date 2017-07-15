@@ -76,6 +76,7 @@ families = {
 }
 
 classicalFamilies = {
+    (t, -2, -2, ((-2)**(t+1) - 1)/3): (t >= 4, "HPW15"),
     (t, -r, -r/(r-1), r + r**2 * ((-r)**(t-1) - 1) / (r**2-1)):
         ([r >= 2, t >= 4], "DeBruynVanhove15")
 }

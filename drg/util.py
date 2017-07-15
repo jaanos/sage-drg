@@ -27,6 +27,39 @@ def checkPos(exp):
     """
     return not (exp <= 0)
 
+def checkPowerOf(exp, base):
+    """
+    Check whether an expression can be a power of another expression.
+
+    Returns ``True`` if ``exp`` is a power of ``base``,
+    or if either of them is a non-constant expression.
+    Otherwise, returns ``False``.
+    """
+    try:
+        exp = integralize(exp)
+        base = integralize(base)
+        return not (isinstance(exp, Integer) and isinstance(base, Integer)) \
+            or exp.is_power_of(base)
+    except TypeError:
+        return False
+
+def checkPrimePower(exp):
+    """
+    Check whether an expression can be a prime power.
+
+    Returns ``True`` if ``exp`` is a constant prime power
+    or an expression which can be positive.
+    Otherwise, returns ``False``.
+    """
+    try:
+        exp = integralize(exp)
+        if isinstance(exp, Integer):
+            return exp.is_prime_power()
+        else:
+            return checkPos(exp)
+    except TypeError:
+        return False
+
 def _factor(exp):
     """
     Factor an expression.

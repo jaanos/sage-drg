@@ -27,6 +27,8 @@ from .nonex import sporadic
 from .partition import PartitionGraph
 from .util import checkNonneg
 from .util import checkPos
+from .util import checkPowerOf
+from .util import checkPrimePower
 from .util import _factor
 from .util import full_simplify
 from .util import integralize
@@ -436,19 +438,64 @@ class DRGParameters:
         if not clas:
             return
         for cl, (cond, ref) in classicalFamilies.items():
+            if isinstance(cl[0], Expression):
+                diam = cl[0] == self.d
+                cl = tuple(subs(exp, diam) for exp in cl)
+            else:
+                diam = None
             vars = tuple(set(sum(map(variables, cl), ())))
             for c in clas:
                 sols = _solve([SR(l) == r for l, r in zip(c, cl)], vars)
                 if all(isinstance(e, Expression) for e in sols):
-                    sols = [_solve(e, e.variables()) for e in sols]
-                    sols = uniq(sum((s if all(isinstance(e, Expression)
-                                              for e in s)
-                                       else sum(s, []) for s in sols), []))
+                    continue
+                if diam is not None:
+                    sols = [s + [diam] for s in sols]
+                if any(checkConditions(cond, sol) for sol in sols):
+                    raise InfeasibleError(refs = ref)
+        if self.d >= 3 and self.a[1] == 0 and self.a[2] > 0 and\
+                self.c[2] > 2:
+            raise InfeasibleError("classical with a[1] = 0, "
+                                  "a[2] > 0 and c[2] > 2",
+                                  ("PanWeng09", "Thm. 2.1."))
+        if self.d >= 4 and self.a[1] > 0 and self.c[2] > 1 and \
+                any(b < 0 for d, b, alpha, beta in clas) and \
+                not self.is_dualPolar2A() and not self.is_hermitean() and \
+                not self.is_weng_feasible():
+            raise InfeasibleError("classical with b < 0",
+                                  ("Weng99", "Thm. 10.3."))
+        s = SR.symbol("__s")
+        if self.d < 3 or self.is_bilinearForms() or self.is_grassmann():
+            return
+        for d, b, alpha, beta in clas:
+            try:
+                b = integralize(b)
+            except TypeError:
+                continue
+            if is_constant(alpha) and is_constant(beta) and \
+                    alpha >= 1 and alpha == b - 1:
+                r = (b**d - 1)/(b - 1)
+                l, h = sorted([s.subs(ss).n()
+                               for ss in _solve((s+1)*(self.a[1]+1)
+                                                - s*(s+1)*(b**2+b-1)/2
+                                                == r*beta, s)])
+                if l.is_integer():
+                    l += 1
+                if h.is_integer():
+                    h -= 1
                 try:
-                    if any(checkConditions(cond, sol) for sol in sols):
-                        raise InfeasibleError(refs = ref)
-                except ValueError:
-                    pass
+                    l, h = l.ceiling(), h.floor()
+                except AttributeError:
+                    continue
+                t = (1 + self.a[1] + b**2 * (b**2 + b + 1)) \
+                    / (b**3 + b**2 + 2*b - 1)
+                if t.is_integer():
+                    t -= 1
+                else:
+                    t = t.floor()
+                if l <= h and l <= t and \
+                        (d != 3 or b != 2 or (l <= 7 and h >= 7 and t >= 7)):
+                    raise InfeasibleError("not a bilinear forms graph",
+                                          ("Metsch99", "Prop. 2.2."))
 
     def check_combinatorial(self):
         """
@@ -1121,6 +1168,20 @@ class DRGParameters:
         """
         return self.r if self.antipodal else False
 
+    def is_bilinearForms(self):
+        """
+        Check whether the graph can be a bilinear forms graph.
+
+        Returns ``False`` if the graph is not known to be classical.
+        """
+        clas = self.is_classical()
+        if not clas:
+            return False
+        for d, b, alpha, beta in clas:
+            if checkPos(alpha) and alpha == b-1:
+                return checkPrimePower(b) and checkPowerOf(beta+1, b)
+        return False
+
     def is_bipartite(self):
         """
         Check whether the graph is bipartite.
@@ -1162,6 +1223,22 @@ class DRGParameters:
             self.classical = False if len(clas) == 0 else clas
         return self.classical
 
+    def is_dualPolar2A(self):
+        """
+        Check whether the graph can be a dual polar graph ^2A_{2d-1}(-b).
+
+        Returns ``False`` if the graph is not known to be classical.
+        """
+        clas = self.is_classical()
+        if not clas:
+            return False
+        for d, b, alpha, beta in clas:
+            if checkPos(-b) and len(_solve([alpha * (b+1) == b * (b-1),
+                                            beta * (b+1) == -b * (b**d + 1)],
+                                           self.vars)) > 0:
+                return checkPrimePower(-b)
+        return False
+
     def is_formallySelfDual(self):
         """
         Check whether the graph is formally self-dual.
@@ -1170,6 +1247,21 @@ class DRGParameters:
             self.fsd = (self.eigenmatrix(simplify = 2)
                         - self.dualEigenmatrix(simplify = 2)).is_zero()
         return self.fsd
+
+    def is_grassmann(self):
+        """
+        Check whether the graph can be a Grassmann graph.
+
+        Returns ``False`` if the graph is not known to be classical.
+        """
+        clas = self.is_classical()
+        if not clas:
+            return False
+        for d, b, alpha, beta in clas:
+            if checkPos(alpha) and alpha == b:
+                return checkPrimePower(b) and \
+                    checkPowerOf(1 + beta * (b - 1)/b, b)
+        return False
 
     def is_halfCube(self):
         """
@@ -1193,6 +1285,21 @@ class DRGParameters:
                            [SR(x) == i+1 for i, x in enumerate(self.c[1:])],
                           self.vars + (z, ))) > 0
 
+    def is_hermitean(self):
+        """
+        Check whether the graph can be a Hermitean forms graph.
+
+        Returns ``False`` if the graph is not known to be classical.
+        """
+        clas = self.is_classical()
+        if not clas:
+            return False
+        for d, b, alpha, beta in clas:
+            if checkPos(-b) and len(_solve([alpha == b-1, beta == -b**d - 1],
+                                           self.vars)) > 0:
+                return checkPrimePower(-b)
+        return False
+
     def is_johnson(self):
         """
         Check whether the graph can be a Johnson graph.
@@ -1210,6 +1317,25 @@ class DRGParameters:
         """
         return self.match(((10, 6), (1, 6)), ((10, 6, 4), (1, 2, 5)),
                           ((10, 6, 4, 1), (1, 2, 6, 10)))
+
+    def is_weng_feasible(self):
+        """
+        Check whether the graph can be a member
+        of a feasible family of classical graphs
+        appearing in a classification from Weng99.
+
+        Returns ``False`` if the graph is not known to be classical.
+        """
+        clas = self.is_classical()
+        if not clas:
+            return False
+        for c in clas:
+            d, b, alpha, beta = c
+            if checkPos(-b) and len(_solve([2*alpha == b-1,
+                                            2*beta == -b**d - 1],
+                                           self.vars)) > 0:
+                return checkPrimePower(-b)
+        return False
 
     def kTable(self, expand = False, factor = False, simplify = False):
         """

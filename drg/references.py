@@ -300,6 +300,19 @@ refs = {
         "url": "http://dx.doi.org/10.1017/CBO9780511526336.018",
         "year": 1993
     },
+    "HPW15": {
+        "type": "article",
+        "authors": [("Huang", ("Yu-pei", )), ("Pan", ("Yeh-jong", )),
+                    ("Weng", ("Chih-wen", ))],
+        "title": "Nonexistence of a class of distance-regular graphs",
+        "journal": "Electron. J. Combin",
+        "fjournal": "Electronic Journal of Combinatorics",
+        "volume": 22,
+        "number": 2,
+        "pages": "2.37",
+        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/view/v22i2p37",
+        "year": 2015,
+    },
     "IvanovShpectorov90": {
         "type": "article",
         "authors": [("Ivanov", ("Aleksandr", "Anatol'evich")),
@@ -436,6 +449,31 @@ refs = {
         "url": "http://dx.doi.org/10.1023/A:1022066425998",
         "year": 2002
     },
+    "Metsch99": {
+        "type": "article",
+        "authors": [("Metsch", ("Klaus", ))],
+        "title": "On a Characterization of Bilinear Forms Graphs",
+        "journal": "European J. Combin.",
+        "fjournal": "European Journal of Combinatorics",
+        "volume": 20,
+        "number": 4,
+        "pages": (293, 306),
+        "url": "http://dx.doi.org/10.1006/eujc.1998.0280",
+        "year": 1999
+    },
+    "PanWeng09": {
+        "type": "article",
+        "authors": [("Pan", ("Yeh-jong", )), ("Weng", ("Chih-wen", ))],
+        "title": "A note on triangle-free distance-regular graphs "
+                 r"with $a_2 \ne 0$",
+        "journal": "J. Combin. Theory Ser. B",
+        "fjournal": "Journal of Combinatorial Theory, Series B",
+        "volume": 99,
+        "number": 1,
+        "pages": (266, 270),
+        "url": "https://doi.org/10.1016/j.jctb.2008.07.005",
+        "year": 2009,
+    },
     "PayneThas": {
         "type": "book",
         "authors": [("Payne", ("Stanley", "E.")), ("Thas", ("Joseph", "A."))],
@@ -473,6 +511,7 @@ refs = {
         "volume": 23,
         "number": 1,
         "pages": "1.32",
+        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/view/v23i1p32",
         "year": 2016,
     },
     "Urlep12": {
@@ -508,6 +547,18 @@ refs = {
         "authors": [("Vidali", (u"Janoš", ))],
         "note": "unpublished result",
         "year": 2016
+    },
+    "Weng99": {
+        "type": "article",
+        "authors": [("Weng", ("Chih-wen", ))],
+        "title": "Classical Distance-Regular Graphs of Negative Type",
+        "journal": "J. Combin. Theory Ser. B",
+        "fjournal": "Journal of Combinatorial Theory, Series B",
+        "volume": 76,
+        "number": 1,
+        "pages": (93, 116),
+        "url": "http://dx.doi.org/10.1006/jctb.1998.1892",
+        "year": 1999
     },
     "WilbrinkBrouwer83": {
         "type": "article",
