@@ -439,17 +439,20 @@ class DRGParameters:
         """
         if self.d >= 3:
             s = SR.symbol("__s")
-            x, y = sorted([s.subs(ss) for ss in
+            sols = sorted([s.subs(ss) for ss in
                            _solve((s+1)*(self.a[1]+1)
                                   - s*(s+1)*(self.c[2]-1)/2
                                   == self.b[0], s)])
-            x, y = hard_ceiling(x, 0), hard_floor(y, self.b[0])
+            x, y = hard_ceiling(sols[0], 0), hard_floor(sols[-1], self.b[0])
             try:
                 q = integralize(sqrt(self.c[2]) - 1)
                 r = hard_floor(((self.a[1] + 1)
                                 - (self.b[0] - self.b[2]) / (q+2))
                                / (q+1) + 1)
-                t = hard_floor(((self.a[1] + 1)/(self.c[2] - 1) + 1) / 2)
+                if q == 0:
+                    t = r
+                else:
+                    t = hard_floor(((self.a[1] + 1)/(self.c[2] - 1) + 1) / 2)
                 if q >= 2 and x >= 2 and x <= y and x <= r and x <= t \
                         and not self.is_grassmann():
                     raise InfeasibleError("not a Grassmann graph",
