@@ -4,6 +4,7 @@ from sage.all import pi
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.combinat.q_analogues import q_int
+from sage.functions.log import log
 from sage.functions.other import ceil
 from sage.functions.other import floor
 from sage.functions.other import sqrt
@@ -31,6 +32,8 @@ from .util import checkPowerOf
 from .util import checkPrimePower
 from .util import _factor
 from .util import full_simplify
+from .util import hard_ceiling
+from .util import hard_floor
 from .util import integralize
 from .util import is_constant
 from .util import is_squareSum
@@ -434,6 +437,25 @@ class DRGParameters:
         Check whether the graph has classical parameters for which
         nonexistence has been shown as a part of an infinite family.
         """
+        if self.d >= 3:
+            s = SR.symbol("__s")
+            x, y = sorted([s.subs(ss) for ss in
+                           _solve((s+1)*(self.a[1]+1)
+                                  - s*(s+1)*(self.c[2]-1)/2
+                                  == self.b[0], s)])
+            x, y = hard_ceiling(x, 0), hard_floor(y, self.b[0])
+            try:
+                q = integralize(sqrt(self.c[2]) - 1)
+                r = hard_floor(((self.a[1] + 1)
+                                - (self.b[0] - self.b[2]) / (q+2))
+                               / (q+1) + 1)
+                t = hard_floor(((self.a[1] + 1)/(self.c[2] - 1) + 1) / 2)
+                if q >= 2 and x >= 2 and x <= y and x <= r and x <= t \
+                        and not self.is_grassmann():
+                    raise InfeasibleError("not a Grassmann graph",
+                                          ("Metsch95", "Thm. 2.3."))
+            except TypeError:
+                pass
         clas = self.is_classical()
         if not clas:
             return
@@ -463,37 +485,20 @@ class DRGParameters:
                 not self.is_weng_feasible():
             raise InfeasibleError("classical with b < 0",
                                   ("Weng99", "Thm. 10.3."))
-        s = SR.symbol("__s")
-        if self.d < 3 or self.is_bilinearForms() or self.is_grassmann():
+        if self.d < 3:
             return
         for d, b, alpha, beta in clas:
             try:
                 b = integralize(b)
             except TypeError:
                 continue
-            if is_constant(alpha) and is_constant(beta) and \
+            if x <= y and is_constant(alpha) and is_constant(beta) and \
                     alpha >= 1 and alpha == b - 1:
-                r = (b**d - 1)/(b - 1)
-                l, h = sorted([s.subs(ss).n()
-                               for ss in _solve((s+1)*(self.a[1]+1)
-                                                - s*(s+1)*(b**2+b-1)/2
-                                                == r*beta, s)])
-                if l.is_integer():
-                    l += 1
-                if h.is_integer():
-                    h -= 1
-                try:
-                    l, h = l.ceiling(), h.floor()
-                except AttributeError:
-                    continue
-                t = (1 + self.a[1] + b**2 * (b**2 + b + 1)) \
-                    / (b**3 + b**2 + 2*b - 1)
-                if t.is_integer():
-                    t -= 1
-                else:
-                    t = t.floor()
-                if l <= h and l <= t and \
-                        (d != 3 or b != 2 or (l <= 7 and h >= 7 and t >= 7)):
+                t = hard_floor((1 + self.a[1] + b**2 * (b**2 + b + 1))
+                               / (b**3 + b**2 + 2*b - 1))
+                if x <= t and (d != 3 or b != 2 or
+                               (x <= 7 and y >= 7 and t >= 7)) and \
+                        not self.is_bilinearForms():
                     raise InfeasibleError("not a bilinear forms graph",
                                           ("Metsch99", "Prop. 2.2."))
 
@@ -1250,18 +1255,22 @@ class DRGParameters:
 
     def is_grassmann(self):
         """
-        Check whether the graph can be a Grassmann graph.
-
-        Returns ``False`` if the graph is not known to be classical.
+        Check whether the graph can be a Grassmann graph
+        of diameter at least 2.
         """
-        clas = self.is_classical()
-        if not clas:
+        if self.d < 2:
             return False
-        for d, b, alpha, beta in clas:
-            if checkPos(alpha) and alpha == b:
-                return checkPrimePower(b) and \
-                    checkPowerOf(1 + beta * (b - 1)/b, b)
-        return False
+        q = sqrt(self.c[2]) - 1
+        if not checkPrimePower(q):
+            return False
+        beta = self.b[0] * (q-1) / (q**self.d - 1)
+        try:
+            integralize(log(q + beta*(q-1), q))
+        except TypeError:
+            return False
+        p = DRGParameters(self.d, q, q, beta)
+        return len(_solve([SR(l) == r for l, r in
+                           zip(self.b + self.c, p.b + p.c)], self.vars)) > 0
 
     def is_halfCube(self):
         """

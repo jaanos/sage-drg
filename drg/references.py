@@ -449,6 +449,18 @@ refs = {
         "url": "http://dx.doi.org/10.1023/A:1022066425998",
         "year": 2002
     },
+    "Metsch95": {
+        "type": "article",
+        "authors": [("Metsch", ("Klaus", ))],
+        "title": "A characterization of Grassmann graphs",
+        "journal": "European J. Combin.",
+        "fjournal": "European Journal of Combinatorics",
+        "volume": 16,
+        "number": 6,
+        "pages": (639, 644),
+        "url": "http://dx.doi.org/10.1016/0195-6698(95)90045-4",
+        "year": 1995
+    },
     "Metsch99": {
         "type": "article",
         "authors": [("Metsch", ("Klaus", ))],

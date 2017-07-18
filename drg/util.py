@@ -1,6 +1,8 @@
 from sage.arith.misc import factor as factorize
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
+from sage.functions.other import ceil
+from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.rings.integer import Integer
 from sage.rings.real_mpfr import create_RealNumber
@@ -74,6 +76,42 @@ def full_simplify(exp):
     """
     if isinstance(exp, Expression):
         return exp.full_simplify()
+    return exp
+
+def hard_ceiling(exp, val = None):
+    """
+    Return the smallest integer greater than ``exp``,
+    or ``val`` if ``exp`` is complex.
+    If ``exp`` is not constant, it is returned as such.
+    """
+    try:
+        exp = exp.n()
+        if exp.is_integer():
+            exp += 1
+        else:
+            exp = exp.ceiling()
+    except AttributeError:
+        exp = val
+    except TypeError:
+        pass
+    return exp
+
+def hard_floor(exp, val = None):
+    """
+    Return the greatest integer smaller than ``exp``,
+    or ``val`` if ``exp`` is complex.
+    If ``exp`` is not constant, it is returned as such.
+    """
+    try:
+        exp = exp.n()
+        if exp.is_integer():
+            exp -= 1
+        else:
+            exp = exp.floor()
+    except AttributeError:
+        exp = val
+    except TypeError:
+        pass
     return exp
 
 def integralize(exp):
