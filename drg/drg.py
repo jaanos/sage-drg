@@ -474,7 +474,7 @@ class DRGParameters:
                     sols = [s + [diam] for s in sols]
                 if any(checkConditions(cond, sol) for sol in sols):
                     raise InfeasibleError(refs = ref)
-        if self.d >= 3 and self.a[1] == 0 and self.a[2] > 0 and\
+        if self.d >= 3 and self.a[1] == 0 and self.a[2] > 0 and \
                 self.c[2] > 2:
             raise InfeasibleError("classical with a[1] = 0, "
                                   "a[2] > 0 and c[2] > 2",
