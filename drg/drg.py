@@ -481,8 +481,8 @@ class DRGParameters:
                                   ("PanWeng09", "Thm. 2.1."))
         if self.d >= 4 and self.a[1] > 0 and self.c[2] > 1 and \
                 any(b < 0 for d, b, alpha, beta in clas) and \
-                not self.is_dualPolar2A() and not self.is_hermitean() and \
-                not self.is_weng_feasible():
+                not self.is_dualPolar2Aodd() and not self.is_hermitean() \
+                and not self.is_weng_feasible():
             raise InfeasibleError("classical with b < 0",
                                   ("Weng99", "Thm. 10.3."))
         if self.d < 3:
@@ -1175,16 +1175,21 @@ class DRGParameters:
 
     def is_bilinearForms(self):
         """
-        Check whether the graph can be a bilinear forms graph.
-
-        Returns ``False`` if the graph is not known to be classical.
+        Check whether the graph can be a bilinear forms graph
+        of diameter at least 2.
         """
-        clas = self.is_classical()
-        if not clas:
-            return False
-        for d, b, alpha, beta in clas:
-            if checkPos(alpha) and alpha == b-1:
-                return checkPrimePower(b) and checkPowerOf(beta+1, b)
+        s = SR.symbol("__s")
+        for q in sorted([s.subs(ss) for ss in
+                         _solve(s*(s+1) == self.c[2], s)], reverse = True):
+            if not checkPrimePower(q):
+                continue
+            beta = self.b[0] * (q-1) / (q**self.d - 1)
+            try:
+                integralize(log(integralize(beta + 1), q))
+            except TypeError:
+                continue
+            if self.is_classicalWithParameters(q, q-1, beta):
+                return True
         return False
 
     def is_bipartite(self):
@@ -1228,21 +1233,26 @@ class DRGParameters:
             self.classical = False if len(clas) == 0 else clas
         return self.classical
 
-    def is_dualPolar2A(self):
+    def is_classicalWithParameters(self, b, alpha, beta):
         """
-        Check whether the graph can be a dual polar graph ^2A_{2d-1}(-b).
+        Check whether the graph can have the specified classical parameters.
+        """
+        p = DRGParameters(self.d, b, alpha, beta)
+        return len(_solve([SR(l) == r for l, r in
+                           zip(self.b + self.c, p.b + p.c)], self.vars)) > 0
 
-        Returns ``False`` if the graph is not known to be classical.
+    def is_dualPolar2Aodd(self):
         """
-        clas = self.is_classical()
-        if not clas:
+        Check whether the graph can be a dual polar graph ^2A_{2d-1}(-b)
+        of diameter at least 2.
+        """
+        if self.d < 2:
             return False
-        for d, b, alpha, beta in clas:
-            if checkPos(-b) and len(_solve([alpha * (b+1) == b * (b-1),
-                                            beta * (b+1) == -b * (b**d + 1)],
-                                           self.vars)) > 0:
-                return checkPrimePower(-b)
-        return False
+        q = self.c[2] - 1
+        if not checkPrimePower(q):
+            return False
+        beta = self.b[0] * (q-1) / (q**self.d - 1)
+        return q == beta**2 and self.is_classicalWithParameters(q, 0, beta)
 
     def is_formallySelfDual(self):
         """
@@ -1260,17 +1270,18 @@ class DRGParameters:
         """
         if self.d < 2:
             return False
-        q = sqrt(self.c[2]) - 1
-        if not checkPrimePower(q):
-            return False
-        beta = self.b[0] * (q-1) / (q**self.d - 1)
-        try:
-            integralize(log(q + beta*(q-1), q))
-        except TypeError:
-            return False
-        p = DRGParameters(self.d, q, q, beta)
-        return len(_solve([SR(l) == r for l, r in
-                           zip(self.b + self.c, p.b + p.c)], self.vars)) > 0
+        s = sqrt(self.c[2])
+        for q in sorted([-1+s, -1-s], reverse = True):
+            if not checkPrimePower(q):
+                continue
+            beta = self.b[0] * (q-1) / (q**self.d - 1)
+            try:
+                integralize(log(integralize(q + beta*(q-1)), q))
+            except TypeError:
+                continue
+            if self.is_classicalWithParameters(q, q, beta):
+                return True
+        return False
 
     def is_halfCube(self):
         """
@@ -1296,17 +1307,18 @@ class DRGParameters:
 
     def is_hermitean(self):
         """
-        Check whether the graph can be a Hermitean forms graph.
-
-        Returns ``False`` if the graph is not known to be classical.
+        Check whether the graph can be a Hermitean forms graph
+        of diameter at least 2.
         """
-        clas = self.is_classical()
-        if not clas:
-            return False
-        for d, b, alpha, beta in clas:
-            if checkPos(-b) and len(_solve([alpha == b-1, beta == -b**d - 1],
-                                           self.vars)) > 0:
-                return checkPrimePower(-b)
+        s = SR.symbol("__s")
+        for q in sorted([s.subs(ss) for ss in
+                         _solve(s*(s+1) == self.c[2], s)]):
+            if not checkPrimePower(-q):
+                continue
+            beta = self.b[0] * (q-1) / (q**self.d - 1)
+            if beta+1 == -q**self.d and \
+                    self.is_classicalWithParameters(q, q-1, beta):
+                return True
         return False
 
     def is_johnson(self):
@@ -1332,18 +1344,17 @@ class DRGParameters:
         Check whether the graph can be a member
         of a feasible family of classical graphs
         appearing in a classification from Weng99.
-
-        Returns ``False`` if the graph is not known to be classical.
         """
-        clas = self.is_classical()
-        if not clas:
+        if self.d < 2:
             return False
-        for c in clas:
-            d, b, alpha, beta = c
-            if checkPos(-b) and len(_solve([2*alpha == b-1,
-                                            2*beta == -b**d - 1],
-                                           self.vars)) > 0:
-                return checkPrimePower(-b)
+        s = sqrt(2 * self.c[2])
+        for q in sorted([-1-s, -1+s]):
+            if not checkPrimePower(-q):
+                continue
+            beta = self.b[0] * (q-1) / (q**self.d - 1)
+            if beta == -(1 + q**self.d)/2 and \
+                    self.is_classicalWithParameters(q, (q-1)/2, beta):
+                return True
         return False
 
     def kTable(self, expand = False, factor = False, simplify = False):
