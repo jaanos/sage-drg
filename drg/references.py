@@ -483,7 +483,7 @@ refs = {
         "volume": 99,
         "number": 1,
         "pages": (266, 270),
-        "url": "https://doi.org/10.1016/j.jctb.2008.07.005",
+        "url": "https://dx.doi.org/10.1016/j.jctb.2008.07.005",
         "year": 2009,
     },
     "PayneThas": {
