@@ -676,7 +676,7 @@ class DRGParameters:
             if any(checkConditions(cond, sol) for sol in sols):
                 raise InfeasibleError(refs = ref)
 
-    def check_feasible(self, checked = None, skip = None):
+    def check_feasible(self, checked = None, skip = None, derived = True):
         """
         Check whether the intersection array is feasible.
         """
@@ -713,7 +713,10 @@ class DRGParameters:
         for name, check in checks:
             if name not in skip:
                 check()
+        if not derived:
+            return
         checked.add(ia)
+        self.distanceGraphs()
         for ia, part in self.subgraphs.items():
             try:
                 ia.check_feasible(checked)
@@ -724,17 +727,11 @@ class DRGParameters:
                 self.complement.check_feasible(checked)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = "complement")
-        for idx in subsets(range(1, self.d + 1)):
-            if len(idx) > 0 and len(idx) < self.d and idx != [1]:
-                part = "distance-%s graph" % (idx if len(idx) > 1
-                                                  else idx[0])
-                try:
-                    dg = self.add_subgraph(self.mergeClasses(*idx), part)
-                    dg.check_feasible(checked)
-                except (InfeasibleError, AssertionError) as ex:
-                    raise InfeasibleError(ex, part = part)
-                except IndexError:
-                    pass
+        for ia, part in self.distance_graphs.items():
+            try:
+                ia.check_feasible(checked)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part = part)
 
     def check_genPoly(self):
         """
@@ -1030,6 +1027,25 @@ class DRGParameters:
         Return the diameter of the graph.
         """
         return self.d
+
+    def distanceGraphs(self):
+        """
+        Return a dictionary of all parameter sets
+        obtained by taking all subsets of {1, ..., d} as adjacency.
+        """
+        out = {}
+        for idx in subsets(range(1, self.d + 1)):
+            if len(idx) > 0 and len(idx) < self.d and idx != [1]:
+                part = "distance-%s graph" % (idx if len(idx) > 1
+                                                  else idx[0])
+                try:
+                    dg = self.add_subgraph(self.mergeClasses(*idx), part)
+                    out[tuple(idx)] = dg
+                except (InfeasibleError, AssertionError) as ex:
+                    raise InfeasibleError(ex, part = part)
+                except IndexError:
+                    pass
+        return out
 
     def distancePartition(self, h = 0):
         """
