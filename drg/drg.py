@@ -1441,12 +1441,19 @@ class DRGParameters:
                 return True
         return False
 
-    def mergeClasses(self, *args):
+    def mergeClasses(self, *args, **kargs):
+        """
+        Return parameters of a graph obtained by merging specified classes.
+        """
         adj = set(args)
+        conditions = kargs.get("conditions", False)
         assert all(i >= 1 and i <= self.d for i in adj), \
             "indices out of bounds"
-        b = [sum(self.k[j] for j in adj)]
-        c = [1]
+        if conditions:
+            eqs = []
+        else:
+            b = [sum(self.k[j] for j in adj)]
+            c = [1]
         cur = adj
         idx = set(range(1, self.d+1)).difference(adj)
         while len(idx) > 0:
@@ -1458,14 +1465,27 @@ class DRGParameters:
                   for h in cur}
             ci = {sum(sum(self.p[h, i, j] for j in adj) for i in cur)
                   for h in nxt}
-            if len(bi) > 1 or len(ci) > 1:
-                raise IndexError("merging classes %s does not yield "
-                                 "a P-polynomial scheme" % sorted(adj))
-            b.append(next(iter(bi)))
-            c.append(next(iter(ci)))
+            if conditions:
+                ib = iter(bi)
+                ic = iter(ci)
+                b0 = SR(next(ib))
+                c0 = SR(next(ic))
+                for bb in ib:
+                    eqs.append(b0 == bb)
+                for cc in ic:
+                    eqs.append(c0 == cc)
+            else:
+                if len(bi) > 1 or len(ci) > 1:
+                    raise IndexError("merging classes %s does not yield "
+                                     "a P-polynomial scheme" % sorted(adj))
+                b.append(next(iter(bi)))
+                c.append(next(iter(ci)))
             cur = nxt
             idx.difference_update(nxt)
-        return DRGParameters(b, c)
+        if conditions:
+            return _solve(eqs, self.vars)
+        else:
+            return DRGParameters(b, c)
 
     def multiplicities(self, expand = False, factor = False, simplify = False):
         """
