@@ -443,7 +443,8 @@ class DRGParameters:
                            _solve((s+1)*(self.a[1]+1)
                                   - s*(s+1)*(self.c[2]-1)/2
                                   == self.b[0], s)])
-            x, y = hard_ceiling(sols[0], 0), hard_floor(sols[-1], self.b[0])
+            x = hard_ceiling(sols[0], Integer(0))
+            y = hard_floor(sols[-1], Integer(-1))
             try:
                 q = integralize(sqrt(self.c[2]) - 1)
                 r = hard_floor(((self.a[1] + 1)
@@ -453,7 +454,7 @@ class DRGParameters:
                     t = r
                 else:
                     t = hard_floor(((self.a[1] + 1)/(self.c[2] - 1) + 1) / 2)
-                if q >= 2 and x >= 2 and x <= y and x <= r and x <= t \
+                if q >= 2 and y >= 2 and x <= y and x <= r and x <= t \
                         and not self.is_grassmann():
                     raise InfeasibleError("not a Grassmann graph",
                                           ("Metsch95", "Thm. 2.3."))
@@ -496,7 +497,7 @@ class DRGParameters:
             except TypeError:
                 continue
             if x <= y and is_constant(alpha) and is_constant(beta) and \
-                    alpha >= 1 and alpha == b - 1:
+                    alpha >= 1 and alpha == b - 1 and y >= (b**d-1)/(b-1):
                 t = hard_floor((1 + self.a[1] + b**2 * (b**2 + b + 1))
                                / (b**3 + b**2 + 2*b - 1))
                 if x <= t and (d != 3 or b != 2 or
