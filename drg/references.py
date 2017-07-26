@@ -109,6 +109,32 @@ refs = {
         "url": "http://dx.doi.org/10.1016/j.laa.2017.03.033",
         "year": 2017
     },
+    "BrouwerNeumaier81": {
+        "type": "book",
+        "authors": [("Brouwer", ("Andries", "E.")),
+                    ("Neumaier", ("Arnold", ))],
+        "title": "Strongly regular graphs where mu equals two "
+                 "and lambda is large",
+        "series": "Afdeling Zuivere Wiskunde "
+                  "[Department of Pure Mathematics]",
+        "pages": ("i", 7),
+        "publisher": "Stichting Mathematisch Centrum",
+        "address": "Amsterdam",
+        "url": "https://ir.cwi.nl/pub/6792/6792A.pdf",
+        "year": 1981
+    },
+    "BrouwerVanLint84": {
+        "type": "incollection",
+        "authors": [("Brouwer", ("Andries", "E.")),
+                    ("van Lint", ("Jacobus", "Hendricus"))],
+        "title": "Strongly regular graphs and partial geometries",
+        "booktitle": "Enumeration and design (Waterloo, Ont., 1982)",
+        "pages": (85, 122),
+        "publisher": "Academic Press",
+        "address": "Toronto",
+        "url": "https://ir.cwi.nl/pub/1817/1817A.pdf",
+        "year": 1984
+    },
     "Coolsaet95": {
         "type": "article",
         "authors": [("Coolsaet", ("Kris", ))],

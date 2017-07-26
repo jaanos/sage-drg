@@ -506,6 +506,19 @@ class DRGParameters:
                     raise InfeasibleError("not a bilinear forms graph",
                                           ("Metsch99", "Prop. 2.2."))
 
+    def check_clawBound(self):
+        """
+        Check the claw bound for strongly regular graphs.
+        """
+        if "theta" not in self.__dict__:
+            self.eigenvalues()
+        if self.d == 2:
+            s, r = sorted(self.theta[1:])
+            if self.c[2] not in [s*s, s*(s+1)] and \
+                    2*(r+1) > s*(s+1)*(self.c[2]+1):
+                raise InfeasibleError("claw bound exceeded",
+                                      "BrouwerVanLint84")
+
     def check_combinatorial(self):
         """
         Check for various combinatorial conditions.
@@ -700,6 +713,7 @@ class DRGParameters:
             ("hadamard", self.check_hadamard),
             ("antipodal", self.check_antipodal),
             ("genPoly", self.check_genPoly),
+            ("clawBound", self.check_clawBound),
             ("terwilliger", self.check_terwilliger),
             ("secondEigenvalue", self.check_secondEigenvalue),
             ("localEigenvalues", self.check_localEigenvalues),
