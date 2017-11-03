@@ -1178,16 +1178,9 @@ class DRGParameters:
             "distance not in feasible range"
         if abs(i1 - i2) > 1 or abs(j1 - j2) > 1:
             return False
-        tperms = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
-                  [1, 2, 0], [2, 0, 1], [2, 1, 0]]
-        dperms = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
-                  [2, 0, 1], [1, 2, 0], [2, 1, 0]]
         for t, d in (((h, i1, j1), (i2, j2, 1)), ((h, i2, j2), (i1, j1, 1))):
-            for p, q in zip(tperms, dperms):
-                tp = tuple(t[i] for i in p)
-                if tp in self.triple and \
-                        self.triple[tp][tuple(d[i] for i in q)] == 0:
-                    return False
+            if any(x == 0 for x in self.triple_generator(t, d)):
+                return False
         return True
 
     def intersectionArray(self, expand = False, factor = False,
@@ -1433,10 +1426,26 @@ class DRGParameters:
         Return parameters of the local graph
         if it is known to be distance-regular.
         """
+        assert self.a[1] != 0, "local graph is disconnected"
         if "local_graph" not in self.__dict__:
             self.check_2graph()
         if "local_graph" not in self.__dict__:
             self.check_localEigenvalues()
+        if "local_graph" not in self.__dict__:
+            try:
+                vars = set(self.vars)
+                b1 = next(x for x in self.triple_generator((1, 1, 1),
+                                                           (1, 1, 2))
+                          if vars.issuperset(variables(x)))
+                c2 = next(x for x in self.triple_generator((1, 1, 2),
+                                                           (1, 1, 1))
+                          if vars.issuperset(variables(x)))
+                assert b1 != 0 and c2 != 0, "local graph is disconnected"
+                self.local_graph = self.add_subgraph(((self.a[1], b1),
+                                                      (Integer(1), c2)),
+                                                     "local graph")
+            except StopIteration:
+                pass
         assert "local_graph" in self.__dict__, \
             "local graph is not known to be distance-regular"
         return self.local_graph
@@ -1627,6 +1636,21 @@ class DRGParameters:
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
         return p
+
+    def triple_generator(self, t, d):
+        """
+        Generate computed values of triple intersecion numbers
+        counting the number of vertices at distances given by the triple d
+        corresponding to vertices at mutual distances given by the triple t.
+        """
+        tperms = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
+                  [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+        dperms = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
+                  [2, 0, 1], [1, 2, 0], [2, 1, 0]]
+        for p, q in zip(tperms, dperms):
+            tp = tuple(t[i] for i in p)
+            if tp in self.triple:
+                yield self.triple[tp][tuple(d[i] for i in q)]
 
     def tripleEquations(self, u, v, w, krein = None, params = None,
                         solve = True, save = None):
