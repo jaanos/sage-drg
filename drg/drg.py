@@ -1699,11 +1699,12 @@ class DRGParameters:
                             s[t][i][j] = Integer(0)
         vars = set(x for x in sum([sum(l, []) for l in s], [])
                    if not isinstance(x, Integer))
-        c = [[[len([t for t in r if not isinstance(s[i][j][t], Integer)])
+        consts = set()
+        c = [[[len([t for t in r if s[i][j][t] in vars])
                for j in r] for i in r],
-             [[len([t for t in r if not isinstance(s[i][t][j], Integer)])
+             [[len([t for t in r if s[i][t][j] in vars])
                for j in r] for i in r],
-             [[len([t for t in r if not isinstance(s[t][i][j], Integer)])
+             [[len([t for t in r if s[t][i][j] in vars])
                for j in r] for i in r]]
         q = []
         for h, ch in enumerate(c):
@@ -1713,9 +1714,12 @@ class DRGParameters:
                         q.append((h, i, j))
         while len(q) > 0:
             l, i, j = q.pop()
+            if c[l][i][j] == 0:
+                continue
             h, i, j = [(i, j, None), (i, None, j), (None, i, j)][l]
             if j is None:
-                j = next(t for t in r if not isinstance(s[h][i][t], Integer))
+                j = next(t for t in r if s[h][i][t] in vars)
+                x = s[h][i][j]
                 s[h][i][j] = self.p[u, h, i] - sum(s[h][i][t] for t in r
                                                    if t != j)
                 c[1][h][j] -= 1
@@ -1725,7 +1729,8 @@ class DRGParameters:
                 if c[2][i][j] == 1:
                     q.append((2, i, j))
             elif i is None:
-                i = next(t for t in r if not isinstance(s[h][t][j], Integer))
+                i = next(t for t in r if s[h][t][j] in vars)
+                x = s[h][i][j]
                 s[h][i][j] = self.p[v, h, j] - sum(s[h][t][j] for t in r
                                                    if t != i)
                 c[0][h][i] -= 1
@@ -1735,15 +1740,18 @@ class DRGParameters:
                 if c[2][i][j] == 1:
                     q.append((2, i, j))
             elif h is None:
-                h = next(t for t in r if not isinstance(s[t][i][j], Integer))
+                h = next(t for t in r if s[t][i][j] in vars)
+                x = s[h][i][j]
                 s[h][i][j] = self.p[w, i, j] - sum(s[t][i][j] for t in r
                                                    if t != h)
                 c[0][h][i] -= 1
-                c[1][j][j] -= 1
+                c[1][h][j] -= 1
                 if c[0][h][i] == 1:
                     q.append((0, h, i))
                 if c[1][h][j] == 1:
                     q.append((1, h, j))
+            out.append(x == s[h][i][j])
+            consts.add(x)
         for i in r:
             for j in r:
                 l = sum(s[i][j][t] for t in r)
@@ -1789,6 +1797,7 @@ class DRGParameters:
                 x = SR.symbol(a)
                 out.append(s[h][i][j] == x)
         vars.intersection_update(sum([sum(l, []) for l in s], []))
+        vars.update(consts)
         if not solve:
             return (out, vars)
         sol = _solve(out, vars)
