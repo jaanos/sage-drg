@@ -1426,7 +1426,8 @@ class DRGParameters:
         Return parameters of the local graph
         if it is known to be distance-regular.
         """
-        assert self.a[1] != 0, "local graph is disconnected"
+        assert self.a[1] != 0 and self.has_edges(1, 1, 1, 1, 2), \
+            "local graph is disconnected"
         if "local_graph" not in self.__dict__:
             self.check_2graph()
         if "local_graph" not in self.__dict__:
@@ -1440,7 +1441,6 @@ class DRGParameters:
                 c2 = next(x for x in self.triple_generator((1, 1, 2),
                                                            (1, 1, 1))
                           if vars.issuperset(variables(x)))
-                assert b1 != 0 and c2 != 0, "local graph is disconnected"
                 self.local_graph = self.add_subgraph(((self.a[1], b1),
                                                       (Integer(1), c2)),
                                                      "local graph")
