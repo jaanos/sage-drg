@@ -133,6 +133,9 @@ def integralize(exp):
             return exp + Integer(0)
         elif exp.is_integer():
             return Integer(exp)
+        mp = exp.minpoly()
+        if mp.degree() == 1:
+            return Integer(mp.any_root())
     except:
         pass
     raise TypeError("attempt to coerce non-integer to Integer")
