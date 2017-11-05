@@ -1644,7 +1644,7 @@ class DRGParameters:
         if "q" in self.__dict__:
             p.q = self.q.subs(exp)
             p.kreinParameters(compute = False)
-        for h, s in self.enumerate(self.subconstituents):
+        for h, s in enumerate(self.subconstituents):
             if s is None:
                 continue
             name = subconstituent_name(h)
