@@ -325,6 +325,19 @@ class DRGParameters:
             self.subgraphs[ia] = part
         return ia
 
+    def all_subconstituents(self, compute = False):
+        """
+        Return a dictionary of parameters for subconstituents
+        which are known to be distance-regular.
+        """
+        out = {}
+        for i in range(self.d+1):
+            try:
+                out[i] = self.subconstituent(i, compute = compute)
+            except AssertionError:
+                pass
+        return out
+
     def antipodalQuotient(self):
         """
         Return the parameters of the antipodal quotient.
@@ -740,6 +753,7 @@ class DRGParameters:
             return
         checked.add(ia)
         self.distanceGraphs()
+        self.all_subconstituents(compute = derived > 1)
         for ia, part in self.subgraphs.items():
             try:
                 ia.check_feasible(checked)
