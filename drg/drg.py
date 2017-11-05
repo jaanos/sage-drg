@@ -159,7 +159,7 @@ class DRGParameters:
         self.subgraphs = {}
         self.distance_graphs = {}
         self.triple = {}
-        self.subconstituents = [None] * self.d
+        self.subconstituents = [None] * (self.d + 1)
         self.a = tuple(full_simplify(b[0]-x-y)
                        for x, y in zip(self.b, self.c))
         assert self.c[1] == 1, "Invalid c[1] value"
