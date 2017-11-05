@@ -81,6 +81,20 @@ class Array3D:
             for i in range(self.n):
                 M[i] = map(fun, M[i])
 
+    def permute(self, p):
+        """
+        Return an array with permuted dimensions.
+        """
+        if tuple(p) == (0, 1, 2):
+            return self
+        A = Array3D(self.n)
+        for h in range(self.n):
+            for i in range(self.n):
+                for j in range(self.n):
+                    t = (h, i, j)
+                    A[t] = self[tuple(t[i] for i in p)]
+        return A
+
     def reorder(self, order):
         """
         Reorder each dimension in the array.

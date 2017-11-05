@@ -209,6 +209,20 @@ def rewriteTuple(t, expand = False, factor = False, simplify = False):
         t = tuple(map(_simplify, t))
     return t
 
+def subconstituent_name(h):
+    """
+    Return a properly formatted ordinal for the given subconstituent.
+    """
+    if h == 1:
+        return "local graph"
+    elif h == 2:
+        o = "2nd"
+    elif h == 3:
+        o = "3rd"
+    else:
+        o = "%dth" % h
+    return "%s subconstituent" % o
+
 def subs(exp, s):
     """
     Substitute the given subexpressions in the expression.

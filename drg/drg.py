@@ -41,8 +41,14 @@ from .util import matrixMap
 from .util import rewriteExp
 from .util import rewriteMatrix
 from .util import rewriteTuple
+from .util import subconstituent_name
 from .util import subs
 from .util import variables
+
+TPERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
+          [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+DPERMS = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
+          [2, 0, 1], [1, 2, 0], [2, 1, 0]]
 
 class InfeasibleError(Exception):
     """
@@ -153,6 +159,7 @@ class DRGParameters:
         self.subgraphs = {}
         self.distance_graphs = {}
         self.triple = {}
+        self.subconstituents = [None] * self.d
         self.a = tuple(full_simplify(b[0]-x-y)
                        for x, y in zip(self.b, self.c))
         assert self.c[1] == 1, "Invalid c[1] value"
@@ -390,9 +397,10 @@ class DRGParameters:
                 raise InfeasibleError("Taylor graph with a[1] > 0 odd "
                                       "or cover of K_n with n odd",
                                       ("BCN", "Thm. 1.5.3."))
-            self.local_graph = self.add_subgraph(((self.a[1], n - mu - 1),
-                                                  (Integer(1), mu)),
-                                                 "local graph")
+            self.subconstituents[1] = self.add_subgraph(((self.a[1],
+                                                          n - mu - 1),
+                                                         (Integer(1), mu)),
+                                                        "local graph")
 
     def check_absoluteBound(self):
         """
@@ -882,10 +890,11 @@ class DRGParameters:
                             raise InfeasibleError("locally strongly regular "
                                                   "antipodal graph with d=4",
                                                   u"JurišićKoolen00")
-                    self.local_graph = self.add_subgraph(((self.a[1],
-                                                           -(bp+1)*(bm+1)),
-                                                          (Integer(1), mu)),
-                                                         "local graph")
+                    self.subconstituents[1] = self.add_subgraph(((self.a[1],
+                                                            -(bp+1)*(bm+1)),
+                                                                 (Integer(1),
+                                                                  mu)),
+                                                            "local graph")
             def checkMul(h):
                 if self.antipodal and self.omega[h, self.d] != 1 and \
                       self.m[h] < self.k[1] + self.r - 2:
@@ -1421,34 +1430,15 @@ class DRGParameters:
         self.q.rewrite(expand = expand, factor = factor, simplify = simplify)
         return self.q
 
-    def localGraph(self):
+    def localGraph(self, compute = False):
         """
         Return parameters of the local graph
         if it is known to be distance-regular.
+
+        If compute is set to True,
+        then the relevant triple intersection numbers will be computed.
         """
-        assert self.a[1] != 0 and self.has_edges(1, 1, 1, 1, 2), \
-            "local graph is disconnected"
-        if "local_graph" not in self.__dict__:
-            self.check_2graph()
-        if "local_graph" not in self.__dict__:
-            self.check_localEigenvalues()
-        if "local_graph" not in self.__dict__:
-            try:
-                vars = set(self.vars)
-                b1 = next(x for x in self.triple_generator((1, 1, 1),
-                                                           (1, 1, 2))
-                          if vars.issuperset(variables(x)))
-                c2 = next(x for x in self.triple_generator((1, 1, 2),
-                                                           (1, 1, 1))
-                          if vars.issuperset(variables(x)))
-                self.local_graph = self.add_subgraph(((self.a[1], b1),
-                                                      (Integer(1), c2)),
-                                                     "local graph")
-            except StopIteration:
-                pass
-        assert "local_graph" in self.__dict__, \
-            "local graph is not known to be distance-regular"
-        return self.local_graph
+        return self.subconstituent(1, compute = compute)
 
     def match(self, *ial):
         """
@@ -1594,6 +1584,48 @@ class DRGParameters:
         for h in range(self.d + 1):
             self.distancePartition(h).show(**options)
 
+    def subconstituent(self, h, compute = False):
+        """
+        Return parameters of the h-th subconstituent
+        if it is known to be distance-regular.
+
+        If compute is set to True,
+        then the relevant triple intersection numbers will be computed.
+        """
+        name = subconstituent_name(h)
+        assert self.p[0, h, h] > 1, \
+            "%s consists of a single vertex" % name
+        assert all(self.has_edges(h, h, i, h, i+1) for i in range(self.d)), \
+            "%s is disconnected" % name
+        if h == 1:
+            if self.subconstituents[h] is None:
+                self.check_2graph()
+            if self.subconstituents[h] is None:
+                self.check_localEigenvalues()
+        if self.subconstituents[h] is None:
+            l = max(i for i in range(self.d+1)
+                    if checkPos(self.p[h, h, i]))
+            if compute:
+                for i in range(1, l + 1):
+                    assert checkPos(self.p[h, h, i]), \
+                        "%s is disconnected" % name
+                    t = self.tripleEquations(h, h, i)
+            vars = set(self.vars)
+            b = tuple(next(x for x in self.triple_generator((h, h, i),
+                                                            (h, i+1, 1))
+                           if vars.issuperset(variables(x)))
+                      for i in range(l))
+            c = tuple(next(x for x in self.triple_generator((h, h, i+1),
+                                                            (h, i, 1))
+                           if vars.issuperset(variables(x)))
+                      for i in range(l))
+            assert 0 not in b and 0 not in c, "%s is disconnected" % name
+            if len(b) == l and len(c) == l:
+                self.subconstituents[h] = self.add_subgraph((b, c), name)
+        assert self.subconstituents[h] is not None, \
+            "%s is not known to be distance-regular" % name
+        return self.subconstituents[h]
+
     def subs(self, exp, complement = False):
         """
         Substitute the given subexpressions in the parameters.
@@ -1612,12 +1644,15 @@ class DRGParameters:
         if "q" in self.__dict__:
             p.q = self.q.subs(exp)
             p.kreinParameters(compute = False)
-        if "local_graph" in self.__dict__:
+        for h, s in self.enumerate(self.subconstituents):
+            if s is None:
+                continue
+            name = subconstituent_name(h)
             try:
-                p.local_graph = p.add_subgraph(self.local_graph.subs(exp),
-                                               "local graph")
+                p.subconstituents[h] = \
+                    p.add_subgraph(self.subconstituents[h].subs(exp), name)
             except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = "local graph")
+                raise InfeasibleError(ex, part = name)
         if "complement" in self.__dict__:
             try:
                 p.complement = self.complement.subs(exp, complement = p)
@@ -1643,11 +1678,21 @@ class DRGParameters:
         counting the number of vertices at distances given by the triple d
         corresponding to vertices at mutual distances given by the triple t.
         """
-        tperms = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
-                  [1, 2, 0], [2, 0, 1], [2, 1, 0]]
-        dperms = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
-                  [2, 0, 1], [1, 2, 0], [2, 1, 0]]
-        for p, q in zip(tperms, dperms):
+        if 0 in t:
+            j = t.index(0)
+            h = {x for k, x in enumerate(t) if j != k}
+            if len(h) == 2:
+                return
+            i = {x for k, x in enumerate(d) if j+k != 2}
+            if len(i) == 2:
+                yield Integer(0)
+                return
+            h = next(iter(h))
+            i = next(iter(i))
+            j = d[2-j]
+            yield self.p[h, i, j]
+            return
+        for p, q in zip(TPERMS, DPERMS):
             tp = tuple(t[i] for i in p)
             if tp in self.triple:
                 yield self.triple[tp][tuple(d[i] for i in q)]
@@ -1667,9 +1712,13 @@ class DRGParameters:
         """
         assert checkPos(self.p[u, v, w]), \
             "no triple of vertices at distances %d, %d, %d" % (u, v, w)
-        if solve and krein is None and params is None \
-                and (u, v, w) in self.triple:
-            return self.triple[u, v, w]
+        if solve and krein is None and params is None:
+            t = (u, v, w)
+            for p, q in zip(TPERMS, DPERMS):
+                tp = tuple(t[i] for i in p)
+                if tp in self.triple:
+                    self.triple[t] = self.triple[tp].permute(q)
+                    return self.triple[t]
         if "Q" not in self.__dict__:
             self.dualEigenmatrix()
         if "q" not in self.__dict__:
