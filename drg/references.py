@@ -42,6 +42,17 @@ refs = {
         "year": 1994,
         "url": "http://www.win.tue.nl/~aeb/drg/"
     },
+    "BGK18": {
+        "type": "article",
+        "authors": [("Bang", ("Sejeong", )),
+                    ("Gavrilyuk", ("Alexander", "L.")),
+                    ("Koolen", ("Jack", "H."))],
+        "title": "Distance-regular graphs without 4-claws",
+        "journal": "European J. Combin.",
+        "fjournal": "European Journal of Combinatorics",
+        "url": "https://dx.doi.org/10.1016/j.ejc.2018.02.022",
+        "year": 2018
+    },
     "BHMW89": {
         "type": "article",
         "authors": [("Bussemaker", ("Frans", "C.")),
