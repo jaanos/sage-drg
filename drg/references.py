@@ -47,7 +47,7 @@ refs = {
         "authors": [("Bang", ("Sejeong", )),
                     ("Gavrilyuk", ("Alexander", "L.")),
                     ("Koolen", ("Jack", "H."))],
-        "title": "Distance-regular graphs without 4-claws",
+        "title": "Distance-regular graphs without $4$-claws",
         "journal": "European J. Combin.",
         "fjournal": "European Journal of Combinatorics",
         "url": "https://dx.doi.org/10.1016/j.ejc.2018.02.022",
@@ -485,6 +485,18 @@ refs = {
         "pages": (941, 949),
         "url": "http://dx.doi.org/10.1023/A:1022066425998",
         "year": 2002
+    },
+    "Makhnev17": {
+        "type": "article",
+        "authors": [("Makhnev", ("Alexander", "Alexeevich"))],
+        "title": "The graph Kre$(4)$ does not exist",
+        "journal": "Dokl. Math.",
+        "fjournal": "Doklady Mathematics",
+        "volume": 96,
+        "number": 1,
+        "pages": (348, 350),
+        "url": "https://doi.org/10.1134/S1064562417040123",
+        "year": 2017
     },
     "Metsch95": {
         "type": "article",
