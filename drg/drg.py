@@ -20,6 +20,8 @@ from sage.symbolic.expression import Expression
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
+from .assoc_scheme import InfeasibleError
+from .assoc_scheme import PolyASParameters
 from .coefflist import CoefficientList
 from .nonex import checkConditions
 from .nonex import classicalFamilies
@@ -50,62 +52,15 @@ TPERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
 DPERMS = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
           [2, 0, 1], [1, 2, 0], [2, 1, 0]]
 
-class InfeasibleError(Exception):
-    """
-    Infeasibility of a parameter set.
-    """
-
-    def __init__(self, reason = None, refs = None, part = None):
-        """
-        Exception constructor.
-        """
-        part = () if part is None else (part, )
-        if isinstance(reason, InfeasibleError):
-            self.reason = reason.reason
-            self.refs = reason.refs
-            self.part = reason.part + part
-        elif isinstance(reason, Exception):
-            self.reason = ", ".join(str(x) for x in reason.args)
-            self.refs = []
-            self.part = part
-        else:
-            self.reason = reason
-            if refs is None:
-                refs = []
-            elif not isinstance(refs, list):
-                refs = [refs]
-            self.refs = [ref if isinstance(ref, tuple) else (ref, None)
-                         for ref in refs]
-            self.part = part
-        msg = []
-        if len(self.part) > 0:
-            msg.append(" of ".join(self.part))
-        if self.reason is not None:
-            msg.append(self.reason)
-        if len(self.refs) > 0:
-            msg.append("nonexistence by %s" %
-                       "; ".join(self.formatRef(ref) for ref in self.refs))
-        msg = ": ".join(msg)
-        if isinstance(msg, unicode):
-            msg = msg.encode("utf-8")
-        self.args = (msg, )
-
-    @staticmethod
-    def formatRef(ref):
-        """
-        Format reason for nonexistence.
-        """
-        pap, thm = ref
-        if thm is None:
-            return pap
-        else:
-            return "%s, %s" % (pap, thm)
-
-class DRGParameters:
+class DRGParameters(PolyASParameters):
     """
     A class for parameters of a distance-regular graph
     and checking their feasibility.
     """
+
+    PARAMETER = "intersection number"
+    PARAMETER_SYMBOL = "p"
+    PARTS = "subconstituents"
 
     def __init__(self, b, c, alpha = None, beta = None, complement = None):
         """
@@ -140,35 +95,14 @@ class DRGParameters:
                 b, c = (b, b-c-1), (1, alpha)
         else:
             self.d = Integer(len(b))
-        assert self.d == len(c), "parameter length mismatch"
-        try:
-            self.c = tuple([Integer(0)] + map(integralize, c))
-        except TypeError:
-            raise InfeasibleError("c sequence not integral")
-        try:
-            self.b = tuple(map(integralize, b) + [Integer(0)])
-        except TypeError:
-            raise InfeasibleError("b sequence not integral")
-        assert all(checkPos(x) for x in self.c[1:]), \
-            "c sequence not positive"
-        assert all(checkPos(x) for x in self.b[:-1]), \
-            "b sequence not positive"
-        self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
-        self.vars_ordered = len(self.vars) <= 1
-        self.prefix = "v%x" % (hash(self) % Integer(2)**32)
-        self.subgraphs = {}
-        self.distance_graphs = {}
-        self.triple = {}
-        self.subconstituents = [None] * (self.d + 1)
-        self.a = tuple(full_simplify(b[0]-x-y)
-                       for x, y in zip(self.b, self.c))
-        assert self.c[1] == 1, "Invalid c[1] value"
+        PolyASParameters.__init__(self, b, c)
         assert all(checkNonneg(self.b[i] - self.b[i+1])
                    for i in range(self.d)), "b sequence not non-ascending"
         assert all(checkNonneg(self.c[i+1] - self.c[i])
                    for i in range(self.d)), "c sequence not non-descending"
-        assert all(checkNonneg(x) for x in self.a), \
-            "a values negative"
+        self.subgraphs = {}
+        self.distance_graphs = {}
+        self.subconstituents = [None] * (self.d + 1)
         if any(any(self.b[j] < self.c[i]
                    for j in range(self.d-i+1)) for i in range(self.d+1)):
             raise InfeasibleError("b[j] < c[i] with i+j <= d",
@@ -177,63 +111,9 @@ class DRGParameters:
         self.antipodal = all(full_simplify(self.b[i] - self.c[self.d - i])
                              == 0 for i in range(self.d) if i != m)
         self.bipartite = all(a == 0 for a in self.a)
-        k = [Integer(1)]
-        try:
-            for i in range(self.d):
-                k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
-                if self.a[i+1] >= k[-1]:
-                    raise InfeasibleError("valency of subconstituent %d "
-                                          "too large" % (i+1))
-                if isinstance(self.a[i+1], Integer) and \
-                        isinstance(k[-1], Integer) and \
-                        self.a[i+1] % 2 == 1 and k[-1] % 2 == 1:
-                    raise InfeasibleError("handshake lemma not satisfied "
-                                          "for subconstituent %d" % (i+1))
-        except TypeError:
-            raise InfeasibleError("subconstituents not integral")
-        self.k = tuple(k)
-        self.n = sum(self.k)
+        self.k = tuple(self._init_multiplicities())
         self.p = Array3D(self.d + 1)
-        for i in range(self.d + 1):
-            self.p[0, i, i] = k[i]
-            self.p[i, 0, i] = Integer(1)
-            self.p[i, i, 0] = Integer(1)
-        for i in range(self.d):
-            self.p[i+1, 1, i+1] = self.a[i+1]
-            self.p[i, 1, i+1] = self.b[i]
-            self.p[i+1, 1, i] = self.c[i+1]
-        for i in range(2, self.d + 1):
-            for j in range(1, self.d + 1):
-                for h in range(1, self.d):
-                    try:
-                        self.p[h, i, j] = integralize(_simplify(_expand(
-                            ( self.c[h] * self.p[h-1, i-1, j]
-                            + self.b[h] * self.p[h+1, i-1, j]
-                            - self.b[i-2] * self.p[h, i-2, j]
-                            + (self.a[h] - self.a[i-1]) * self.p[h, i-1, j]
-                            ) / self.c[i]
-                        )))
-                    except TypeError:
-                        raise InfeasibleError("intersection number "
-                                              "p[%d, %d, %d] is nonintegral"
-                                               % (h, i, j))
-                    assert checkNonneg(self.p[h, i, j]), \
-                        "intersection number p[%d, %d, %d] is negative" % \
-                        (h, i, j)
-                try:
-                    self.p[self.d, i, j] = integralize(_simplify(_expand(
-                        ( self.c[self.d] * self.p[self.d-1, i-1, j]
-                        - self.b[i-2] * self.p[self.d, i-2, j]
-                        + (self.a[self.d] - self.a[i-1])
-                            * self.p[self.d, i-1, j]
-                        ) / self.c[i]
-                    )))
-                except TypeError:
-                    raise InfeasibleError("intersection number p[%d, %d, %d]"
-                                          " is nonintegral" % (self.d, i, j))
-                assert checkNonneg(self.p[self.d, i, j]), \
-                    "intersection number p[%d, %d, %d] is negative" % \
-                    (self.d, i, j)
+        self._compute_parameters(self.p, self.k)
         if self.antipodal:
             try:
                 self.r = integralize(1 + self.b[m] / self.c[self.d - m])
@@ -265,12 +145,6 @@ class DRGParameters:
                                            complement = self)
             self.complement = self.add_subgraph(complement, "complement")
 
-    def __hash__(self):
-        """
-        Return the hash value.
-        """
-        return hash(self.intersectionArray())
-
     def __eq__(self, other):
         """
         Compare self to other.
@@ -281,14 +155,6 @@ class DRGParameters:
         else:
             return ia == other
 
-    def __len__(self, expand = False, factor = False, simplify = False):
-        """
-        Return the number of vertices.
-        """
-        self.n = rewriteExp(self.n, expand = expand, factor = factor,
-                            simplify = simplify)
-        return self.n
-
     def __repr__(self):
         """
         String representation.
@@ -297,14 +163,47 @@ class DRGParameters:
                "with intersection array %s" % \
                self.format_intersectionArray()
 
-    def aTable(self, expand = False, factor = False, simplify = False):
+    def _check_multiplicity(self, k, i):
         """
-        Return the table of intersection numbers ``a[1], a[2], ..., a[d]``,
-        where ``d`` is the diameter of the graph.
+        Check the valency of the i-th subconstituent
+        and verify the handshake lemma.
         """
-        self.a = rewriteTuple(self.a, expand = expand, factor = factor,
-                              simplify = simplify)
-        return self.a[1:]
+        if self.a[i+1] >= k[-1]:
+            raise InfeasibleError("valency of subconstituent %d "
+                                  "too large" % (i+1))
+        if isinstance(self.a[i+1], Integer) and \
+                isinstance(k[-1], Integer) and \
+                self.a[i+1] % 2 == 1 and k[-1] % 2 == 1:
+            raise InfeasibleError("handshake lemma not satisfied "
+                                  "for subconstituent %d" % (i+1))
+
+    def _check_parameter(self, h, i, j, v):
+        """
+        Check for the feasibility of an intersection number.
+
+        The intersection number is checked for integrality and nonnegativity.
+        """
+        try:
+            return PolyASParameters._check_parameter(self, h, i, j,
+                                                     integralize(v))
+        except TypeError:
+            raise InfeasibleError("%s %s[%d, %d, %d] is nonintegral"
+                                   % (self.PARAMETER, self.PARAMETER_SYMBOL,
+                                      h, i, j))
+
+
+    def _init_array(self, b, c):
+        """
+        Initialize the intersection array while checking for integrality.
+        """
+        try:
+            self.c = tuple([Integer(0)] + map(integralize, c))
+        except TypeError:
+            raise InfeasibleError("c sequence not integral")
+        try:
+            self.b = tuple(map(integralize, b) + [Integer(0)])
+        except TypeError:
+            raise InfeasibleError("b sequence not integral")
 
     def add_subgraph(self, ia, part):
         """
@@ -346,15 +245,6 @@ class DRGParameters:
         assert self.d >= 2, "quotient of complete graph has diameter 0"
         return self.quotient
 
-    def bTable(self, expand = False, factor = False, simplify = False):
-        """
-        Return the table of intersection numbers ``b[0], b[1], ..., b[d-1]``,
-        where ``d`` is the diameter of the graph.
-        """
-        self.b = rewriteTuple(self.b, expand = expand, factor = factor,
-                              simplify = simplify)
-        return self.b[:-1]
-
     def bipartiteHalf(self):
         """
         Return the parameters of the bipartite half.
@@ -362,15 +252,6 @@ class DRGParameters:
         assert self.bipartite, "graph not bipartite"
         assert self.d >= 2, "bipartite half of complete graph has diameter 0"
         return self.half
-
-    def cTable(self, expand = False, factor = False, simplify = False):
-        """
-        Return the table of intersection numbers ``c[1], c[2], ..., c[d]``,
-        where ``d`` is the diameter of the graph.
-        """
-        self.c = rewriteTuple(self.c, expand = expand, factor = factor,
-                              simplify = simplify)
-        return self.c[1:]
 
     def check_2design(self):
         """
@@ -1059,12 +940,6 @@ class DRGParameters:
         if index is not None:
             return self.omega[index]
         return Matrix(SR, self.omega)
-
-    def diameter(self):
-        """
-        Return the diameter of the graph.
-        """
-        return self.d
 
     def distanceGraphs(self):
         """
@@ -1883,11 +1758,4 @@ class DRGParameters:
         """
         return self.b[0]
 
-    def variables(self):
-        """
-        Return the variables in the graph parameters.
-        """
-        return self.vars
-
-    order = __len__
     substitute = subs
