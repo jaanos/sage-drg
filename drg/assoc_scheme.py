@@ -104,6 +104,8 @@ class ASParameters:
 
 
 class PolyASParameters(ASParameters):
+    ARRAY = None
+    OBJECT = None
     PARAMETER = None
     PARAMETER_SYMBOL = None
     PARTS = None
@@ -131,11 +133,28 @@ class PolyASParameters(ASParameters):
         self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
         ASParameters.__init__(self)
 
+    def __eq__(self, other):
+        """
+        Compare self to other.
+        """
+        ia = self.parameterArray()
+        if isinstance(other, self._get_class()):
+            return ia == other.parameterArray()
+        else:
+            return not isinstance(other, ASParameters) and ia == other
+
     def __hash__(self):
         """
         Return the hash value.
         """
-        return hash((self.PARAMETER_SYMBOL, self.intersectionArray()))
+        return hash((self.PARAMETER_SYMBOL, self.parameterArray()))
+
+    def __repr__(self):
+        """
+        String representation.
+        """
+        return "Parameters of a %s with %s %s" % (self.OBJECT, self.ARRAY,
+                                                self.format_parameterArray())
 
     def _check_multiplicity(self, k, i):
         """
@@ -192,8 +211,8 @@ class PolyASParameters(ASParameters):
         """
         Initialize the intersection or Krein array.
         """
-        self.c = c
-        self.b = b
+        self.c = (Integer(0), ) + tuple(c)
+        self.b = tuple(b) + (Integer(0), )
 
     def _init_multiplicities(self):
         k = [Integer(1)]
@@ -232,3 +251,21 @@ class PolyASParameters(ASParameters):
         self.c = rewriteTuple(self.c, expand = expand, factor = factor,
                               simplify = simplify)
         return self.c[1:]
+
+    def format_parameterArray(self):
+        """
+        Return a string representation of the intersection array.
+        """
+        return "{%s; %s}" % tuple(', '.join(str(x) for x in l)
+                                  for l in self.parameterArray())
+
+    def parameterArray(self, expand = False, factor = False,
+                       simplify = False):
+        """
+        Return the intersection or Krein array of the association scheme
+        as a tuple of two tuples.
+        """
+        return (self.bTable(expand = expand, factor = factor,
+                            simplify = simplify),
+                self.cTable(expand = expand, factor = factor,
+                            simplify = simplify))

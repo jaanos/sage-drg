@@ -58,6 +58,8 @@ class DRGParameters(PolyASParameters):
     and checking their feasibility.
     """
 
+    ARRAY = "intersection array"
+    OBJECT = "distance-regular graph"
     PARAMETER = "intersection number"
     PARAMETER_SYMBOL = "p"
     PARTS = "subconstituents"
@@ -144,24 +146,6 @@ class DRGParameters(PolyASParameters):
                                            (Integer(1), self.p[1, 2, 2]),
                                            complement = self)
             self.complement = self.add_subgraph(complement, "complement")
-
-    def __eq__(self, other):
-        """
-        Compare self to other.
-        """
-        ia = self.intersectionArray()
-        if isinstance(other, DRGParameters):
-            return ia == other.intersectionArray()
-        else:
-            return ia == other
-
-    def __repr__(self):
-        """
-        String representation.
-        """
-        return "Parameters of a distance-regular graph " \
-               "with intersection array %s" % \
-               self.format_intersectionArray()
 
     def _check_multiplicity(self, k, i):
         """
@@ -1037,13 +1021,6 @@ class DRGParameters(PolyASParameters):
                                   factor = factor, simplify = simplify)
         return self.theta
 
-    def format_intersectionArray(self):
-        """
-        Return a string representation of the intersection array.
-        """
-        return "{%s; %s}" % tuple(', '.join(str(x) for x in l)
-                                  for l in self.intersectionArray())
-
     def genPoly_parameters(self, expand = False, factor = False,
                            simplify = False):
         """
@@ -1080,16 +1057,6 @@ class DRGParameters(PolyASParameters):
             if any(x == 0 for x in self.triple_generator(t, d)):
                 return False
         return True
-
-    def intersectionArray(self, expand = False, factor = False,
-                          simplify = False):
-        """
-        Return the intersection array of the graph as a tuple of two tuples.
-        """
-        return (self.bTable(expand = expand, factor = factor,
-                            simplify = simplify),
-                self.cTable(expand = expand, factor = factor,
-                            simplify = simplify))
 
     def is_antipodal(self):
         """
@@ -1758,4 +1725,5 @@ class DRGParameters(PolyASParameters):
         """
         return self.b[0]
 
+    intersectionArray = PolyASParameters.parameterArray
     substitute = subs

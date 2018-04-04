@@ -1,1 +1,2 @@
-from drg import *
+from drg import DRGParameters
+from qpoly import QPolyParameters
