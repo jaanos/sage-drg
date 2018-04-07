@@ -9,6 +9,9 @@ from sage.rings.real_mpfr import create_RealNumber
 from sage.structure.factorization_integer import IntegerFactorization
 from sage.symbolic.expression import Expression
 
+pair_keep = staticmethod(lambda i, j: (i, j))
+pair_swap = staticmethod(lambda i, j: (j, i))
+
 def checkNonneg(exp):
     """
     Check whether an expression can be nonnegative.

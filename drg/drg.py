@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
@@ -10,7 +9,6 @@ from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
-from sage.matrix.constructor import identity_matrix
 from sage.misc.misc import subsets
 from sage.misc.misc import uniq
 from sage.rings.finite_rings.integer_mod_ring import Integers
@@ -22,7 +20,6 @@ from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .assoc_scheme import InfeasibleError
 from .assoc_scheme import PolyASParameters
-from .coefflist import CoefficientList
 from .nonex import checkConditions
 from .nonex import classicalFamilies
 from .nonex import families
@@ -40,6 +37,8 @@ from .util import integralize
 from .util import is_constant
 from .util import is_squareSum
 from .util import matrixMap
+from .util import pair_keep
+from .util import pair_swap
 from .util import rewriteExp
 from .util import rewriteMatrix
 from .util import rewriteTuple
@@ -59,10 +58,16 @@ class DRGParameters(PolyASParameters):
     """
 
     ARRAY = "intersection array"
+    DUAL_INTEGRAL = False
+    DUAL_PARAMETER = "Krein parameter"
+    DUAL_PARTS = "multiplicities"
+    DUAL_SYMBOL = "q"
     OBJECT = "distance-regular graph"
     PARAMETER = "intersection number"
-    PARAMETER_SYMBOL = "p"
     PARTS = "subconstituents"
+    PTR = pair_keep
+    QTR = pair_swap
+    SYMBOL = "p"
 
     def __init__(self, b, c, alpha = None, beta = None, complement = None):
         """
@@ -161,20 +166,67 @@ class DRGParameters(PolyASParameters):
             raise InfeasibleError("handshake lemma not satisfied "
                                   "for subconstituent %d" % (i+1))
 
-    def _check_parameter(self, h, i, j, v):
+    def _check_parameter(self, h, i, j, v, integral = True,
+                         name = None, sym = None):
         """
-        Check for the feasibility of an intersection number.
+        Check for the feasibility
+        of an intersection number or Krein parameter.
 
-        The intersection number is checked for integrality and nonnegativity.
+        The parameter is checked for nonnegativity,
+        and, if requested, also for integrality.
         """
-        try:
-            return PolyASParameters._check_parameter(self, h, i, j,
-                                                     integralize(v))
-        except TypeError:
-            raise InfeasibleError("%s %s[%d, %d, %d] is nonintegral"
-                                   % (self.PARAMETER, self.PARAMETER_SYMBOL,
-                                      h, i, j))
+        return PolyASParameters._check_parameter(self, h, i, j, v,
+                                                 integral = integral,
+                                                 name = name, sym = sym)
 
+    def _compute_kreinParameters(self, expand = False, factor = False,
+                                 simplify = False):
+        """
+        Compute the Krein parameters.
+        """
+        if "m" not in self.__dict__:
+            self.multiplicities(expand = expand, factor = factor,
+                                simplify = simplify)
+        if "q" not in self.__dict__:
+            q = Array3D(self.d + 1)
+            self._compute_dualParameters(q, self.k, self.m, self.PTR)
+            self.q = q
+
+    def _compute_kTable(self, expand = False, factor = False,
+                        simplify = False):
+        """
+        Compute the sizes of the subconstituents.
+
+        Does nothing, as they are already computed
+        for distance-regular graphs.
+        """
+        pass
+
+    def _compute_multiplicities(self, expand = False, factor = False,
+                                simplify = False):
+        """
+        Compute the multiplicities of the eigenspaces.
+        """
+        if "m" not in self.__dict__:
+            self.m = self._compute_sizes(self.k, expand = expand,
+                                         factor = factor, simplify = simplify)
+
+    def _compute_pTable(self, expand = False, factor = False,
+                        simplify = False):
+        """
+        Compute the intersection numbers.
+
+        Does nothing, as they are already computed
+        for distance-regular graphs.
+        """
+        pass
+
+    @staticmethod
+    def _get_class():
+        """
+        Return the principal class of the object.
+        """
+        return DRGParameters
 
     def _init_array(self, b, c):
         """
@@ -896,35 +948,6 @@ class DRGParameters(PolyASParameters):
             "the complement is not distance-regular"
         return self.complement
 
-    def cosineSequences(self, index = None, ev = None, expand = False,
-                        factor = False, simplify = False):
-        """
-        Compute and return the cosine sequences for each eigenvalue.
-        """
-        if "theta" not in self.__dict__:
-            self.eigenvalues(expand = expand, factor = factor,
-                             simplify = simplify)
-        if "omega" not in self.__dict__:
-            self.omega = Matrix(SR, self.d + 1)
-            self.omega[:, 0] = 1
-            for i in range(self.d + 1):
-                self.omega[i, 1] = self.theta[i]/self.b[0]
-                for j in range(2, self.d + 1):
-                    self.omega[i, j] = _simplify(_factor((
-                        (self.theta[i] - self.a[j-1]) * self.omega[i, j-1]
-                        - self.c[j-1] * self.omega[i, j-2]) / self.b[j-1]))
-        rewriteMatrix(self.omega, expand = expand, factor = factor,
-                      simplify = simplify)
-        if ev is not None:
-            try:
-                index = self.theta.index(ev)
-            except ValueError as ex:
-                if index is None:
-                    raise ex
-        if index is not None:
-            return self.omega[index]
-        return Matrix(SR, self.omega)
-
     def distanceGraphs(self):
         """
         Return a dictionary of all parameter sets
@@ -952,74 +975,12 @@ class DRGParameters(PolyASParameters):
         """
         return PartitionGraph(self, h)
 
-    def dualEigenmatrix(self, expand = False, factor = False,
-                        simplify = False):
-        """
-        Compute and return the dual eigenmatrix of the graph.
-        """
-        if "m" not in self.__dict__:
-            self.multiplicities(expand = expand, factor = factor,
-                                simplify = simplify)
-        if "Q" not in self.__dict__:
-            self.Q = Matrix(SR, [[self.omega[j, i] * self.m[j]
-                                  for j in range(self.d + 1)]
-                                 for i in range(self.d + 1)])
-            if "P" in self.__dict__ and _simplify(_expand(self.P * self.Q)) \
-                        != self.order(expand = True, simplify = True) \
-                            * identity_matrix(SR, self.d + 1):
-                    warn(Warning("the eigenmatrices do not multiply "
-                                 "into a multiple of the identity matrix"))
-        rewriteMatrix(self.Q, expand = expand, factor = factor,
-                      simplify = simplify)
-        return Matrix(SR, self.Q)
-
-    def eigenmatrix(self, expand = False, factor = False, simplify = False):
-        """
-        Compute and return the eigenmatrix of the graph.
-        """
-        if "omega" not in self.__dict__:
-            self.cosineSequences(expand = expand, factor = factor,
-                                 simplify = simplify)
-        if "P" not in self.__dict__:
-            self.P = Matrix(SR, [[self.omega[i, j] * self.k[j]
-                                  for j in range(self.d + 1)]
-                                 for i in range(self.d + 1)])
-            if "Q" in self.__dict__ and _simplify(_expand(self.P * self.Q)) \
-                        != self.order(expand = True, simplify = True) \
-                            * identity_matrix(SR, self.d + 1):
-                    warn(Warning("the eigenmatrices do not multiply "
-                                 "into a multiple of the identity matrix"))
-        rewriteMatrix(self.P, expand = expand, factor = factor,
-                      simplify = simplify)
-        return Matrix(SR, self.P)
-
     def eigenvalues(self, expand = False, factor = False, simplify = False):
         """
         Compute and return the eigenvalues of the graph.
         """
-        if "theta" not in self.__dict__:
-            if self.k[1] == 2:
-                self.theta = tuple(2*cos(2*i*pi/self.n)
-                                   for i in range(self.d + 1))
-            else:
-                B = Matrix(SR, [M[1] for M in self.p])
-                self.theta = B.eigenvalues()
-                try:
-                    self.theta.sort(
-                        key = lambda x: CoefficientList(x, self.vars),
-                        reverse = True)
-                except:
-                    warn(Warning("Sorting of eigenvalues failed - "
-                                 "you may want to sort theta manually"))
-                else:
-                    if not self.vars_ordered:
-                        warn(Warning("More than one variable is used - "
-                                     "please check that the ordering "
-                                     "of the eigenvalues is correct"))
-                self.theta = tuple(self.theta)
-        self.theta = rewriteTuple(self.theta, expand = expand,
-                                  factor = factor, simplify = simplify)
-        return self.theta
+        return self._compute_eigenvalues(self.p, expand = expand,
+                                         factor = factor, simplify = simplify)
 
     def genPoly_parameters(self, expand = False, factor = False,
                            simplify = False):
@@ -1146,15 +1107,6 @@ class DRGParameters(PolyASParameters):
         beta = self.b[0] * (q-1) / (q**self.d - 1)
         return q == beta**2 and self.is_classicalWithParameters(q, 0, beta)
 
-    def is_formallySelfDual(self):
-        """
-        Check whether the graph is formally self-dual.
-        """
-        if "fsd" not in self.__dict__:
-            self.fsd = (self.eigenmatrix(simplify = 2)
-                        - self.dualEigenmatrix(simplify = 2)).is_zero()
-        return self.fsd
-
     def is_grassmann(self):
         """
         Check whether the graph can be a Grassmann graph
@@ -1249,43 +1201,6 @@ class DRGParameters(PolyASParameters):
                 return True
         return False
 
-    def kTable(self, expand = False, factor = False, simplify = False):
-        """
-        Return the table of intersection numbers ``k[0], k[1], ..., k[d]``,
-        where ``d`` is the diameter of the graph.
-        """
-        self.k = rewriteTuple(self.k, expand = expand, factor = factor,
-                              simplify = simplify)
-        return self.k
-
-    def kreinParameters(self, compute = True, expand = False,
-                        factor = False, simplify = False):
-        """
-        Compute and return the Krein parameters.
-        """
-        if "m" not in self.__dict__:
-            self.multiplicities(expand = expand, factor = factor,
-                                simplify = simplify)
-        if "q" not in self.__dict__:
-            q = Array3D(self.d + 1)
-            for h in range(self.d + 1):
-                for i in range(self.d + 1):
-                    for j in range(self.d + 1):
-                        if compute:
-                            q[h, i, j] = full_simplify(
-                                            sum(self.k[t] * self.omega[h, t]
-                                                          * self.omega[i, t]
-                                                          * self.omega[j, t]
-                                                for t in range(self.d + 1))
-                                            * self.m[i] * self.m[j] / self.n)
-                        if not checkNonneg(q[h, i, j]):
-                            raise InfeasibleError("Krein parameter "
-                                                  "q[%d, %d, %d] negative"
-                                                  % (h, i, j))
-            self.q = q
-        self.q.rewrite(expand = expand, factor = factor, simplify = simplify)
-        return self.q
-
     def localGraph(self, compute = False):
         """
         Return parameters of the local graph
@@ -1355,45 +1270,6 @@ class DRGParameters(PolyASParameters):
             return _solve(eqs, self.vars)
         else:
             return DRGParameters(b, c)
-
-    def multiplicities(self, expand = False, factor = False, simplify = False):
-        """
-        Compute and return the multiplicities of the eigenvalues.
-        """
-        if "omega" not in self.__dict__:
-            self.cosineSequences(expand = expand, factor = factor,
-                                 simplify = simplify)
-        if "m" not in self.__dict__:
-            if self.k[1] == 2:
-                self.m = tuple(Integer(1 if th in [2, -2] else 2)
-                               for th in self.theta)
-            else:
-                try:
-                    self.m = tuple(integralize(_simplify(_factor(
-                                            self.n / sum(k * om**2 for k, om
-                                                    in zip(self.k, omg)))))
-                                   for omg in self.omega)
-                except TypeError:
-                    raise InfeasibleError("multiplicities not integral")
-        if expand:
-            self.m = tuple(map(_expand, self.m))
-        if factor:
-            self.m = tuple(map(_factor, self.m))
-        if simplify:
-            self.m = tuple(map(_simplify, self.m))
-        return self.m
-
-    def pTable(self, expand = False, factor = False, simplify = False):
-        """
-        Return the table of all intersection numbers.
-        """
-        if expand:
-            self.p.map(_expand)
-        if factor:
-            self.p.map(_factor)
-        if simplify:
-            self.p.map(_simplify)
-        return self.p
 
     def reorderEigenvalues(self, *order):
         """
@@ -1499,7 +1375,8 @@ class DRGParameters(PolyASParameters):
             p.Q = self.Q.subs(exp)
         if "q" in self.__dict__:
             p.q = self.q.subs(exp)
-            p.kreinParameters(compute = False)
+            p._checkParameters(p.q, integral = False,
+                               name = "Krein parameter", sym = "q")
         for h, s in enumerate(self.subconstituents):
             if s is None:
                 continue
@@ -1725,5 +1602,6 @@ class DRGParameters(PolyASParameters):
         """
         return self.b[0]
 
+    diameter = PolyASParameters.classes
     intersectionArray = PolyASParameters.parameterArray
     substitute = subs
