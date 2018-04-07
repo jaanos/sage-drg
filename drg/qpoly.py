@@ -1,8 +1,11 @@
+from sage.matrix.constructor import Matrix
 from sage.rings.integer import Integer
+from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .assoc_scheme import PolyASParameters
 from .util import pair_keep
 from .util import pair_swap
+from .util import subs
 
 class QPolyParameters(PolyASParameters):
     """
@@ -94,5 +97,34 @@ class QPolyParameters(PolyASParameters):
         """
         return self._compute_eigenvalues(self.q, expand = expand,
                                          factor = factor, simplify = simplify)
+
+    def reorderEigenvalues(self, *order):
+        """
+        Specify a new order for the eigenvalues and return it.
+        """
+        order = PolyASParameters.reorderEigenvalues(self, *order)
+        if "k" in self.__dict__:
+            self.k = tuple(self.k[i] for i in order)
+        if "P" in self.__dict__:
+            self.P = Matrix(SR, [[r[j] for j in order] for r in self.P])
+        if "Q" in self.__dict__:
+            self.Q = Matrix(SR, [self.Q[i] for i in order])
+        if "p" in self.__dict__:
+            self.p.reorder(order)
+        return self.theta
+
+    def subs(self, exp):
+        """
+        Substitute the given subexpressions in the parameters.
+        """
+        p = QPolyParameters(*[[subs(x, exp) for x in l]
+                              for l in self.kreinArray()])
+        self._subs(exp, p)
+        if "p" in self.__dict__:
+            p.p = self.p.subs(exp)
+            p._checkParameters(p.p, integral = self.DUAL_INTEGRAL,
+                               name = self.DUAL_PARAMETER,
+                               sym = self.DUAL_SYMBOL)
+        return p
 
     kreinArray = PolyASParameters.parameterArray

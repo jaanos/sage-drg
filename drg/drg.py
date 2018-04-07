@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
-from sage.all import pi
-from sage.calculus.functional import expand as _expand
-from sage.calculus.functional import simplify as _simplify
 from sage.combinat.q_analogues import q_int
 from sage.functions.log import log
 from sage.functions.other import ceil
 from sage.functions.other import floor
 from sage.functions.other import sqrt
-from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.misc.misc import subsets
-from sage.misc.misc import uniq
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
@@ -27,29 +22,19 @@ from .nonex import sporadic
 from .partition import PartitionGraph
 from .util import checkNonneg
 from .util import checkPos
-from .util import checkPowerOf
 from .util import checkPrimePower
-from .util import _factor
 from .util import full_simplify
 from .util import hard_ceiling
 from .util import hard_floor
 from .util import integralize
 from .util import is_constant
 from .util import is_squareSum
-from .util import matrixMap
 from .util import pair_keep
 from .util import pair_swap
 from .util import rewriteExp
-from .util import rewriteMatrix
-from .util import rewriteTuple
 from .util import subconstituent_name
 from .util import subs
 from .util import variables
-
-TPERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
-          [1, 2, 0], [2, 0, 1], [2, 1, 0]]
-DPERMS = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
-          [2, 0, 1], [1, 2, 0], [2, 1, 0]]
 
 class DRGParameters(PolyASParameters):
     """
@@ -331,23 +316,6 @@ class DRGParameters(PolyASParameters):
                                                           n - mu - 1),
                                                          (Integer(1), mu)),
                                                         "local graph")
-
-    def check_absoluteBound(self):
-        """
-        Check whether the absolute bound is not exceeded.
-        """
-        if "q" not in self.__dict__:
-            self.kreinParameters()
-        for i in range(self.d + 1):
-            if sum(self.m[h] for h in range(self.d + 1)
-                   if self.q[h, i, i] != 0) > self.m[i]*(self.m[i] + 1)/2:
-                raise InfeasibleError("absolute bound exceeded "
-                                      "for (%d, %d)" % (i, i))
-            for j in range(i+1, self.d + 1):
-                if sum(self.m[h] for h in range(self.d + 1)
-                       if self.q[h, i, j] != 0) > self.m[i]*self.m[j]:
-                    raise InfeasibleError("absolute bound exceeded "
-                                          "for (%d, %d)" % (i, j))
 
     def check_antipodal(self):
         """
@@ -1211,20 +1179,6 @@ class DRGParameters(PolyASParameters):
         """
         return self.subconstituent(1, compute = compute)
 
-    def match(self, *ial):
-        """
-        Check whether the graph matches any of the given intersection arrays.
-        """
-        for b, c in ial:
-            assert len(b) == len(c), "parameter length mismatch"
-            if self.d != len(b):
-                continue
-            if len(_solve([SR(l) == r for l, r
-                          in zip(self.b[:-1] + self.c[1:],
-                                 tuple(b) + tuple(c))], self.vars)) > 0:
-                return True
-        return False
-
     def mergeClasses(self, *args, **kargs):
         """
         Return parameters of a graph obtained by merging specified classes.
@@ -1241,13 +1195,13 @@ class DRGParameters(PolyASParameters):
         cur = adj
         idx = set(range(1, self.d+1)).difference(adj)
         while len(idx) > 0:
-            nxt = {i for i in idx if any(any(checkPos(self.p[h, i, j])
-                                             for j in adj) for h in cur)}
+            nxt = {i for i in idx if any(checkPos(self.p[h, i, j])
+                                         for h in cur for j in adj)}
             if len(nxt) == 0:
                 break
-            bi = {sum(sum(self.p[h, i, j] for j in adj) for i in nxt)
+            bi = {sum(self.p[h, i, j] for i in nxt for j in adj)
                   for h in cur}
-            ci = {sum(sum(self.p[h, i, j] for j in adj) for i in cur)
+            ci = {sum(self.p[h, i, j] for i in cur for j in adj)
                   for h in nxt}
             if conditions:
                 ib = iter(bi)
@@ -1275,17 +1229,7 @@ class DRGParameters(PolyASParameters):
         """
         Specify a new order for the eigenvalues and return it.
         """
-        if "theta" not in self.__dict__:
-            self.eigenvalues()
-        if len(order) == 1 and isinstance(order[0], (tuple, list)):
-            order = order[0]
-        assert len(order) == self.d, "wrong number of indices"
-        order = [0] + list(order)
-        assert set(order) == set(range(self.d + 1)), \
-            "repeating or nonexisting indices"
-        self.theta = tuple(self.theta[i] for i in order)
-        if "omega" in self.__dict__:
-            self.omega = Matrix(SR, [self.omega[i] for i in order])
+        order = PolyASParameters.reorderEigenvalues(self, *order)
         if "m" in self.__dict__:
             self.m = tuple(self.m[i] for i in order)
         if "P" in self.__dict__:
@@ -1294,20 +1238,7 @@ class DRGParameters(PolyASParameters):
             self.Q = Matrix(SR, [[r[j] for j in order] for r in self.Q])
         if "q" in self.__dict__:
             self.q.reorder(order)
-        if "fsd" in self.__dict__:
-            del self.fsd
         return self.theta
-
-    def set_vars(self, vars):
-        """
-        Set the order of the variables for eigenvalue sorting.
-        """
-        if vars is False:
-            self.vars_ordered = False
-        else:
-            self.vars = tuple(vars) + tuple(x for x in self.vars
-                                            if x not in vars)
-            self.vars_ordered = True
 
     def show_distancePartitions(self, **options):
         """
@@ -1365,18 +1296,12 @@ class DRGParameters(PolyASParameters):
         p = DRGParameters(*[[subs(x, exp) for x in l]
                             for l in self.intersectionArray()],
                           complement = complement)
-        if "theta" in self.__dict__:
-            p.theta = tuple(subs(th, exp) for th in self.theta)
-        if "omega" in self.__dict__:
-            p.omega = self.omega.subs(exp)
-        if "P" in self.__dict__:
-            p.P = self.P.subs(exp)
-        if "Q" in self.__dict__:
-            p.Q = self.Q.subs(exp)
+        self._subs(exp, p)
         if "q" in self.__dict__:
             p.q = self.q.subs(exp)
-            p._checkParameters(p.q, integral = False,
-                               name = "Krein parameter", sym = "q")
+            p._checkParameters(p.q, integral = self.DUAL_INTEGRAL,
+                               name = self.DUAL_PARAMETER,
+                               sym = self.DUAL_SYMBOL)
         for h, s in enumerate(self.subconstituents):
             if s is None:
                 continue
@@ -1391,8 +1316,6 @@ class DRGParameters(PolyASParameters):
                 p.complement = self.complement.subs(exp, complement = p)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = "complement")
-        for k, v in self.triple.items():
-            p.triple[k] = v.subs(exp)
         for ia, part in self.subgraphs.items():
             try:
                 p.add_subgraph(ia.subs(exp), part)
@@ -1404,197 +1327,6 @@ class DRGParameters(PolyASParameters):
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
         return p
-
-    def triple_generator(self, t, d):
-        """
-        Generate computed values of triple intersecion numbers
-        counting the number of vertices at distances given by the triple d
-        corresponding to vertices at mutual distances given by the triple t.
-        """
-        if 0 in t:
-            j = t.index(0)
-            h = {x for k, x in enumerate(t) if j != k}
-            if len(h) == 2:
-                return
-            i = {x for k, x in enumerate(d) if j+k != 2}
-            if len(i) == 2:
-                yield Integer(0)
-                return
-            h = next(iter(h))
-            i = next(iter(i))
-            j = d[2-j]
-            yield self.p[h, i, j]
-            return
-        for p, q in zip(TPERMS, DPERMS):
-            tp = tuple(t[i] for i in p)
-            if tp in self.triple:
-                yield self.triple[tp][tuple(d[i] for i in q)]
-
-    def tripleEquations(self, u, v, w, krein = None, params = None,
-                        solve = True, save = None):
-        """
-        Solve equations for triples of vertices at distances u, v, w.
-
-        If krein is a list of triples, the corresponding equations are used;
-        otherwise, equations for zero Krein parameters are used.
-        If params is a dictionary mapping strings to triples,
-        the keys will be used as variables mapped to triple intersection
-        numbers for corresponding triples.
-        If solve is False, only a list of equations and a set of variables
-        is returned, without solving the equations.
-        """
-        assert checkPos(self.p[u, v, w]), \
-            "no triple of vertices at distances %d, %d, %d" % (u, v, w)
-        if solve and krein is None and params is None:
-            t = (u, v, w)
-            for p, q in zip(TPERMS, DPERMS):
-                tp = tuple(t[i] for i in p)
-                if tp in self.triple:
-                    self.triple[t] = self.triple[tp].permute(q)
-                    return self.triple[t]
-        if "Q" not in self.__dict__:
-            self.dualEigenmatrix()
-        if "q" not in self.__dict__:
-            self.kreinParameters()
-        out = []
-        r = range(self.d+1)
-        s = [[[Integer(1) if (h, i, j) in [(v, w, 0), (u, 0, w), (0, u, v)]
-               else SR.symbol("%s_%d_%d_%d_%d_%d_%d" %
-                              (self.prefix, u, v, w, h, i, j))
-               for j in r] for i in r] for h in r]
-        for i in r:
-            for j in r:
-                if self.p[u, i, j] == sum(s[i][j][t] for t in r
-                                        if isinstance(s[i][j][t], Integer)):
-                    for t in r:
-                        if not isinstance(s[i][j][t], Integer):
-                            s[i][j][t] = Integer(0)
-                if self.p[v, i, j] == sum(s[i][t][j] for t in r
-                                        if isinstance(s[i][t][j], Integer)):
-                    for t in r:
-                        if not isinstance(s[i][t][j], Integer):
-                            s[i][t][j] = Integer(0)
-                if self.p[w, i, j] == sum(s[t][i][j] for t in r
-                                        if isinstance(s[t][i][j], Integer)):
-                    for t in r:
-                        if not isinstance(s[t][i][j], Integer):
-                            s[t][i][j] = Integer(0)
-        vars = set(x for x in sum([sum(l, []) for l in s], [])
-                   if not isinstance(x, Integer))
-        consts = set()
-        c = [[[len([t for t in r if s[i][j][t] in vars])
-               for j in r] for i in r],
-             [[len([t for t in r if s[i][t][j] in vars])
-               for j in r] for i in r],
-             [[len([t for t in r if s[t][i][j] in vars])
-               for j in r] for i in r]]
-        q = []
-        for h, ch in enumerate(c):
-            for i, ci in enumerate(ch):
-                for j, n in enumerate(ci):
-                    if n == 1:
-                        q.append((h, i, j))
-        while len(q) > 0:
-            l, i, j = q.pop()
-            if c[l][i][j] == 0:
-                continue
-            h, i, j = [(i, j, None), (i, None, j), (None, i, j)][l]
-            if j is None:
-                j = next(t for t in r if s[h][i][t] in vars)
-                x = s[h][i][j]
-                s[h][i][j] = self.p[u, h, i] - sum(s[h][i][t] for t in r
-                                                   if t != j)
-                c[1][h][j] -= 1
-                c[2][i][j] -= 1
-                if c[1][h][j] == 1:
-                    q.append((1, h, j))
-                if c[2][i][j] == 1:
-                    q.append((2, i, j))
-            elif i is None:
-                i = next(t for t in r if s[h][t][j] in vars)
-                x = s[h][i][j]
-                s[h][i][j] = self.p[v, h, j] - sum(s[h][t][j] for t in r
-                                                   if t != i)
-                c[0][h][i] -= 1
-                c[2][i][j] -= 1
-                if c[0][h][i] == 1:
-                    q.append((0, h, i))
-                if c[2][i][j] == 1:
-                    q.append((2, i, j))
-            elif h is None:
-                h = next(t for t in r if s[t][i][j] in vars)
-                x = s[h][i][j]
-                s[h][i][j] = self.p[w, i, j] - sum(s[t][i][j] for t in r
-                                                   if t != h)
-                c[0][h][i] -= 1
-                c[1][h][j] -= 1
-                if c[0][h][i] == 1:
-                    q.append((0, h, i))
-                if c[1][h][j] == 1:
-                    q.append((1, h, j))
-            out.append(x == s[h][i][j])
-            consts.add(x)
-        for i in r:
-            for j in r:
-                l = sum(s[i][j][t] for t in r)
-                if isinstance(l, Integer):
-                    assert self.p[u, i, j] == l, \
-                        "value of p[%d, %d, %d] exceeded" % (u, i, j)
-                else:
-                    out.append(self.p[u, i, j] == l)
-                l = sum(s[i][t][j] for t in r)
-                if isinstance(l, Integer):
-                    assert self.p[v, i, j] == l, \
-                        "value of p[%d, %d, %d] exceeded" % (v, i, j)
-                else:
-                    out.append(self.p[v, i, j] == l)
-                l = sum(s[t][i][j] for t in r)
-                if isinstance(l, Integer):
-                    assert self.p[w, i, j] == l, \
-                        "value of p[%d, %d, %d] exceeded" % (w, i, j)
-                else:
-                    out.append(self.p[w, i, j] == l)
-        if krein is None:
-            if save is None:
-                save = True
-            krein = []
-            for h in range(1, self.d+1):
-                for i in range(1, self.d+1):
-                    for j in range(1, self.d+1):
-                        if self.q[h, i, j] == 0:
-                            krein.append((h, i, j))
-        if krein:
-            for h, i, j in krein:
-                l = sum(sum(sum(self.Q[th, h] * self.Q[ti, i] *
-                                self.Q[tj, j] * s[th][ti][tj]
-                                for tj in r) for ti in r) for th in r)
-                if isinstance(l, Integer):
-                    assert l == 0, \
-                        "Krein equation for (%d, %d, %d) not satisfied" % \
-                        (h, i, j)
-                else:
-                    out.append(l == 0)
-        if params:
-            for a, (h, i, j) in params.items():
-                x = SR.symbol(a)
-                out.append(s[h][i][j] == x)
-        vars.intersection_update(sum([sum(l, []) for l in s], []))
-        vars.update(consts)
-        if not solve:
-            return (out, vars)
-        sol = _solve(out, tuple(vars))
-        assert len(sol) > 0, "system of equations has no solution"
-        S = Array3D(self.d + 1)
-        for h in r:
-            for i in r:
-                for j in r:
-                    if isinstance(s[h][i][j], Integer):
-                        S[h, i, j] = s[h][i][j]
-                    else:
-                        S[h, i, j] = s[h][i][j].subs(sol[0])
-        if save:
-            self.triple[u, v, w] = S
-        return S
 
     def valency(self):
         """
