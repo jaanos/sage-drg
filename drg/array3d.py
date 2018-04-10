@@ -1,9 +1,16 @@
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
+from sage.numerical.mip import MIPSolverException
+from sage.numerical.mip import MixedIntegerLinearProgram
+from sage.rings.integer import Integer
 from sage.symbolic.ring import SR
+from .util import checkNonneg
+from .util import integralize
+from .util import is_constant
 from .util import _factor
 from .util import full_simplify
+from .util import variables
 
 class Array3D:
     """
@@ -73,6 +80,55 @@ class Array3D:
         k1, k2, k3 = key
         self.A[k1][k2, k3] = value
 
+    def find(self, vars = None):
+        """
+        Generate assignments of values to variables
+        such that the values in the array are nonnegative integers.
+
+        Assumes that the entries are linear in the variables.
+        """
+        if vars is None:
+            vars = self.variables()
+        if len(vars) > 0:
+            x, rest = vars[0], vars[1:]
+            zero = [z == 0 for z in vars]
+            lp = MixedIntegerLinearProgram(maximization = False)
+            v = lp.new_variable(integer = True)
+            lp.add_constraint(lp[1] == 1)
+        else:
+            x = None
+        for M in self:
+            for r in M:
+                for e in r:
+                    if is_constant(e):
+                        try:
+                            integralize(e)
+                        except TypeError:
+                            return
+                        if not checkNonneg(e):
+                            return
+                        continue
+                    elif x is None:
+                        return
+                    lp.add_constraint(sum(e.coefficient(y) * v[str(y)]
+                                          for y in vars)
+                                      + e.subs(zero) * lp[1] >= 0)
+        if x is None:
+            yield ()
+            return
+        lp.set_objective(v[str(x)])
+        try:
+            vmin = lp.solve()
+        except MIPSolverException as ex:
+            if ex.args == ('GLPK: Problem has no feasible solution',):
+                return
+        lp.set_objective(-v[str(x)])
+        vmax = -lp.solve()
+        for v in range(Integer(vmin), Integer(vmax)+1):
+            eq = x == Integer(v)
+            for sol in self.subs(eq).find(vars = rest):
+                yield (eq, ) + sol
+
     def map(self, fun):
         """
         Replace each value by its image under ``fun``.
@@ -126,5 +182,12 @@ class Array3D:
         for i, M in enumerate(self.A):
             A.A[i] = M.subs(exp)
         return A
+
+    def variables(self):
+        """
+        Return the variables occuring in the array.
+        """
+        return tuple(set(sum((variables(x)
+                              for M in self for r in M for x in r), ())))
 
     substitute = subs
