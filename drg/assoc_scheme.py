@@ -386,8 +386,6 @@ class ASParameters:
         only a list of equations and a set of variables is returned,
         without solving the equations.
         """
-        assert checkPos(self.p[u, v, w]), \
-            "no triple of vertices in relations %d, %d, %d" % (u, v, w)
         if solve and krein is None and params is None:
             t = (u, v, w)
             for p, q in zip(TPERMS, DPERMS):
@@ -399,6 +397,8 @@ class ASParameters:
             self.dualEigenmatrix()
         if "p" not in self.__dict__:
             self.pTable()
+        assert checkPos(self.p[u, v, w]), \
+            "no triple of vertices in relations %d, %d, %d" % (u, v, w)
         if "q" not in self.__dict__:
             self.kreinParameters()
         out = []
