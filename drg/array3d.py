@@ -120,7 +120,7 @@ class Array3D:
         try:
             vmin = lp.solve()
         except MIPSolverException as ex:
-            if 'no feasible solution' in ex.args[0]:
+            if len(ex.args) == 0 or 'no feasible solution' in ex.args[0]:
                 return
         lp.set_objective(-v[str(x)])
         vmax = -lp.solve()
