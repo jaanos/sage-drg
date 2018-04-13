@@ -1,3 +1,4 @@
+import operator
 from sage.arith.misc import factor as factorize
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
@@ -242,3 +243,12 @@ def variables(exp):
         return exp.variables()
     else:
         return ()
+
+def verify(exp):
+    """
+    Verify that the expression holds trivially.
+    """
+    op = exp.operator()
+    if op == operator.ne:
+        return bool((exp.lhs() < exp.rhs()) or (exp.lhs() > exp.rhs()))
+    return bool(exp)

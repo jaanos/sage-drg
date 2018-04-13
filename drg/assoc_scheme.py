@@ -326,7 +326,7 @@ class ASParameters:
                                 if s[sd] != 0:
                                     del r[st][sol]
                             try:
-                                sol = g[st].send(sd)
+                                sol = g[st].send(self.triple[st][sd] == 0)
                                 r[st][sol] = self.triple[st].subs(sol)
                                 zero[st] -= {d for d in zero[st]
                                              if s[d] != 0}

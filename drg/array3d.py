@@ -1,3 +1,4 @@
+import operator
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
@@ -11,6 +12,7 @@ from .util import is_constant
 from .util import _factor
 from .util import full_simplify
 from .util import variables
+from .util import verify
 
 class Array3D:
     """
@@ -82,7 +84,7 @@ class Array3D:
         k1, k2, k3 = key
         self.A[k1][k2, k3] = value
 
-    def find(self, vars = None, zeros = None, solver = None):
+    def find(self, vars = None, conditions = None, solver = None):
         """
         Generate assignments of values to variables
         such that the values in the array are nonnegative integers.
@@ -91,7 +93,12 @@ class Array3D:
         """
         if vars is None:
             vars = self.variables()
-        zeros = set() if zeros is None else set(zeros)
+        conditions = set() if conditions is None else set(conditions)
+        for c in set(conditions):
+            if verify(c):
+                conditions.discard(c)
+            elif verify(c.negation()):
+                return
         if len(vars) > 0:
             x, rest = vars[0], vars[1:]
             zero = [z == 0 for z in vars]
@@ -102,6 +109,16 @@ class Array3D:
             def makeLPExpression(e):
                 return sum(e.coefficient(y) * v[str(y)] for y in vars) \
                        + e.subs(zero) * lp[1]
+            def addCondition(c):
+                op = c.operator()
+                if op is operator.gt:
+                    op = operator.ge
+                elif op is operator.lt:
+                    op = operator.le
+                elif op not in [operator.eq, operator.ge, operator.le]:
+                    return
+                lp.add_constraint(op(makeLPExpression(c.lhs()),
+                                     makeLPExpression(c.rhs())))
         else:
             x = None
         for h, M in enumerate(self):
@@ -117,12 +134,12 @@ class Array3D:
                         continue
                     elif x is None:
                         return
-                    lpe = makeLPExpression(e)
-                    lp.add_constraint(lpe == 0 if (h, i, j) in zeros
-                                               else lpe >= 0)
+                    lp.add_constraint(makeLPExpression(e) >= 0)
         if x is None:
             yield ()
             return
+        for c in conditions:
+            addCondition(c)
         lp.set_objective(-v[str(x)])
         try:
             vmax = -lp.solve()
@@ -133,17 +150,21 @@ class Array3D:
         vmin = lp.solve()
         while vmin <= vmax:
             eq = x == Integer(vmin)
-            g = self.subs(eq).find(vars = rest, zeros = zeros)
+            g = self.subs(eq).find(vars = rest,
+                            conditions = {c.subs(eq) for c in conditions})
             try:
-                t = None
+                c = None
                 while True:
-                    t = (yield (eq, ) + g.send(t))
-                    if t is not None:
-                        if t in zeros:
-                            t = None
+                    c = (yield (eq, ) + g.send(c))
+                    if c is not None:
+                        if c in conditions or verify(c):
+                            c = None
                             continue
-                        zeros.add(t)
-                        lp.add_constraint(makeLPExpression(self[t]) == 0)
+                        elif verify(c.negation()):
+                            return
+                        conditions.add(c)
+                        addCondition(c)
+                        c = c.subs(eq)
                         lp.set_objective(-v[str(x)])
                         try:
                             vmax = -lp.solve()
@@ -156,6 +177,8 @@ class Array3D:
                             break
             except StopIteration:
                 vmin += 1
+            finally:
+                g.close()
 
     def map(self, fun):
         """
