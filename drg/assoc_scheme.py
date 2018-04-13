@@ -89,6 +89,8 @@ class ASParameters:
         self._init_vars()
         self.prefix = "v%x" % (hash(self) % Integer(2)**32)
         self.triple = {}
+        self.triple_solution = {}
+        self.triple_solution_generator = {}
 
     def __len__(self, expand = False, factor = False, simplify = False):
         """
@@ -145,6 +147,14 @@ class ASParameters:
                         _check_parameter(h, i, j, p[h, i, j],
                                          integral = integral,
                                          name = name, sym = sym)
+
+    def _check_zero(self, h, i, j, u, v, w):
+        """
+        Check whether a triple intersection number is not forced to be zero
+        by the intersection numbers.
+        """
+        return self.p[u, h, i] != 0 and self.p[v, h, j] != 0 and \
+            self.p[w, i, j] != 0
 
     def _compute_dualEigenmatrix(self, expand = False, factor = False,
                                  simplify = False):
@@ -243,6 +253,113 @@ class ASParameters:
                        if self.q[h, i, j] != 0) > self.m[i]*self.m[j]:
                     raise InfeasibleError("absolute bound exceeded "
                                           "for (%d, %d)" % (i, j))
+
+    def check_quadruples(self, solver = None):
+        """
+        Check whether the existence of a forbidden quadruple of vertices
+        is implied by the triple intersection numbers.
+        """
+        if "p" not in self.__dict__:
+            self.pTable()
+        r = self.triple_solution = {}
+        g = self.triple_solution_generator = {}
+        zero = {}
+        done = {}
+        for u in range(self.d + 1):
+            for v in range(u, self.d + 1):
+                for w in range(v, self.d + 1):
+                    if self.p[u, v, w] == 0:
+                        continue
+                    S = self.tripleEquations(u, v, w)
+                    g[u, v, w] = S.find(solver = solver)
+                    try:
+                        sol = next(g[u, v, w])
+                    except StopIteration:
+                        raise InfeasibleError("no solution found "
+                            "for a triple of vertices at distances "
+                            "(%d, %d, %d)" % (u, v, w))
+                    s = S.subs(sol)
+                    r[u, v, w] = {sol: s}
+                    zero[u, v, w] = {(h, i, j) for h in range(self.d + 1)
+                                               for i in range(self.d + 1)
+                                               for j in range(self.d + 1)
+                                     if s[h, i, j] == 0 and
+                                        self._check_zero(h, i, j, u, v, w)}
+                    done[u, v, w] = set()
+        check = {t for t in g if len(zero[t]) > 0}
+        while len(check) > 0:
+            for t in list(check):
+                if t not in check:
+                    continue
+                try:
+                    sol = next(g[t])
+                    s = r[t][sol] = self.triple[t].subs(sol)
+                    zero[t] -= {d for d in zero[t] if s[d] != 0}
+                    if len(zero[t]) == 0:
+                        check.discard(t)
+                    continue
+                except StopIteration:
+                    del g[t]
+                except KeyError:
+                    pass
+                check.discard(t)
+                u, v, w = t
+                for h, i, j in list(zero[t]):
+                    for lt, ld in {((u, h, i), (v, w, j)),
+                                   ((v, h, j), (u, w, i)),
+                                   ((w, i, j), (u, v, h))}:
+                        st = tuple(sorted(lt))
+                        if st not in zero:
+                            continue
+                        seen = set()
+                        if st == t:
+                            seen.add((h, i, j))
+                        for tp, dp in zip(TPERMS, DPERMS):
+                            if tuple(lt[k] for k in tp) != st:
+                                continue
+                            sd = tuple(ld[k] for k in dp)
+                            if sd in seen:
+                                continue
+                            seen.add(sd)
+                            l = len(r[st])
+                            for sol, s in r[st].items():
+                                if s[sd] != 0:
+                                    del r[st][sol]
+                            try:
+                                sol = g[st].send(sd)
+                                r[st][sol] = self.triple[st].subs(sol)
+                                zero[st] -= {d for d in zero[st]
+                                             if s[d] != 0}
+                                if len(zero[st]) == 0:
+                                    check.discard(st)
+                                l += 1
+                            except StopIteration:
+                                del g[st]
+                            except KeyError:
+                                pass
+                            if len(r[st]) == 0:
+                                raise InfeasibleError(
+                                    "found forbidden quadruple "
+                                    "wxyz with d(w, x) = %d, "
+                                    "d(w, y) = %d, d(w, z) = %d, "
+                                    "d(x, y) = %d, d(x, z) = %d, "
+                                    "d(y, z) = %d" % (sd + st))
+                            if len(r[st]) < l:
+                                zero[st] = {(h, i, j)
+                                            for h in range(self.d + 1)
+                                            for i in range(self.d + 1)
+                                            for j in range(self.d + 1)
+                                            if (h, i, j) not in done[st]
+                                            and self._check_zero(h, i, j,
+                                                                 *st)
+                                            and all(s[h, i, j] == 0 for s
+                                                    in r[st].values())}
+                                if len(zero[st]) == 0:
+                                    check.discard(st)
+                                else:
+                                    check.add(st)
+                    zero[t].discard((h, i, j))
+                    done[t].add((h, i, j))
 
     def classes(self):
         """

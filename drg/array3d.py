@@ -30,7 +30,9 @@ class Array3D:
         """
         Equality comparison.
         """
-        return self.n == other.n and self.A == other.A
+        if isinstance(other, Array3D):
+            return self.n == other.n and self.A == other.A
+        return all(x == other for M in self for r in M for x in r)
 
     def __getitem__(self, key):
         """
@@ -80,7 +82,7 @@ class Array3D:
         k1, k2, k3 = key
         self.A[k1][k2, k3] = value
 
-    def find(self, vars = None):
+    def find(self, vars = None, zeros = None, solver = None):
         """
         Generate assignments of values to variables
         such that the values in the array are nonnegative integers.
@@ -89,17 +91,22 @@ class Array3D:
         """
         if vars is None:
             vars = self.variables()
+        zeros = set() if zeros is None else set(zeros)
         if len(vars) > 0:
             x, rest = vars[0], vars[1:]
             zero = [z == 0 for z in vars]
-            lp = MixedIntegerLinearProgram(maximization = False)
+            lp = MixedIntegerLinearProgram(maximization = False,
+                                           solver = solver)
             v = lp.new_variable(integer = True)
             lp.add_constraint(lp[1] == 1)
+            def makeLPExpression(e):
+                return sum(e.coefficient(y) * v[str(y)] for y in vars) \
+                       + e.subs(zero) * lp[1]
         else:
             x = None
-        for M in self:
-            for r in M:
-                for e in r:
+        for h, M in enumerate(self):
+            for i, r in enumerate(M):
+                for j, e in enumerate(r):
                     if is_constant(e):
                         try:
                             integralize(e)
@@ -110,24 +117,45 @@ class Array3D:
                         continue
                     elif x is None:
                         return
-                    lp.add_constraint(sum(e.coefficient(y) * v[str(y)]
-                                          for y in vars)
-                                      + e.subs(zero) * lp[1] >= 0)
+                    lpe = makeLPExpression(e)
+                    lp.add_constraint(lpe == 0 if (h, i, j) in zeros
+                                               else lpe >= 0)
         if x is None:
             yield ()
             return
-        lp.set_objective(v[str(x)])
-        try:
-            vmin = lp.solve()
-        except MIPSolverException as ex:
-            if len(ex.args) == 0 or 'no feasible solution' in ex.args[0]:
-                return
         lp.set_objective(-v[str(x)])
-        vmax = -lp.solve()
-        for v in range(Integer(vmin), Integer(vmax)+1):
-            eq = x == Integer(v)
-            for sol in self.subs(eq).find(vars = rest):
-                yield (eq, ) + sol
+        try:
+            vmax = -lp.solve()
+        except MIPSolverException as ex:
+            if len(ex.args) == 0 or 'feasible' in ex.args[0]:
+                return
+        lp.set_objective(v[str(x)])
+        vmin = lp.solve()
+        while vmin <= vmax:
+            eq = x == Integer(vmin)
+            g = self.subs(eq).find(vars = rest, zeros = zeros)
+            try:
+                t = None
+                while True:
+                    t = (yield (eq, ) + g.send(t))
+                    if t is not None:
+                        if t in zeros:
+                            t = None
+                            continue
+                        zeros.add(t)
+                        lp.add_constraint(makeLPExpression(self[t]) == 0)
+                        lp.set_objective(-v[str(x)])
+                        try:
+                            vmax = -lp.solve()
+                        except MIPSolverException:
+                            return
+                        lp.set_objective(v[str(x)])
+                        vnew = lp.solve()
+                        if vnew > vmin:
+                            vmin = vnew
+                            break
+            except StopIteration:
+                vmin += 1
 
     def map(self, fun):
         """
