@@ -4,7 +4,7 @@ from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
 from sage.numerical.mip import MIPSolverException
 from sage.numerical.mip import MixedIntegerLinearProgram
-from sage.rings.integer import Integer
+from sage.rings.real_mpfr import create_RealNumber
 from sage.symbolic.ring import SR
 from .util import checkNonneg
 from .util import integralize
@@ -147,9 +147,9 @@ class Array3D:
             if len(ex.args) == 0 or 'feasible' in ex.args[0]:
                 return
         lp.set_objective(v[str(x)])
-        vmin = lp.solve()
+        vmin = create_RealNumber(lp.solve()).round()
         while vmin <= vmax:
-            eq = x == Integer(vmin)
+            eq = x == vmin
             g = self.subs(eq).find(vars = rest,
                             conditions = {c.subs(eq) for c in conditions})
             try:
