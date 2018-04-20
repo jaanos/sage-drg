@@ -142,7 +142,7 @@ class Array3D:
             addCondition(c)
         lp.set_objective(-v[str(x)])
         try:
-            vmax = -lp.solve()
+            vmax = create_RealNumber(-lp.solve()).round()
         except MIPSolverException as ex:
             if len(ex.args) == 0 or 'feasible' in ex.args[0]:
                 return
