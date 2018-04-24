@@ -167,11 +167,11 @@ class Array3D:
                         c = c.subs(eq)
                         lp.set_objective(-v[str(x)])
                         try:
-                            vmax = -lp.solve()
+                            vmax = create_RealNumber(-lp.solve()).round()
                         except MIPSolverException:
                             return
                         lp.set_objective(v[str(x)])
-                        vnew = lp.solve()
+                        vnew = create_RealNumber(lp.solve()).round()
                         if vnew > vmin:
                             vmin = vnew
                             break
