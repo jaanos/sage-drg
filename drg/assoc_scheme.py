@@ -291,75 +291,72 @@ class ASParameters:
             for t in list(check):
                 if t not in check:
                     continue
-                try:
-                    sol = next(g[t])
-                    s = r[t][sol] = self.triple[t].subs(sol)
-                    zero[t] -= {d for d in zero[t] if s[d] != 0}
-                    if len(zero[t]) == 0:
-                        check.discard(t)
-                    continue
-                except StopIteration:
-                    del g[t]
-                except KeyError:
-                    pass
                 check.discard(t)
                 u, v, w = t
-                for h, i, j in list(zero[t]):
-                    for lt, ld in {((u, h, i), (v, w, j)),
-                                   ((v, h, j), (u, w, i)),
-                                   ((w, i, j), (u, v, h))}:
-                        st = tuple(sorted(lt))
-                        if st not in zero:
-                            continue
-                        seen = set()
-                        if st == t:
-                            seen.add((h, i, j))
-                        for tp, dp in zip(TPERMS, DPERMS):
-                            if tuple(lt[k] for k in tp) != st:
+                for d in list(zero[t]):
+                    if d not in zero[t]:
+                        continue
+                    try:
+                        sol = next(g[t].send((True, self.triple[t][d] >= 1)))
+                        if sol not in r[t]:
+                            s = r[t][sol] = self.triple[t].subs(sol)
+                            zero[t] -= {z for z in zero[t] if s[z] != 0}
+                    except (StopIteration, KeyError):
+                        h, i, j = d
+                        seen = {(t, d)}
+                        for lt, ld in {((u, h, i), (v, w, j)),
+                                       ((v, h, j), (u, w, i)),
+                                       ((w, i, j), (u, v, h))}:
+                            st = tuple(sorted(lt))
+                            if st not in zero:
                                 continue
-                            sd = tuple(ld[k] for k in dp)
-                            if sd in seen:
-                                continue
-                            seen.add(sd)
-                            l = len(r[st])
-                            for sol, s in r[st].items():
-                                if s[sd] != 0:
-                                    del r[st][sol]
-                            try:
-                                sol = g[st].send(self.triple[st][sd] == 0)
-                                r[st][sol] = self.triple[st].subs(sol)
-                                zero[st] -= {d for d in zero[st]
-                                             if s[d] != 0}
-                                if len(zero[st]) == 0:
-                                    check.discard(st)
-                                l += 1
-                            except StopIteration:
-                                del g[st]
-                            except KeyError:
-                                pass
-                            if len(r[st]) == 0:
-                                raise InfeasibleError(
-                                    "found forbidden quadruple "
-                                    "wxyz with d(w, x) = %d, "
-                                    "d(w, y) = %d, d(w, z) = %d, "
-                                    "d(x, y) = %d, d(x, z) = %d, "
-                                    "d(y, z) = %d" % (sd + st))
-                            if len(r[st]) < l:
-                                zero[st] = {(h, i, j)
-                                            for h in range(self.d + 1)
-                                            for i in range(self.d + 1)
-                                            for j in range(self.d + 1)
-                                            if (h, i, j) not in done[st]
-                                            and self._check_zero(h, i, j,
-                                                                 *st)
-                                            and all(s[h, i, j] == 0 for s
-                                                    in r[st].values())}
-                                if len(zero[st]) == 0:
-                                    check.discard(st)
-                                else:
-                                    check.add(st)
-                    zero[t].discard((h, i, j))
-                    done[t].add((h, i, j))
+                            for tp, dp in zip(TPERMS, DPERMS):
+                                if tuple(lt[k] for k in tp) != st:
+                                    continue
+                                sd = tuple(ld[k] for k in dp)
+                                if (st, sd) in seen:
+                                    continue
+                                seen.add((st, sd))
+                                l = len(r[st])
+                                for sol, s in r[st].items():
+                                    if s[sd] != 0:
+                                        del r[st][sol]
+                                try:
+                                    g[st].send((False,
+                                                self.triple[st][sd] == 0))
+                                    if len(r[st]) == 0:
+                                        sol = next(g[st])
+                                        r[st][sol] = \
+                                            self.triple[st].subs(sol)
+                                        l += 1
+                                except StopIteration:
+                                    del g[st]
+                                except KeyError:
+                                    pass
+                                if len(r[st]) == 0:
+                                    raise InfeasibleError(
+                                        "found forbidden quadruple "
+                                        "wxyz with d(w, x) = %d, "
+                                        "d(w, y) = %d, d(w, z) = %d, "
+                                        "d(x, y) = %d, d(x, z) = %d, "
+                                        "d(y, z) = %d" % (sd + st))
+                                if len(r[st]) < l:
+                                    zero[st] = {(sh, si, sj)
+                                                for sh in range(self.d + 1)
+                                                for si in range(self.d + 1)
+                                                for sj in range(self.d + 1)
+                                                if (sh, si, sj)
+                                                    not in done[st]
+                                                and self._check_zero(sh, si,
+                                                                     sj, *st)
+                                                and all(s[sh, si, sj] == 0
+                                                    for s in r[st].values())}
+                                    if len(zero[st]) == 0:
+                                        check.discard(st)
+                                    else:
+                                        check.add(st)
+                        zero[t].discard(d)
+                        done[t].add(d)
 
     def classes(self):
         """

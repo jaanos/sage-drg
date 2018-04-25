@@ -213,6 +213,12 @@ def rewriteTuple(t, expand = False, factor = False, simplify = False):
         t = tuple(map(_simplify, t))
     return t
 
+def round(x):
+    """
+    Return ``x`` rounded to an ``Integer``.
+    """
+    return create_RealNumber(x).round()
+
 def subconstituent_name(h):
     """
     Return a properly formatted ordinal for the given subconstituent.

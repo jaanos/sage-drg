@@ -4,13 +4,13 @@ from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
 from sage.numerical.mip import MIPSolverException
 from sage.numerical.mip import MixedIntegerLinearProgram
-from sage.rings.real_mpfr import create_RealNumber
 from sage.symbolic.ring import SR
 from .util import checkNonneg
 from .util import integralize
 from .util import is_constant
 from .util import _factor
 from .util import full_simplify
+from .util import round
 from .util import variables
 from .util import verify
 
@@ -105,6 +105,7 @@ class Array3D:
             lp = MixedIntegerLinearProgram(maximization = False,
                                            solver = solver)
             v = lp.new_variable(integer = True)
+            w = lp.new_variable(integer = True)
             lp.add_constraint(lp[1] == 1)
             def makeLPExpression(e):
                 return sum(e.coefficient(y) * v[str(y)] for y in vars) \
@@ -134,7 +135,8 @@ class Array3D:
                         continue
                     elif x is None:
                         return
-                    lp.add_constraint(makeLPExpression(e) >= 0)
+                    lp.add_constraint(w[h, i, j] == makeLPExpression(e))
+                    lp.add_constraint(w[h, i, j] >= 0)
         if x is None:
             yield ()
             return
@@ -142,41 +144,49 @@ class Array3D:
             addCondition(c)
         lp.set_objective(-v[str(x)])
         try:
-            vmax = create_RealNumber(-lp.solve()).round()
+            vmax = round(-lp.solve())
         except MIPSolverException as ex:
             if len(ex.args) == 0 or 'feasible' in ex.args[0]:
                 return
         lp.set_objective(v[str(x)])
-        vmin = create_RealNumber(lp.solve()).round()
+        vmin = round(lp.solve())
+        t = None
         while vmin <= vmax:
             eq = x == vmin
             g = self.subs(eq).find(vars = rest,
                             conditions = {c.subs(eq) for c in conditions})
             try:
-                c = None
                 while True:
-                    c = (yield (eq, ) + g.send(c))
-                    if c is not None:
-                        if c in conditions or verify(c):
-                            c = None
-                            continue
-                        elif verify(c.negation()):
-                            return
-                        conditions.add(c)
-                        addCondition(c)
-                        c = c.subs(eq)
-                        lp.set_objective(-v[str(x)])
-                        try:
-                            vmax = create_RealNumber(-lp.solve()).round()
-                        except MIPSolverException:
-                            return
-                        lp.set_objective(v[str(x)])
-                        vnew = create_RealNumber(lp.solve()).round()
-                        if vnew > vmin:
-                            vmin = vnew
-                            break
+                    while t is not None:
+                        b, c = t
+                        if b:
+                            t = (yield self.find(vars = vars,
+                                            conditions = conditions | {c}))
+                        else:
+                            if c in conditions or verify(c):
+                                t = yield
+                                continue
+                            elif verify(c.negation()):
+                                return
+                            conditions.add(c)
+                            addCondition(c)
+                            lp.set_objective(-v[str(x)])
+                            try:
+                                vmax = round(-lp.solve())
+                            except MIPSolverException:
+                                return
+                            lp.set_objective(v[str(x)])
+                            vnew = round(lp.solve())
+                            t = yield
+                            if vnew > vmin:
+                                vmin = vnew
+                                raise IndexError
+                            g.send((False, c.subs(eq)))
+                    t = (yield (eq, ) + next(g))
             except StopIteration:
                 vmin += 1
+            except IndexError:
+                pass
             finally:
                 g.close()
 
