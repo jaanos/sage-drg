@@ -1311,7 +1311,7 @@ class DRGParameters(PolyASParameters):
                     p.add_subgraph(self.subconstituents[h].subs(exp), name)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = name)
-        if "complement" in self.__dict__:
+        if "complement" in self.__dict__ and "complement" not in p.__dict__:
             try:
                 p.complement = self.complement.subs(exp, complement = p)
             except (InfeasibleError, AssertionError) as ex:
@@ -1322,6 +1322,8 @@ class DRGParameters(PolyASParameters):
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
         for ia, part in self.distance_graphs.items():
+            if "complement" in self.__dict__ and ia is self.complement:
+                continue
             try:
                 p.add_subgraph(ia.subs(exp), part)
             except (InfeasibleError, AssertionError) as ex:
