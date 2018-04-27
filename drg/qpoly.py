@@ -122,9 +122,9 @@ class QPolyParameters(PolyASParameters):
         self._subs(exp, p)
         if "p" in self.__dict__:
             p.p = self.p.subs(exp)
-            p._checkParameters(p.p, integral = self.DUAL_INTEGRAL,
-                               name = self.DUAL_PARAMETER,
-                               sym = self.DUAL_SYMBOL)
+            p._check_parameters(p.p, integral = self.DUAL_INTEGRAL,
+                                name = self.DUAL_PARAMETER,
+                                sym = self.DUAL_SYMBOL)
         return p
 
     kreinArray = PolyASParameters.parameterArray
