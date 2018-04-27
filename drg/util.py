@@ -1,3 +1,4 @@
+import operator
 from sage.arith.misc import factor as factorize
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
@@ -212,6 +213,12 @@ def rewriteTuple(t, expand = False, factor = False, simplify = False):
         t = tuple(map(_simplify, t))
     return t
 
+def round(x):
+    """
+    Return ``x`` rounded to an ``Integer``.
+    """
+    return create_RealNumber(x).round()
+
 def subconstituent_name(h):
     """
     Return a properly formatted ordinal for the given subconstituent.
@@ -242,3 +249,12 @@ def variables(exp):
         return exp.variables()
     else:
         return ()
+
+def verify(exp):
+    """
+    Verify that the expression holds trivially.
+    """
+    op = exp.operator()
+    if op == operator.ne:
+        return bool((exp.lhs() < exp.rhs()) or (exp.lhs() > exp.rhs()))
+    return bool(exp)

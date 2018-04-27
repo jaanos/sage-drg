@@ -1299,9 +1299,9 @@ class DRGParameters(PolyASParameters):
         self._subs(exp, p)
         if "q" in self.__dict__:
             p.q = self.q.subs(exp)
-            p._checkParameters(p.q, integral = self.DUAL_INTEGRAL,
-                               name = self.DUAL_PARAMETER,
-                               sym = self.DUAL_SYMBOL)
+            p._check_parameters(p.q, integral = self.DUAL_INTEGRAL,
+                                name = self.DUAL_PARAMETER,
+                                sym = self.DUAL_SYMBOL)
         for h, s in enumerate(self.subconstituents):
             if s is None:
                 continue
