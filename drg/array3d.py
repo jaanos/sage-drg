@@ -1,18 +1,10 @@
-import operator
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
-from sage.numerical.mip import MIPSolverException
-from sage.numerical.mip import MixedIntegerLinearProgram
 from sage.symbolic.ring import SR
-from .util import checkNonneg
-from .util import integralize
-from .util import is_constant
 from .util import _factor
 from .util import full_simplify
-from .util import round
 from .util import variables
-from .util import verify
 
 class Array3D:
     """
@@ -83,112 +75,6 @@ class Array3D:
         """
         k1, k2, k3 = key
         self.A[k1][k2, k3] = value
-
-    def find(self, vars = None, conditions = None, solver = None):
-        """
-        Generate assignments of values to variables
-        such that the values in the array are nonnegative integers.
-
-        Assumes that the entries are linear in the variables.
-        """
-        if vars is None:
-            vars = self.variables()
-        conditions = set() if conditions is None else set(conditions)
-        for c in set(conditions):
-            if verify(c):
-                conditions.discard(c)
-            elif verify(c.negation()):
-                return
-        if len(vars) > 0:
-            x, rest = vars[0], vars[1:]
-            zero = [z == 0 for z in vars]
-            lp = MixedIntegerLinearProgram(maximization = False,
-                                           solver = solver)
-            v = lp.new_variable(integer = True)
-            w = lp.new_variable(integer = True)
-            lp.add_constraint(lp[1] == 1)
-            def makeLPExpression(e):
-                return sum(e.coefficient(y) * v[str(y)] for y in vars) \
-                       + e.subs(zero) * lp[1]
-            def addCondition(c):
-                op = c.operator()
-                if op is operator.gt:
-                    op = operator.ge
-                elif op is operator.lt:
-                    op = operator.le
-                elif op not in [operator.eq, operator.ge, operator.le]:
-                    return
-                lp.add_constraint(op(makeLPExpression(c.lhs()),
-                                     makeLPExpression(c.rhs())))
-        else:
-            x = None
-        for h, M in enumerate(self):
-            for i, r in enumerate(M):
-                for j, e in enumerate(r):
-                    if is_constant(e):
-                        try:
-                            integralize(e)
-                        except TypeError:
-                            return
-                        if not checkNonneg(e):
-                            return
-                        continue
-                    elif x is None:
-                        return
-                    lp.add_constraint(w[h, i, j] == makeLPExpression(e))
-                    lp.add_constraint(w[h, i, j] >= 0)
-        if x is None:
-            yield ()
-            return
-        for c in conditions:
-            addCondition(c)
-        lp.set_objective(-v[str(x)])
-        try:
-            vmax = round(-lp.solve())
-        except MIPSolverException as ex:
-            if len(ex.args) == 0 or 'feasible' in ex.args[0]:
-                return
-        lp.set_objective(v[str(x)])
-        vmin = round(lp.solve())
-        t = None
-        while vmin <= vmax:
-            eq = x == vmin
-            g = self.subs(eq).find(vars = rest,
-                            conditions = {c.subs(eq) for c in conditions})
-            try:
-                while True:
-                    while t is not None:
-                        b, c = t
-                        if b:
-                            t = (yield self.find(vars = vars,
-                                            conditions = conditions | {c}))
-                        else:
-                            if c in conditions or verify(c):
-                                t = yield
-                                continue
-                            elif verify(c.negation()):
-                                return
-                            conditions.add(c)
-                            addCondition(c)
-                            lp.set_objective(-v[str(x)])
-                            try:
-                                vmax = round(-lp.solve())
-                            except MIPSolverException:
-                                return
-                            lp.set_objective(v[str(x)])
-                            vnew = round(lp.solve())
-                            t = yield
-                            if vnew > vmin:
-                                vmin = vnew
-                                raise IndexError
-                            g.send((False, c.subs(eq)))
-                    t = (yield (eq, ) + next(g))
-            except StopIteration:
-                vmin += 1
-            except IndexError:
-                pass
-            finally:
-                g.close()
 
     def map(self, fun):
         """

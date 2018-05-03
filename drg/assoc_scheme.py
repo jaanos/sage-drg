@@ -10,14 +10,17 @@ from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .coefflist import CoefficientList
+from .find import find
 from .util import checkNonneg
 from .util import checkPos
 from .util import _factor
 from .util import full_simplify
 from .util import integralize
+from .util import make_expressions
 from .util import rewriteExp
 from .util import rewriteMatrix
 from .util import rewriteTuple
+from .util import sort_solution
 from .util import subs
 from .util import variables
 
@@ -271,13 +274,20 @@ class ASParameters:
                     if self.p[u, v, w] == 0:
                         continue
                     S = self.tripleEquations(u, v, w)
-                    g[u, v, w] = S.find(solver = solver)
+                    g[u, v, w] = find(make_expressions((S[h, i, j], 0,
+                                                        min(self.p[u, h, i],
+                                                            self.p[v, h, j],
+                                                            self.p[w, i, j]))
+                                       for h in range(self.d + 1)
+                                       for i in range(self.d + 1)
+                                       for j in range(self.d + 1)),
+                                      S.variables(), solver = solver)
                     try:
-                        sol = next(g[u, v, w])
+                        sol = sort_solution(next(g[u, v, w]))
                     except StopIteration:
                         raise InfeasibleError("no solution found "
-                            "for a triple of vertices at distances "
-                            "(%d, %d, %d)" % (u, v, w))
+                                    "for a triple of vertices at distances "
+                                    "(%d, %d, %d)" % (u, v, w))
                     s = S.subs(sol)
                     r[u, v, w] = {sol: s}
                     zero[u, v, w] = {(h, i, j) for h in range(self.d + 1)
@@ -297,7 +307,8 @@ class ASParameters:
                     if d not in zero[t]:
                         continue
                     try:
-                        sol = next(g[t].send((True, self.triple[t][d] >= 1)))
+                        sol = sort_solution(next(g[t].send((True,
+                                                self.triple[t][d] >= 1))))
                         if sol not in r[t]:
                             s = r[t][sol] = self.triple[t].subs(sol)
                             zero[t] -= {z for z in zero[t] if s[z] != 0}
@@ -325,7 +336,7 @@ class ASParameters:
                                     g[st].send((False,
                                                 self.triple[st][sd] == 0))
                                     if len(r[st]) == 0:
-                                        sol = next(g[st])
+                                        sol = sort_solution(next(g[st]))
                                         r[st][sol] = \
                                             self.triple[st].subs(sol)
                                         l += 1

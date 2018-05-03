@@ -165,6 +165,20 @@ def is_squareSum(x):
         y -= i
     return False
 
+def make_expressions(exps):
+    """
+    Prepare a dictionary of expressions
+    together with their lower and upper bounds.
+    """
+    d = {}
+    for e, l, u in exps:
+        if e in d:
+            ll, uu = d[e]
+            d[e] = (max(l, ll), min(u, uu))
+        else:
+            d[e] = (l, u)
+    return d
+
 def matrixMap(fun, M):
     """
     Replace each value in matrix ``M`` by its image under ``fun``.
@@ -218,6 +232,12 @@ def round(x):
     Return ``x`` rounded to an ``Integer``.
     """
     return create_RealNumber(x).round()
+
+def sort_solution(sol):
+    """
+    Sort a solution to an equation by the variable names.
+    """
+    return tuple(sorted(sol, key = lambda e: str(e.lhs())))
 
 def subconstituent_name(h):
     """
