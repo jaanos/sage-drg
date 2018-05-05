@@ -84,15 +84,16 @@ def find(expressions, vars, conditions = None, solver = None):
         if len(ex.args) == 0 or 'feasible' in ex.args[0]:
             return
     lp.set_objective(lpopt)
-    vmin = round(lp.solve())
-    t = None
+    vnew = vmin = round(lp.solve())
     while vmin <= vmax:
         eq = xsol.subs(s == vmin)
         g = find(make_expressions((e.subs(eq), l, u)
                                   for e, (l, u) in expressions.items()),
                  vars = rest, conditions = {c.subs(eq) for c in conditions})
         try:
-            while True:
+            while vnew == vmin:
+                sol = next(g)
+                t = (yield (eq.subs(sol), ) + sol)
                 while t is not None:
                     b, c = t
                     if b:
@@ -113,16 +114,12 @@ def find(expressions, vars, conditions = None, solver = None):
                             return
                         lp.set_objective(lpopt)
                         vnew = round(lp.solve())
-                        if vnew > vmin:
-                            vmin = vnew
-                            raise IndexError
-                        g.send((False, c.subs(eq)))
+                        if vnew == vmin:
+                            g.send((False, c.subs(eq)))
                         t = yield
-                sol = next(g)
-                t = (yield (eq.subs(sol), ) + sol)
+            vmin = vnew
         except StopIteration:
             vmin += 1
-        except IndexError:
-            t = yield
+            vnew = vmin
         finally:
             g.close()
