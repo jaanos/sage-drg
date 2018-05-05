@@ -38,7 +38,7 @@ def find(expressions, vars, conditions = None, solver = None):
         zero = [z == 0 for z in vars]
         lp = MixedIntegerLinearProgram(maximization = False,
                                        solver = solver)
-        v = lp.new_variable(integer = True)
+        v = lp.new_variable(real = True)
         w = lp.new_variable(integer = True)
         lp.add_constraint(lp[1] == 1)
         def makeLPExpression(e):
@@ -70,10 +70,8 @@ def find(expressions, vars, conditions = None, solver = None):
         elif x is None:
             return
         lp.add_constraint(w[i] == makeLPExpression(e))
-        if l is not None:
-            lp.add_constraint(w[i] >= l)
-        if u is not None:
-            lp.add_constraint(w[i] <= u)
+        lp.set_min(w[i], l)
+        lp.set_max(w[i], u)
     if x is None:
         yield ()
         return
