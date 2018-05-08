@@ -20,6 +20,7 @@ class QPolyParameters(PolyASParameters):
     DUAL_SYMBOL = "p"
     OBJECT = "Q-polynomial association scheme"
     PARAMETER = "Krein parameter"
+    PART = "eigenspace"
     PARTS = "multiplicities"
     SYMBOL = "q"
     PTR = pair_swap
@@ -82,6 +83,7 @@ class QPolyParameters(PolyASParameters):
             p = Array3D(self.d + 1)
             self._compute_dualParameters(p, self.m, self.k, self.QTR)
             self.p = p
+            self.check_handshake()
 
     @staticmethod
     def _get_class():

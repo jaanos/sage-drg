@@ -49,6 +49,7 @@ class DRGParameters(PolyASParameters):
     DUAL_SYMBOL = "q"
     OBJECT = "distance-regular graph"
     PARAMETER = "intersection number"
+    PART = "subconstituent"
     PARTS = "subconstituents"
     PTR = pair_keep
     QTR = pair_swap
@@ -106,6 +107,7 @@ class DRGParameters(PolyASParameters):
         self.k = tuple(self._init_multiplicities())
         self.p = Array3D(self.d + 1)
         self._compute_parameters(self.p, self.k)
+        self.check_handshake(metric = True, bipartite = self.bipartite)
         if self.antipodal:
             try:
                 self.r = integralize(1 + self.b[m] / self.c[self.d - m])
@@ -136,20 +138,6 @@ class DRGParameters(PolyASParameters):
                                            (Integer(1), self.p[1, 2, 2]),
                                            complement = self)
             self.complement = self.add_subgraph(complement, "complement")
-
-    def _check_multiplicity(self, k, i):
-        """
-        Check the valency of the i-th subconstituent
-        and verify the handshake lemma.
-        """
-        if self.a[i+1] >= k[-1]:
-            raise InfeasibleError("valency of subconstituent %d "
-                                  "too large" % (i+1))
-        if isinstance(self.a[i+1], Integer) and \
-                isinstance(k[-1], Integer) and \
-                self.a[i+1] % 2 == 1 and k[-1] % 2 == 1:
-            raise InfeasibleError("handshake lemma not satisfied "
-                                  "for subconstituent %d" % (i+1))
 
     def _check_parameter(self, h, i, j, v, integral = True,
                          name = None, sym = None):

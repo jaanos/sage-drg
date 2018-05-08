@@ -132,6 +132,13 @@ class ASParameters:
                             simplify = simplify)
         return self.n
 
+    def __repr__(self):
+        """
+        String representation.
+        """
+        return "Parameters of an association scheme on %s vertices " \
+               "with %d classes" % (self.n, self.d)
+
     def _check_consistency(self, p, k, name = None, sym = None):
         """
         Check for the consistency of the intersection numbers
@@ -384,6 +391,7 @@ class ASParameters:
         self._compute_parameters(p, self.P, self.m, integral = True,
                                  name = PARAMETER, sym = SYMBOL)
         self.p = p
+        self.check_handshake()
 
     @staticmethod
     def _get_class():
@@ -399,10 +407,11 @@ class ASParameters:
         self.d = nrows(P) - 1
         assert all(len(r) == self.d + 1 for r in P), \
             "parameter length mismatch"
+        P = Matrix(SR, P)
         for i, x in enumerate(P[0]):
             P[0, i] = integralize(x)
         self.n = sum(P[0])
-        return Matrix(SR, P)
+        return P
 
     def _init_parameters(self, p, integral = False, name = None, sym = None):
         """
@@ -459,6 +468,8 @@ class ASParameters:
         """
         Check whether the absolute bound is not exceeded.
         """
+        if "m" not in self.__dict__:
+            self.multiplicities()
         if "q" not in self.__dict__:
             self.kreinParameters()
         for i in range(self.d + 1):
@@ -471,6 +482,27 @@ class ASParameters:
                        if self.q[h, i, j] != 0) > self.m[i]*self.m[j]:
                     raise InfeasibleError("absolute bound exceeded "
                                           "for (%d, %d)" % (i, j))
+
+    def check_handshake(self, metric = False, bipartite = False):
+        """
+        Verify the handshake lemma for all relations in all subconstituents.
+        """
+        if "k" not in self.__dict__:
+            self.kTable()
+        if "p" not in self.__dict__:
+            self.pTable()
+        d = [self.d, 0 if metric else self.d]
+        b = 2 if bipartite else 1
+        for i in range(1, self.d + 1):
+            if not isinstance(self.k[i], Integer) or self.k[i] % 2 == 0:
+                continue
+            d[1] += 2
+            for j in range(b, min(d) + 1, b):
+                if isinstance(self.p[i, i, j], Integer) and \
+                        self.p[i, i, j] % 2 == 1:
+                    raise InfeasibleError("handshake lemma not satisfied "
+                                          "for relation %d in subconstituent"
+                                          " %d" % (j, i))
 
     def check_quadruples(self, solver = None):
         """
@@ -902,6 +934,7 @@ class PolyASParameters(ASParameters):
     DUAL_SYMBOL = None
     OBJECT = None
     PARAMETER = None
+    PART = None
     PARTS = None
     PTR = None
     QTR = None
@@ -955,11 +988,12 @@ class PolyASParameters(ASParameters):
 
     def _check_multiplicity(self, k, i):
         """
-        Check for the feasibility of the i-th multiplicity.
-
-        By default, no checks are performed.
+        Check the valency of the i-th subconstituent or eigenspace.
         """
-        pass
+        for j in range(self.d + 1):
+            if self.a[i] >= k[i]:
+                raise InfeasibleError("valency of %s %d too large" %
+                                      (self.PART, i))
 
     def _check_parameter(self, h, i, j, v, integral = False,
                          name = None, sym = None):
@@ -1147,8 +1181,8 @@ class PolyASParameters(ASParameters):
         """
         k = [Integer(1)]
         try:
-            for i in range(self.d):
-                k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
+            for i in range(1, self.d + 1):
+                k.append(integralize(k[-1]*self.b[i-1]/self.c[i]))
                 self._check_multiplicity(k, i)
         except TypeError:
             raise InfeasibleError("%s not integral" % self.PARTS)
