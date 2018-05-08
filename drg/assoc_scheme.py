@@ -17,6 +17,7 @@ from .util import _factor
 from .util import full_simplify
 from .util import integralize
 from .util import make_expressions
+from .util import nrows
 from .util import rewriteExp
 from .util import rewriteMatrix
 from .util import rewriteTuple
@@ -28,6 +29,14 @@ TPERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
           [1, 2, 0], [2, 0, 1], [2, 1, 0]]
 DPERMS = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
           [2, 0, 1], [1, 2, 0], [2, 1, 0]]
+
+DUAL_PARAMETER = "Krein parameter"
+DUAL_PARTS = "multiplicities"
+DUAL_SYMBOL = "q"
+OBJECT = "association scheme"
+PARAMETER = "intersection number"
+PARTS = "subconstituents"
+SYMBOL = "p"
 
 class InfeasibleError(Exception):
     """
@@ -84,16 +93,36 @@ class ASParameters:
     d = None
     vars = None
 
-    def __init__(self, p = None, q = None):
+    def __init__(self, p = None, q = None, P = None, Q = None):
         """
         Object constructor.
         """
-        # TODO: initialize from p or q array
-        self._init_vars()
         self.prefix = "v%x" % (hash(self) % Integer(2)**32)
         self.triple = {}
         self.triple_solution = {}
         self.triple_solution_generator = {}
+        assert (p, q, P, Q).count(None) >= 3, \
+            "precisely one of p, q, P, Q must be given"
+        if p is not None:
+            self.p = self._init_parameters(p, integral = True,
+                                           name = PARAMETER, sym = SYMBOL)
+            self._compute_kTable()
+            self._check_consistency(self.p, self.k,
+                                    name = PARAMETER, sym = SYMBOL)
+        elif q is not None:
+            self.q = self._init_parameters(q, integral = False,
+                                           name = DUAL_PARAMETER,
+                                           sym = DUAL_SYMBOL)
+            self._compute_multiplicities()
+            self._check_consistency(self.q, self.m,
+                                    name = DUAL_PARAMETER, sym = DUAL_SYMBOL)
+        elif P is not None:
+            self.P = self._init_eigenmatrix(P)
+        elif Q is not None:
+            self.Q = self._init_eigenmatrix(Q)
+        else:
+            assert self.d is not None, "insufficient data"
+        self._init_vars()
 
     def __len__(self, expand = False, factor = False, simplify = False):
         """
@@ -102,6 +131,36 @@ class ASParameters:
         self.n = rewriteExp(self.n, expand = expand, factor = factor,
                             simplify = simplify)
         return self.n
+
+    def _check_consistency(self, p, k, name = None, sym = None):
+        """
+        Check for the consistency of the intersection numbers
+        or Krein parameters.
+        """
+        r = range(self.d + 1)
+        for h in r:
+            assert p[0, h, h] == k[h], \
+                "mismatch of %s %s[0, %d, %d]" % (name, sym, h, h)
+            for i in r:
+                s = 0
+                for j in r:
+                    assert p[h, i, j] == p[h, j, i], \
+                        "non-symmetric %s %s[%d, %d, %d]" % \
+                        (name, sym, h, i, j)
+                    assert p[h, i, j] * k[h] == p[j, h, i] * k[j], \
+                        "double counting mismatch for %s[%d, %d, %d]" % \
+                        (sym, h, i, j)
+                    s += p[h, i, j]
+                    for u in r:
+                        assert sum(p[v, i, j] * p[u, v, h] for v in r) == \
+                               sum(p[u, i, v] * p[v, j, h] for v in r), \
+                               "double counting mismatch for " \
+                               "sum_l %s[l, %d, %d] %s[%d, l, %d]" % \
+                               (sym, i, j, sym, u, h)
+                assert s == k[i], \
+                    "mismatch of sum_j %s[%d, %d, j]" % (sym, h, i)
+        if "n" not in self.__dict__:
+            self.n = sum(k)
 
     def _check_eigenmatrices(self):
         """
@@ -164,56 +223,167 @@ class ASParameters:
         """
         Compute the dual eigenmatrix of the association scheme.
         """
-        # TODO
-        pass
+        if "Q" in self.__dict__:
+            return
+        if "q" in self.__dict__:
+            self.Q = self._compute_eigenmatrix(self.q, expand = expand,
+                                               factor = factor,
+                                               simplify = simplify)
+        else:
+            if "P" not in self.__dict__:
+                self.eigenmatrix(expand = expand, factor = factor,
+                                 simplify = simplify)
+            self.Q = self.n * self.P.inverse()
+        self._check_eigenmatrices()
 
     def _compute_eigenmatrix(self, p, expand = False, factor = False,
                              simplify = False):
         """
         Compute and return an eigenmatrix of the association scheme.
         """
-        # TODO
         B = [Matrix(SR, [M[i] for M in p]) for i in range(self.d + 1)]
+        V = SR**(self.d + 1)
+        R = [[self.d + 1, V, [Integer(1)]]]
+        for i in range(1, self.d + 1):
+            S = sorted(([k, m, V.subspace_with_basis(b)]
+                        for k, b, m in B[i].eigenvectors_right()),
+                       key = lambda (k, v, b): CoefficientList(k, self.vars),
+                       reverse = True)
+            j = 0
+            while j < len(R):
+                m, s, r = R[j]
+                h = 0
+                while h < len(S):
+                    k, v, b = S[h]
+                    sb = s.intersection(b)
+                    d = sb.dimension()
+                    if d == v:
+                        del S[h]
+                    else:
+                        S[h][1] -= d
+                        h += 1
+                    if d == m:
+                        R[j][1] = sb
+                        r.append(k)
+                        break
+                    elif d > 0:
+                        R.insert(j, [d, sb, r + [k]])
+                        j += 1
+                        m -= d
+                        R[j][0] = m
+                j += 1
+        assert len(R) == self.d + 1 and all(len(r) == self.d + 1
+                                            for _, _, r in R), \
+            "failed to compute the eigenmatrix"
+        return Matrix(SR, [r for _, _, r in R])
 
     def _compute_kreinParameters(self, expand = False, factor = False,
                                  simplify = False):
         """
         Compute the Krein parameters.
         """
-        # TODO
-        pass
+        if "q" in self.__dict__:
+            return
+        if "m" not in self.__dict__:
+            self.multiplicities(expand = expand, factor = factor,
+                                simplify = simplify)
+        if "k" not in self.__dict__:
+            self.kTable(expand = expand, factor = factor,
+                        simplify = simplify)
+        q = Array3D(self.d + 1)
+        self._compute_parameters(q, self.Q, self.k, integral = False,
+                                 name = DUAL_PARAMETER, sym = DUAL_SYMBOL)
+        self.q = q
 
     def _compute_kTable(self, expand = False, factor = False,
                         simplify = False):
         """
         Compute the sizes of the subconstituents.
         """
-        # TODO
-        pass
+        if "k" in self.__dict__:
+            return
+        if "p" in self.__dict__:
+            k = tuple(self.p[0, i, i] for i in range(self.d + 1))
+        else:
+            if "P" not in self.__dict__:
+                self.eigenmatrix(expand = expand, factor = factor,
+                                 simplify = simplify)
+            k = tuple(integralize(x) for x in self.P[0])
+        assert k[0] == 1, \
+            "the size of the first subconstituent is not 1"
+        self.k = k
 
     def _compute_multiplicities(self, expand = False, factor = False,
                                 simplify = False):
         """
         Compute the multiplicities of the eigenspaces.
         """
-        # TODO
-        pass
+        if "m" in self.__dict__:
+            return
+        if "q" in self.__dict__:
+            m = tuple(integralize(self.q[0, i, i])
+                      for i in range(self.d + 1))
+        else:
+            if "Q" not in self.__dict__:
+                self.dualEigenmatrix(expand = expand, factor = factor,
+                                     simplify = simplify)
+            m = tuple(integralize(x) for x in self.Q[0])
+        assert m[0] == 1, "the multiplicity of the first eigenspace is not 1"
+        self.m = m
+
+    def _compute_parameters(self, p, P, m, integral = False, name = None,
+                            sym = None):
+        """
+        Compute the intersection numbers or Krein parameters
+        from the eigenmatrices.
+        """
+        for h in range(self.d + 1):
+            for i in range(self.d + 1):
+                for j in range(self.d + 1):
+                    p[h, i, j] = full_simplify(
+                                    sum(m[t] * P[t, h] * P[t, i] * P[t, j]
+                                        for t in range(self.d + 1))
+                                    / (self.n * P[0, h]))
+                    self._check_parameter(h, i, j, p[h, i, j],
+                                          integral = integral,
+                                          name = name, sym = sym)
+        self._check_consistency(p, P[0], name = name, sym = sym)
 
     def _compute_primalEigenmatrix(self, expand = False, factor = False,
                                    simplify = False):
         """
         Compute the primal eigenmatrix of the association scheme.
         """
-        # TODO
-        pass
+        if "P" in self.__dict__:
+            return
+        if "p" in self.__dict__:
+            self.P = self._compute_eigenmatrix(self.p, expand = expand,
+                                               factor = factor,
+                                               simplify = simplify)
+        else:
+            if "Q" not in self.__dict__:
+                self.dualEigenmatrix(expand = expand, factor = factor,
+                                     simplify = simplify)
+            self.P = self.n * self.Q.inverse()
+        self._check_eigenmatrices()
 
     def _compute_pTable(self, expand = False, factor = False,
                         simplify = False):
         """
         Compute the intersection numbers.
         """
-        # TODO
-        pass
+        if "p" in self.__dict__:
+            return
+        if "k" not in self.__dict__:
+            self.kTable(expand = expand, factor = factor,
+                        simplify = simplify)
+        if "m" not in self.__dict__:
+            self.multiplicities(expand = expand, factor = factor,
+                                simplify = simplify)
+        p = Array3D(self.d + 1)
+        self._compute_parameters(p, self.P, self.m, integral = True,
+                                 name = PARAMETER, sym = SYMBOL)
+        self.p = p
 
     @staticmethod
     def _get_class():
@@ -222,20 +392,65 @@ class ASParameters:
         """
         return ASParameters
 
+    def _init_eigenmatrix(self, P):
+        """
+        Initialize an eigenmatrix from the specified matrix.
+        """
+        self.d = nrows(P) - 1
+        assert all(len(r) == self.d + 1 for r in P), \
+            "parameter length mismatch"
+        for i, x in enumerate(P[0]):
+            P[0, i] = integralize(x)
+        self.n = sum(P[0])
+        return Matrix(SR, P)
+
+    def _init_parameters(self, p, integral = False, name = None, sym = None):
+        """
+        Initialize the intersection numbers or Krein parameters
+        from the specified array.
+        """
+        self.d = nrows(p) - 1
+        if isinstance(p, Array3D):
+            a = p
+        else:
+            assert all(len(M) == self.d + 1 and all(len(r) == self.d+1
+                                                    for r in M)
+                       for M in p), "parameter length mismatch"
+            a = Array3D(self.d + 1)
+            for h in range(self.d + 1):
+                for i in range(self.d + 1):
+                    for j in range(self.d + 1):
+                        a[h, i, j] = p[h][i][j]
+        self._check_parameters(a, integral = integral,
+                               name = name, sym = sym)
+        return a
+
     def _init_vars(self):
         """
         Initialize the list of variables.
         """
-        # TODO: obtain variables if not yet available
+        if "vars" not in self.__dict__:
+            if "p" in self.__dict__:
+                self.vars = self.p.variables()
+            elif "q" in self.__dict__:
+                self.vars = self.q.variables()
+            elif "P" in self.__dict__:
+                self.vars = variables(self.P)
+            elif "Q" in self.__dict__:
+                self.vars = variables(self.Q)
         self.vars_ordered = len(self.vars) <= 1
 
     def _subs(self, exp, p):
         """
-        Substitute the given subexpressions in the eigenmatrices.
+        Substitute the given subexpressions in the paramaters.
         """
-        if "P" in self.__dict__:
+        if "p" in self.__dict__ and not "p" in p.__dict__:
+            p.p = self.p.subs(exp)
+        if "q" in self.__dict__ and not "q" in p.__dict__:
+            p.q = self.q.subs(exp)
+        if "P" in self.__dict__ and not "P" in p.__dict__:
             p.P = self.P.subs(exp)
-        if "Q" in self.__dict__:
+        if "Q" in self.__dict__ and not "Q" in p.__dict__:
             p.Q = self.Q.subs(exp)
         for k, v in self.triple.items():
             p.triple[k] = v.subs(exp)
@@ -464,8 +679,12 @@ class ASParameters:
         par = {}
         if "p" in self.__dict__:
             par["p"] = self.p.subs(exp)
-        if "q" in self.__dict__:
+        elif "q" in self.__dict__:
             par["q"] = self.q.subs(exp)
+        elif "P" in self.__dict__:
+            par["P"] = self.P.subs(exp)
+        elif "Q" in self.__dict__:
+            par["Q"] = self.Q.subs(exp)
         p = ASParameters(**par)
         self._subs(exp, p)
         return p
@@ -763,29 +982,33 @@ class PolyASParameters(ASParameters):
         """
         Compute the cosine sequences of the association scheme.
         """
+        if "omega" in self.__dict__:
+            return
         if "theta" not in self.__dict__:
             self.eigenvalues(expand = expand, factor = factor,
                              simplify = simplify)
-        if "omega" not in self.__dict__:
-            self.omega = Matrix(SR, self.d + 1)
-            self.omega[:, 0] = 1
-            for i in range(self.d + 1):
-                self.omega[i, 1] = self.theta[i]/self.b[0]
-                for j in range(2, self.d + 1):
-                    self.omega[i, j] = _simplify(_factor((
-                        (self.theta[i] - self.a[j-1]) * self.omega[i, j-1]
-                        - self.c[j-1] * self.omega[i, j-2]) / self.b[j-1]))
+        omega = Matrix(SR, self.d + 1)
+        omega[:, 0] = 1
+        for i in range(self.d + 1):
+            omega[i, 1] = self.theta[i]/self.b[0]
+            for j in range(2, self.d + 1):
+                omega[i, j] = _simplify(_factor((
+                    (self.theta[i] - self.a[j-1]) * omega[i, j-1]
+                    - self.c[j-1] * omega[i, j-2]) / self.b[j-1]))
+        self.omega = omega
 
     def _compute_dualEigenmatrix(self, expand = False, factor = False,
                                  simplify = False):
         """
         Compute the dual eigenmatrix of the association scheme.
         """
+        if "Q" in self.__dict__:
+            return
         params = {"expand": expand, "factor": factor, "simplify": simplify}
-        self.Q = self._compute_eigenmatrix(self.multiplicities(*params),
-                                           self.QTR, *params)
+        self.Q = self._compute_eigenmatrix(self.multiplicities(**params),
+                                           self.QTR, **params)
 
-    def _compute_dualParameters(self, q, k, m, tr, n = 1):
+    def _compute_dualParameters(self, q, k, m, tr):
         """
         Compute the Krein parameters or intersection numbers
         from the cosine sequences.
@@ -881,9 +1104,11 @@ class PolyASParameters(ASParameters):
         """
         Compute the primal eigenmatrix of the association scheme.
         """
+        if "P" in self.__dict__:
+            return
         params = {"expand": expand, "factor": factor, "simplify": simplify}
-        self.P = self._compute_eigenmatrix(self.kTable(*params),
-                                           self.PTR, *params)
+        self.P = self._compute_eigenmatrix(self.kTable(**params),
+                                           self.PTR, **params)
 
     def _compute_sizes(self, k, expand = False, factor = False,
                        simplify = False):

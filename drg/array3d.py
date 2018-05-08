@@ -56,7 +56,7 @@ class Array3D:
         """
         Return the size of the array in each dimension.
         """
-        return self.n
+        return int(self.n)
 
     def __repr__(self):
         """
