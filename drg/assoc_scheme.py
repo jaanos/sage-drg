@@ -454,15 +454,15 @@ class ASParameters:
         Substitute the given subexpressions in the paramaters.
         """
         if "p" in self.__dict__ and not "p" in p.__dict__:
-            p.p = self.p.subs(exp)
+            p.p = self.p.subs(*exp)
         if "q" in self.__dict__ and not "q" in p.__dict__:
-            p.q = self.q.subs(exp)
+            p.q = self.q.subs(*exp)
         if "P" in self.__dict__ and not "P" in p.__dict__:
-            p.P = self.P.subs(exp)
+            p.P = self.P.subs(*exp)
         if "Q" in self.__dict__ and not "Q" in p.__dict__:
-            p.Q = self.Q.subs(exp)
+            p.Q = self.Q.subs(*exp)
         for k, v in self.triple.items():
-            p.triple[k] = v.subs(exp)
+            p.triple[k] = v.subs(*exp)
 
     def check_absoluteBound(self):
         """
@@ -704,19 +704,19 @@ class ASParameters:
                                             if x not in vars)
             self.vars_ordered = True
 
-    def subs(self, exp):
+    def subs(self, *exp):
         """
         Substitute the given subexpressions in the parameters.
         """
         par = {}
         if "p" in self.__dict__:
-            par["p"] = self.p.subs(exp)
+            par["p"] = self.p.subs(*exp)
         elif "q" in self.__dict__:
-            par["q"] = self.q.subs(exp)
+            par["q"] = self.q.subs(*exp)
         elif "P" in self.__dict__:
-            par["P"] = self.P.subs(exp)
+            par["P"] = self.P.subs(*exp)
         elif "Q" in self.__dict__:
-            par["Q"] = self.Q.subs(exp)
+            par["Q"] = self.Q.subs(*exp)
         p = ASParameters(**par)
         self._subs(exp, p)
         return p
@@ -961,6 +961,8 @@ class PolyASParameters(ASParameters):
         assert all(checkNonneg(x) for x in self.a), \
             "a values negative"
         self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
+        self.hash_parameters = self.parameterArray(factor = True,
+                                                   simplify = 2)
         ASParameters.__init__(self)
 
     def __eq__(self, other):
@@ -977,7 +979,7 @@ class PolyASParameters(ASParameters):
         """
         Return the hash value.
         """
-        return hash((self.SYMBOL, self.parameterArray()))
+        return hash((self.SYMBOL, self.hash_parameters))
 
     def __repr__(self):
         """
@@ -1194,9 +1196,9 @@ class PolyASParameters(ASParameters):
         Substitute the given subexpressions in the parameters.
         """
         if "theta" in self.__dict__:
-            p.theta = tuple(subs(th, exp) for th in self.theta)
+            p.theta = tuple(subs(th, *exp) for th in self.theta)
         if "omega" in self.__dict__:
-            p.omega = self.omega.subs(exp)
+            p.omega = self.omega.subs(*exp)
         ASParameters._subs(self, exp, p)
 
     def aTable(self, expand = False, factor = False, simplify = False):

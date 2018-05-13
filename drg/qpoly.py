@@ -115,15 +115,15 @@ class QPolyParameters(PolyASParameters):
             self.p.reorder(order)
         return self.theta
 
-    def subs(self, exp):
+    def subs(self, *exp):
         """
         Substitute the given subexpressions in the parameters.
         """
-        p = QPolyParameters(*[[subs(x, exp) for x in l]
+        p = QPolyParameters(*[[subs(x, *exp) for x in l]
                               for l in self.kreinArray()])
         self._subs(exp, p)
         if "p" in self.__dict__:
-            p.p = self.p.subs(exp)
+            p.p = self.p.subs(*exp)
             p._check_parameters(p.p, integral = self.DUAL_INTEGRAL,
                                 name = self.DUAL_PARAMETER,
                                 sym = self.DUAL_SYMBOL)

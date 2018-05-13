@@ -121,13 +121,13 @@ class Array3D:
         elif simplify:
             self.map(_simplify)
 
-    def subs(self, exp):
+    def subs(self, *exp):
         """
         Substitute the given subexpressions in the array.
         """
         A = Array3D(self.n)
         for i, M in enumerate(self.A):
-            A.A[i] = M.subs(exp)
+            A.A[i] = M.subs(*exp)
         return A
 
     def variables(self):

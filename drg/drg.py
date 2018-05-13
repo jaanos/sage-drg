@@ -1277,16 +1277,17 @@ class DRGParameters(PolyASParameters):
             "%s is not known to be distance-regular" % name
         return self.subconstituents[h]
 
-    def subs(self, exp, complement = False):
+    def subs(self, *exp, **kargs):
         """
         Substitute the given subexpressions in the parameters.
         """
-        p = DRGParameters(*[[subs(x, exp) for x in l]
+        complement = kargs.get("complement", False)
+        p = DRGParameters(*[[subs(x, *exp) for x in l]
                             for l in self.intersectionArray()],
                           complement = complement)
         self._subs(exp, p)
         if "q" in self.__dict__:
-            p.q = self.q.subs(exp)
+            p.q = self.q.subs(*exp)
             p._check_parameters(p.q, integral = self.DUAL_INTEGRAL,
                                 name = self.DUAL_PARAMETER,
                                 sym = self.DUAL_SYMBOL)
@@ -1296,24 +1297,24 @@ class DRGParameters(PolyASParameters):
             name = subconstituent_name(h)
             try:
                 p.subconstituents[h] = \
-                    p.add_subgraph(self.subconstituents[h].subs(exp), name)
+                    p.add_subgraph(self.subconstituents[h].subs(*exp), name)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = name)
         if "complement" in self.__dict__ and "complement" not in p.__dict__:
             try:
-                p.complement = self.complement.subs(exp, complement = p)
+                p.complement = self.complement.subs(*exp, complement = p)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = "complement")
         for ia, part in self.subgraphs.items():
             try:
-                p.add_subgraph(ia.subs(exp), part)
+                p.add_subgraph(ia.subs(*exp), part)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
         for ia, part in self.distance_graphs.items():
             if "complement" in self.__dict__ and ia is self.complement:
                 continue
             try:
-                p.add_subgraph(ia.subs(exp), part)
+                p.add_subgraph(ia.subs(*exp), part)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
         return p
