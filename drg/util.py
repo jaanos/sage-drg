@@ -260,12 +260,12 @@ def subconstituent_name(h):
         o = "%dth" % h
     return "%s subconstituent" % o
 
-def subs(exp, s):
+def subs(exp, *s):
     """
     Substitute the given subexpressions in the expression.
     """
     if isinstance(exp, Expression):
-        return exp.subs(s)
+        return exp.subs(*s)
     return exp
 
 def variables(exp):

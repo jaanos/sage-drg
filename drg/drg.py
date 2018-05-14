@@ -13,6 +13,7 @@ from sage.symbolic.expression import Expression
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
+from .assoc_scheme import ASParameters
 from .assoc_scheme import InfeasibleError
 from .assoc_scheme import PolyASParameters
 from .nonex import checkConditions
@@ -55,7 +56,8 @@ class DRGParameters(PolyASParameters):
     QTR = pair_swap
     SYMBOL = "p"
 
-    def __init__(self, b, c, alpha = None, beta = None, complement = None):
+    def __init__(self, b, c = None, alpha = None, beta = None,
+                 complement = None, order = None):
         """
         Object constructor.
 
@@ -72,42 +74,50 @@ class DRGParameters(PolyASParameters):
         If four parameters are given,
         they are understood as the classical parameters.
         """
-        if alpha is not None:
-            if beta is not None:
-                self.d = Integer(b)
-                q = c
-                b = [(q_int(self.d, q) - q_int(i, q)) *
-                     (beta - alpha * q_int(i, q)) for i in range(self.d)]
-                c = [q_int(i, q) * (1 + alpha * q_int(i-1, q))
-                     for i in range(1, self.d + 1)]
-            elif b - c == 1:
-                self.d = Integer(1)
-                b, c = (b, ), (1, )
+        if isinstance(b, ASParameters):
+            o = b.is_pPolynomial()
+            assert o, "scheme not P-polynomial"
+            self.d = b.d
+            if order is None:
+                order = o[0]
             else:
-                self.d = Integer(2)
-                b, c = (b, b-c-1), (1, alpha)
+                order = self._reorder(order)
+            assert order in o, "scheme not P-polynomial for given order"
+            PolyASParameters.__init__(self, b, order = order)
+            self._check_intersectionArray()
+            if isinstance(b, DRGParameters):
+                return
         else:
-            self.d = Integer(len(b))
-        PolyASParameters.__init__(self, b, c)
-        assert all(checkNonneg(self.b[i] - self.b[i+1])
-                   for i in range(self.d)), "b sequence not non-ascending"
-        assert all(checkNonneg(self.c[i+1] - self.c[i])
-                   for i in range(self.d)), "c sequence not non-descending"
+            if alpha is not None:
+                if beta is not None:
+                    self.d = Integer(b)
+                    q = c
+                    b = [(q_int(self.d, q) - q_int(i, q)) *
+                         (beta - alpha * q_int(i, q)) for i in range(self.d)]
+                    c = [q_int(i, q) * (1 + alpha * q_int(i-1, q))
+                         for i in range(1, self.d + 1)]
+                elif b - c == 1:
+                    self.d = Integer(1)
+                    b, c = (b, ), (1, )
+                else:
+                    self.d = Integer(2)
+                    b, c = (b, b-c-1), (1, alpha)
+            else:
+                self.d = Integer(len(b))
+            PolyASParameters.__init__(self, b, c)
+            self._check_intersectionArray()
+            self.k = tuple(self._init_multiplicities())
+            self.p = Array3D(self.d + 1)
+            self._compute_parameters(self.p, self.k)
         self.subgraphs = {}
         self.distance_graphs = {}
         self.subconstituents = [None] * (self.d + 1)
-        if any(any(self.b[j] < self.c[i]
-                   for j in range(self.d-i+1)) for i in range(self.d+1)):
-            raise InfeasibleError("b[j] < c[i] with i+j <= d",
-                                  ("BCN", "Proposition 4.1.6.(ii)"))
         m = floor(self.d / 2)
         self.antipodal = all(full_simplify(self.b[i] - self.c[self.d - i])
                              == 0 for i in range(self.d) if i != m)
         self.bipartite = all(a == 0 for a in self.a)
-        self.k = tuple(self._init_multiplicities())
-        self.p = Array3D(self.d + 1)
-        self._compute_parameters(self.p, self.k)
-        self.check_handshake(metric = True, bipartite = self.bipartite)
+        if not isinstance(b, ASParameters):
+            self.check_handshake(metric = True, bipartite = self.bipartite)
         if self.antipodal:
             try:
                 self.r = integralize(1 + self.b[m] / self.c[self.d - m])
@@ -138,6 +148,21 @@ class DRGParameters(PolyASParameters):
                                            (Integer(1), self.p[1, 2, 2]),
                                            complement = self)
             self.complement = self.add_subgraph(complement, "complement")
+
+    def _check_intersectionArray(self):
+        """
+        Check the basic restrictions on the intersection array.
+        """
+        assert all(checkNonneg(self.b[i] - self.b[i+1])
+                   for i in range(self.d)), \
+                   "b sequence not non-ascending"
+        assert all(checkNonneg(self.c[i+1] - self.c[i])
+                   for i in range(self.d)), \
+                   "c sequence not non-descending"
+        if any(self.b[j] < self.c[i] for i in range(self.d+1)
+                                     for j in range(self.d-i+1)):
+            raise InfeasibleError("b[j] < c[i] with i+j <= d",
+                                  ("BCN", "Proposition 4.1.6.(ii)"))
 
     def _check_parameter(self, h, i, j, v, integral = True,
                          name = None, sym = None):
@@ -193,6 +218,32 @@ class DRGParameters(PolyASParameters):
         for distance-regular graphs.
         """
         pass
+
+    def _copy(self, p):
+        """
+        Copy fields to the given obejct.
+        """
+        PolyASParameters._copy(self, p)
+        if isinstance(p, DRGParameters):
+            p.subgraphs = dict(self.subgraphs)
+            p.distance_graphs = dict(self.distance_graphs)
+            p.subconstituents = list(self.subconstituents)
+            p.antipodal = self.antipodal
+            p.bipartite = self.bipartite
+            if "r" in self.__dict__:
+                p.r = self.r
+            if "quotient" in self.__dict__:
+                p.quotient = self.quotient
+            if "half" in self.__dict__:
+                p.half = self.half
+            if "complement" in self.__dict__:
+                p.complement = self.complement
+
+    def _copy_cosineSequences(self, p):
+        """
+        Obtain the cosine sequences from the eigenmatrix.
+        """
+        PolyASParameters._copy_cosineSequences(self, p.eigenmatrix())
 
     @staticmethod
     def _get_class():
@@ -1213,20 +1264,37 @@ class DRGParameters(PolyASParameters):
         else:
             return DRGParameters(b, c)
 
+    def reorderEigenspaces(self, *order):
+        """
+        Specify a new order for the eigenspaces.
+        """
+        self.reorderEigenvalues(*order)
+
     def reorderEigenvalues(self, *order):
         """
         Specify a new order for the eigenvalues and return it.
         """
         order = PolyASParameters.reorderEigenvalues(self, *order)
-        if "m" in self.__dict__:
-            self.m = tuple(self.m[i] for i in order)
-        if "P" in self.__dict__:
-            self.P = Matrix(SR, [self.P[i] for i in order])
-        if "Q" in self.__dict__:
-            self.Q = Matrix(SR, [[r[j] for j in order] for r in self.Q])
-        if "q" in self.__dict__:
-            self.q.reorder(order)
+        PolyASParameters.reorderEigenspaces(self, *order)
         return self.theta
+
+    def reorderParameters(self, *order):
+        """
+        Specify a new order for the parameters and return them.
+        """
+        order = self._reorder(order)
+        assert order in self.is_pPolynomial(), \
+            "scheme not P-polynomial for the given order"
+        PolyASParameters.reorderRelations(self, *order)
+        PolyASParameters.reorderParameters(self, self.p, *order)
+        self.subconstituents = [None for i in order]
+        return self.parameterArray()
+
+    def reorderRelations(self, *order):
+        """
+        Specify a new order for the relations.
+        """
+        self.reorderParameters(*order)
 
     def show_distancePartitions(self, **options):
         """
@@ -1277,16 +1345,17 @@ class DRGParameters(PolyASParameters):
             "%s is not known to be distance-regular" % name
         return self.subconstituents[h]
 
-    def subs(self, exp, complement = False):
+    def subs(self, *exp, **kargs):
         """
         Substitute the given subexpressions in the parameters.
         """
-        p = DRGParameters(*[[subs(x, exp) for x in l]
+        complement = kargs.get("complement", False)
+        p = DRGParameters(*[[subs(x, *exp) for x in l]
                             for l in self.intersectionArray()],
                           complement = complement)
         self._subs(exp, p)
         if "q" in self.__dict__:
-            p.q = self.q.subs(exp)
+            p.q = self.q.subs(*exp)
             p._check_parameters(p.q, integral = self.DUAL_INTEGRAL,
                                 name = self.DUAL_PARAMETER,
                                 sym = self.DUAL_SYMBOL)
@@ -1296,24 +1365,24 @@ class DRGParameters(PolyASParameters):
             name = subconstituent_name(h)
             try:
                 p.subconstituents[h] = \
-                    p.add_subgraph(self.subconstituents[h].subs(exp), name)
+                    p.add_subgraph(self.subconstituents[h].subs(*exp), name)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = name)
         if "complement" in self.__dict__ and "complement" not in p.__dict__:
             try:
-                p.complement = self.complement.subs(exp, complement = p)
+                p.complement = self.complement.subs(*exp, complement = p)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = "complement")
         for ia, part in self.subgraphs.items():
             try:
-                p.add_subgraph(ia.subs(exp), part)
+                p.add_subgraph(ia.subs(*exp), part)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
         for ia, part in self.distance_graphs.items():
             if "complement" in self.__dict__ and ia is self.complement:
                 continue
             try:
-                p.add_subgraph(ia.subs(exp), part)
+                p.add_subgraph(ia.subs(*exp), part)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part = part)
         return p

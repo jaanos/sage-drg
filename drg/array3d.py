@@ -1,3 +1,4 @@
+from copy import copy
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
@@ -19,6 +20,14 @@ class Array3D:
         """
         self.A = [Matrix(SR, n) for i in range(n)]
         self.n = n
+
+    def __copy__(self):
+        """
+        Return a copy of the array.
+        """
+        A = Array3D(self.n)
+        A.A = [copy(M) for M in self.A]
+        return A
 
     def __eq__(self, other):
         """
@@ -98,15 +107,17 @@ class Array3D:
                     A[t] = self[tuple(t[i] for i in p)]
         return A
 
-    def reorder(self, order):
+    def reorder(self, order, inplace = True):
         """
         Reorder each dimension in the array.
         """
         assert len(order) == self.n, "wrong number of indices"
         assert set(order) == set(range(self.n)), \
             "repeating or nonexisting indices"
-        self.A = [Matrix(SR, [[self.A[h][i, j] for j in order] for i in order])
-                  for h in order]
+        A = self if inplace else Array3D(self.n)
+        A.A = [Matrix(SR, [[self.A[h][i, j] for j in order] for i in order])
+               for h in order]
+        return A
 
     def rewrite(self, expand = False, factor = False, simplify = False):
         """
@@ -121,13 +132,13 @@ class Array3D:
         elif simplify:
             self.map(_simplify)
 
-    def subs(self, exp):
+    def subs(self, *exp):
         """
         Substitute the given subexpressions in the array.
         """
         A = Array3D(self.n)
         for i, M in enumerate(self.A):
-            A.A[i] = M.subs(exp)
+            A.A[i] = M.subs(*exp)
         return A
 
     def variables(self):
