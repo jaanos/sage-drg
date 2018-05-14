@@ -2,6 +2,7 @@ from sage.matrix.constructor import Matrix
 from sage.rings.integer import Integer
 from sage.symbolic.ring import SR
 from .array3d import Array3D
+from .assoc_scheme import ASParameters
 from .assoc_scheme import PolyASParameters
 from .util import pair_keep
 from .util import pair_swap
@@ -26,7 +27,7 @@ class QPolyParameters(PolyASParameters):
     PTR = pair_swap
     QTR = pair_keep
 
-    def __init__(self, b, c):
+    def __init__(self, b, c = None, order = None):
         """
         Object constructor.
 
@@ -36,12 +37,25 @@ class QPolyParameters(PolyASParameters):
         The basic checks on nonnegativity
         of the Krein array are performed.
         """
-        self.d = Integer(len(b))
-        PolyASParameters.__init__(self, b, c)
+        if isinstance(b, ASParameters):
+            o = b.is_qPolynomial()
+            assert o, "scheme not Q-polynomial"
+            self.d = b.d
+            if order is None:
+                order = o[0]
+            else:
+                order = self._reorder(order)
+            assert order in o, "scheme not Q-polynomial for given order"
+            PolyASParameters.__init__(self, b, order = order)
+            if isinstance(b, QPolyParameters):
+                return
+        else:
+            self.d = Integer(len(b))
+            PolyASParameters.__init__(self, b, c)
+            self.m = tuple(self._init_multiplicities())
+            self.q = Array3D(self.d + 1)
+            self._compute_parameters(self.q, self.m)
         self.bipartite = all(a == 0 for a in self.a)
-        self.m = tuple(self._init_multiplicities())
-        self.q = Array3D(self.d + 1)
-        self._compute_parameters(self.q, self.m)
 
     def _compute_kreinParameters(self, expand = False, factor = False,
                                  simplify = False):
@@ -84,6 +98,20 @@ class QPolyParameters(PolyASParameters):
             self._compute_dualParameters(p, self.m, self.k, self.QTR)
             self.p = p
             self.check_handshake()
+
+    def _copy(self, p):
+        """
+        Copy fields to the given obejct.
+        """
+        PolyASParameters._copy(self, p)
+        if isinstance(p, QPolyParameters):
+            p.bipartite = self.bipartite
+
+    def _copy_cosineSequences(self, p):
+        """
+        Obtain the cosine sequences from the dual eigenmatrix.
+        """
+        PolyASParameters._copy_cosineSequences(self, p.dualEigenmatrix())
 
     @staticmethod
     def _get_class():

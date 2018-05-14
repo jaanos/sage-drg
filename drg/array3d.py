@@ -1,3 +1,4 @@
+from copy import copy
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
@@ -19,6 +20,14 @@ class Array3D:
         """
         self.A = [Matrix(SR, n) for i in range(n)]
         self.n = n
+
+    def __copy__(self):
+        """
+        Return a copy of the array.
+        """
+        A = Array3D(self.n)
+        A.A = [copy(M) for M in self.A]
+        return A
 
     def __eq__(self, other):
         """

@@ -1,3 +1,4 @@
+from copy import copy
 from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
@@ -5,6 +6,7 @@ from sage.calculus.functional import simplify as _simplify
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
+from sage.matrix.special import diagonal_matrix
 from sage.rings.integer import Integer
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
@@ -97,13 +99,16 @@ class ASParameters:
         """
         Object constructor.
         """
-        self.prefix = "v%x" % (hash(self) % Integer(2)**32)
+        if self._get_class() is ASParameters:
+            self._init_prefix()
         self.triple = {}
         self.triple_solution = {}
         self.triple_solution_generator = {}
         assert (p, q, P, Q).count(None) >= 3, \
             "precisely one of p, q, P, Q must be given"
-        if p is not None:
+        if isinstance(p, ASParameters):
+            p._copy(self)
+        elif p is not None:
             self.p = self._init_parameters(p, integral = True,
                                            name = PARAMETER, sym = SYMBOL)
             self._compute_kTable()
@@ -393,6 +398,34 @@ class ASParameters:
         self.p = p
         self.check_handshake()
 
+    def _copy(self, p):
+        """
+        Copy fields to the given obejct.
+        """
+        p.d = self.d
+        p.n = self.n
+        if "p" in self.__dict__:
+            p.p = copy(self.p)
+        if "q" in self.__dict__:
+            p.q = copy(self.q)
+        if "P" in self.__dict__:
+            p.P = copy(self.P)
+        if "Q" in self.__dict__:
+            p.Q = copy(self.Q)
+        if "k" in self.__dict__:
+            p.k = self.k
+        if "m" in self.__dict__:
+            p.m = self.m
+        if "fsd" in self.__dict__:
+            p.fsd = self.fsd
+        if "pPolynomial_ordering" in self.__dict__:
+            p.pPolynomial_ordering = self.pPolynomial_ordering
+        if "qPolynomial_ordering" in self.__dict__:
+            p.qPolynomial_ordering = self.qPolynomial_ordering
+        p.triple.update(self.triple)
+        p.triple_solution.update(self.triple_solution)
+        p.triple_solution_generator.update(self.triple_solution_generator)
+
     @staticmethod
     def _get_class():
         """
@@ -433,6 +466,12 @@ class ASParameters:
         self._check_parameters(a, integral = integral,
                                name = name, sym = sym)
         return a
+
+    def _init_prefix(self):
+        """
+        Initialize prefix to be used for internal variables.
+        """
+        self.prefix = "v%x" % (hash(self) % Integer(2)**32)
 
     def _init_vars(self):
         """
@@ -1043,40 +1082,50 @@ class PolyASParameters(ASParameters):
     QTR = None
     SYMBOL = None
 
-    def __init__(self, b, c):
+    def __init__(self, b, c = None, order = None):
         """
         Object constructor.
 
         Check the basic properties of the intersection or Krein array.
         """
-        if self.d is None:
-            raise NotImplementedError("PolyASParameters can not be "
-                                      "instantiated directly")
-        assert self.d == len(c) == len(b), "parameter length mismatch"
-        self._init_array(b, c)
-        assert all(checkPos(x) for x in self.c[1:]), \
-            "c sequence not positive"
-        assert all(checkPos(x) for x in self.b[:-1]), \
-            "b sequence not positive"
-        self.a = tuple(full_simplify(b[0]-x-y)
-                       for x, y in zip(self.b, self.c))
-        assert self.c[1] == 1, "Invalid c[1] value"
-        assert all(checkNonneg(x) for x in self.a), \
-            "a values negative"
-        self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
+        if isinstance(b, ASParameters):
+            ASParameters.__init__(self, b)
+            if not isinstance(b, PolyASParameters) and \
+                    ("P" in b.__dict__ or "Q" in b.__dict__):
+                self._copy_cosineSequences(b)
+            if order is not None:
+                self.reorderParameters(*order)
+        else:
+            if self.d is None:
+                raise NotImplementedError("PolyASParameters can not be "
+                                          "instantiated directly")
+            assert self.d == len(c) == len(b), "parameter length mismatch"
+            self._init_array(b, c)
+            assert all(checkPos(x) for x in self.c[1:]), \
+                "c sequence not positive"
+            assert all(checkPos(x) for x in self.b[:-1]), \
+                "b sequence not positive"
+            self.a = tuple(full_simplify(b[0]-x-y)
+                           for x, y in zip(self.b, self.c))
+            assert self.c[1] == 1, "Invalid c[1] value"
+            assert all(checkNonneg(x) for x in self.a), \
+                "a values negative"
+            self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)),
+                                      ())))
+            ASParameters.__init__(self)
         self.hash_parameters = self.parameterArray(factor = True,
                                                    simplify = 2)
-        ASParameters.__init__(self)
+        self._init_prefix()
 
     def __eq__(self, other):
         """
         Compare self to other.
         """
-        ia = self.parameterArray()
         if isinstance(other, self._get_class()):
-            return ia == other.parameterArray()
+            return self.hash_parameters == other.hash_parameters
         else:
-            return not isinstance(other, ASParameters) and ia == other
+            return not isinstance(other, ASParameters) \
+                   and self.hash_parameters == other
 
     def __hash__(self):
         """
@@ -1184,7 +1233,9 @@ class PolyASParameters(ASParameters):
         Compute and return the eigenvalues of the association scheme.
         """
         if "theta" not in self.__dict__:
-            if self.is_cyclic():
+            if "omega" in self.__dict__:
+                self.theta = tuple(r[1] * p[0, 1, 1] for r in self.omega)
+            elif self.is_cyclic():
                 self.theta = tuple(2*cos(2*i*pi/self.n)
                                    for i in range(self.d + 1))
             else:
@@ -1258,6 +1309,8 @@ class PolyASParameters(ASParameters):
         if "omega" not in self.__dict__:
             self.cosineSequences(expand = expand, factor = factor,
                                  simplify = simplify)
+        if "theta" not in self.__dict__:
+            self.eigenvalues()
         if self.is_cyclic():
             m = tuple(Integer(1 if th in [2, -2] else 2)
                       for th in self.theta)
@@ -1270,6 +1323,28 @@ class PolyASParameters(ASParameters):
             except TypeError:
                 raise InfeasibleError("%s not integral" % self.DUAL_PARTS)
         return m
+
+    def _copy(self, p):
+        """
+        Copy fields to the given obejct.
+        """
+        ASParameters._copy(self, p)
+        if isinstance(p, self._get_class()):
+            if "theta" in self.__dict__:
+                p.theta = self.theta
+            if "omega" in self.__dict__:
+                p.omega = copy(self.omega)
+        elif "omega" in self.__dict__:
+            if isinstance(p, PolyASParameters):
+                p.omega = self.omega.transpose()
+            elif "P" not in p.__dict__ and "Q" not in p.__dict__:
+                p.P = p.eigenmatrix()
+
+    def _copy_cosineSequences(self, P):
+        """
+        Obtain the cosine sequences from an eigenmatrix.
+        """
+        self.omega = P / diagonal_matrix(P[0])
 
     def _init_array(self, b, c):
         """
@@ -1342,6 +1417,8 @@ class PolyASParameters(ASParameters):
         rewriteMatrix(self.omega, expand = expand, factor = factor,
                       simplify = simplify)
         if ev is not None:
+            if "theta" not in self.__dict__:
+                self.eigenvalues()
             try:
                 index = self.theta.index(ev)
             except ValueError as ex:
@@ -1350,6 +1427,14 @@ class PolyASParameters(ASParameters):
         if index is not None:
             return self.omega[index]
         return Matrix(SR, self.omega)
+
+    def eigenvalues(self, expand = False, factor = False, simplify = False):
+        """
+        Compute and return the eigenvalues of the association scheme.
+
+        Not implemented, to be overridden.
+        """
+        raise NotImplementedError
 
     def format_parameterArray(self):
         """
@@ -1423,5 +1508,7 @@ class PolyASParameters(ASParameters):
         if "omega" in self.__dict__:
             self.omega = Matrix(SR, [[r[i] for i in order]
                                      for r in self.omega])
+        if "theta" in self.__dict__:
+            del self.theta
         if "fsd" in self.__dict__:
             del self.fsd
