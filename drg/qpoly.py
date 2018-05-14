@@ -100,20 +100,36 @@ class QPolyParameters(PolyASParameters):
         return self._compute_eigenvalues(self.q, expand = expand,
                                          factor = factor, simplify = simplify)
 
+    def reorderEigenspaces(self, *order):
+        """
+        Specify a new order for the eigenspaces.
+        """
+        self.reorderParameters(*order)
+
     def reorderEigenvalues(self, *order):
         """
         Specify a new order for the eigenvalues and return it.
         """
         order = PolyASParameters.reorderEigenvalues(self, *order)
-        if "k" in self.__dict__:
-            self.k = tuple(self.k[i] for i in order)
-        if "P" in self.__dict__:
-            self.P = Matrix(SR, [[r[j] for j in order] for r in self.P])
-        if "Q" in self.__dict__:
-            self.Q = Matrix(SR, [self.Q[i] for i in order])
-        if "p" in self.__dict__:
-            self.p.reorder(order)
+        PolyASParameters.reorderRelations(self, *order)
         return self.theta
+
+    def reorderParameters(self, *order):
+        """
+        Specify a new order for the parameters and return them.
+        """
+        order = self._reorder(order)
+        assert order in self.is_qPolynomial(), \
+            "scheme not Q-polynomial for the given order"
+        PolyASParameters.reorderEigenspaces(self, *order)
+        PolyASParameters.reorderParameters(self, self.q, *order)
+        return self.parameterArray()
+
+    def reorderRelations(self, *order):
+        """
+        Specify a new order for the relations.
+        """
+        self.reorderEigenvalues(*order)
 
     def subs(self, *exp):
         """

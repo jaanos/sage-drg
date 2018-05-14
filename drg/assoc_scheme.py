@@ -449,6 +449,36 @@ class ASParameters:
                 self.vars = variables(self.Q)
         self.vars_ordered = len(self.vars) <= 1
 
+    def _is_polynomial(self, p, i):
+        """
+        Check whether the association scheme is polynomial
+        for the given parameters and principal relation or eigenspace.
+        """
+        order = [0, i]
+        while len(order) <= self.d:
+            j = {h for h in range(self.d+1)
+                 if h not in order[-2:] and p[order[-1], i, h] != 0}
+            if len(j) != 1:
+                return False
+            j, = j
+            order.append(j)
+        return tuple(order)
+
+    def _reorder(self, order):
+        """
+        Check and normalize a given order of relations or eigenspaces.
+        """
+        if len(order) == 1 and isinstance(order[0], (tuple, list)):
+            order = order[0]
+        if 0 in order:
+            assert order[0] == 0, "zero cannot be reordered"
+        else:
+            order = [0] + list(order)
+        assert len(order) == self.d + 1, "wrong number of indices"
+        assert set(order) == set(range(self.d + 1)), \
+            "repeating or nonexisting indices"
+        return tuple(order)
+
     def _subs(self, exp, p):
         """
         Substitute the given subexpressions in the paramaters.
@@ -654,6 +684,32 @@ class ASParameters:
                         - self.dualEigenmatrix(simplify = 2)).is_zero()
         return self.fsd
 
+    def is_pPolynomial(self):
+        """
+        Check whether the association scheme is P-polynomial,
+        and return all P-polynomial orderings if it is.
+        """
+        if "p" not in self.__dict__:
+            self.pTable()
+        if "pPolynomial_ordering" not in self.__dict__:
+            pPoly = filter(None, (self._is_polynomial(self.p, i)
+                                  for i in range(1, self.d+1)))
+            self.pPolynomial_ordering = False if len(pPoly) == 0 else pPoly
+        return self.pPolynomial_ordering
+
+    def is_qPolynomial(self):
+        """
+        Check whether the association scheme is Q-polynomial,
+        and return all Q-polynomial orderings if it is.
+        """
+        if "q" not in self.__dict__:
+            self.kreinParameters()
+        if "qPolynomial_ordering" not in self.__dict__:
+            qPoly = filter(None, (self._is_polynomial(self.q, i)
+                                  for i in range(1, self.d+1)))
+            self.qPolynomial_ordering = False if len(qPoly) == 0 else qPoly
+        return self.qPolynomial_ordering
+
     def kreinParameters(self, expand = False, factor = False,
                         simplify = False):
         """
@@ -692,6 +748,53 @@ class ASParameters:
                              simplify = simplify)
         self.p.rewrite(expand = expand, factor = factor, simplify = simplify)
         return self.p
+
+    def reorderEigenspaces(self, *order):
+        """
+        Specify a new order for the eigenspaces.
+        """
+        order = self._reorder(order)
+        if "m" in self.__dict__:
+            self.m = tuple(self.m[i] for i in order)
+        if "P" in self.__dict__:
+            self.P = Matrix(SR, [self.P[i] for i in order])
+        if "Q" in self.__dict__:
+            self.Q = Matrix(SR, [[r[j] for j in order] for r in self.Q])
+        if "q" in self.__dict__:
+            self.q.reorder(order)
+        if "qPolynomial_ordering" in self.__dict__ \
+                and self.qPolynomial_ordering:
+            self.qPolynomial_ordering = sorted([tuple(order.index(i)
+                                                      for i in o)
+                                        for o in self.qPolynomial_ordering])
+
+    def reorderRelations(self, *order):
+        """
+        Specify a new order for the relations.
+        """
+        order = self._reorder(order)
+        if "k" in self.__dict__:
+            self.k = tuple(self.k[i] for i in order)
+        if "P" in self.__dict__:
+            self.P = Matrix(SR, [[r[j] for j in order] for r in self.P])
+        if "Q" in self.__dict__:
+            self.Q = Matrix(SR, [self.Q[i] for i in order])
+        if "p" in self.__dict__:
+            self.p.reorder(order)
+        self.triple = {tuple(order.index(i) for i in t):
+                       s.reorder(order, inplace = False)
+                       for t, s in self.triple.items()}
+        self.triple_solution = {tuple(order.index(i) for i in t):
+                                {k: s.reorder(order, inplace = False)
+                                 for k, s in d.items()}
+                                for t, d in self.triple_solution.items()}
+        self.triple_solution_generator = {tuple(order.index(i) for i in t): g
+                        for t, g in self.triple_solution_generator.items()}
+        if "pPolynomial_ordering" in self.__dict__ \
+                and self.pPolynomial_ordering:
+            self.pPolynomial_ordering = sorted([tuple(order.index(i)
+                                                      for i in o)
+                                        for o in self.pPolynomial_ordering])
 
     def set_vars(self, vars):
         """
@@ -1295,17 +1398,30 @@ class PolyASParameters(ASParameters):
         Performs the part of the reordering that is common
         to P- and Q-polynomial association schemes.
         """
+        order = self._reorder(order)
         if "theta" not in self.__dict__:
             self.eigenvalues()
-        if len(order) == 1 and isinstance(order[0], (tuple, list)):
-            order = order[0]
-        assert len(order) == self.d, "wrong number of indices"
-        order = [0] + list(order)
-        assert set(order) == set(range(self.d + 1)), \
-            "repeating or nonexisting indices"
         self.theta = tuple(self.theta[i] for i in order)
         if "omega" in self.__dict__:
             self.omega = Matrix(SR, [self.omega[i] for i in order])
         if "fsd" in self.__dict__:
             del self.fsd
         return order
+
+    def reorderParameters(self, p, *order):
+        """
+        Specify a new order for the parameters and return it.
+
+        Performs the part of the reordering that is common
+        to P- and Q-polynomial association schemes.
+        """
+        self.a = tuple(p[i, i, 1] for i in range(self.d + 1))
+        self.b = tuple(p[i, i+1, 1] if i < self.d else Integer(0)
+                       for i in range(self.d + 1))
+        self.c = tuple(p[i, i-1, 1] if i > 0 else Integer(0)
+                       for i in range(self.d + 1))
+        if "omega" in self.__dict__:
+            self.omega = Matrix(SR, [[r[i] for i in order]
+                                     for r in self.omega])
+        if "fsd" in self.__dict__:
+            del self.fsd

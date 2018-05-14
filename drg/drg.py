@@ -1213,20 +1213,36 @@ class DRGParameters(PolyASParameters):
         else:
             return DRGParameters(b, c)
 
+    def reorderEigenspaces(self, *order):
+        """
+        Specify a new order for the eigenspaces.
+        """
+        self.reorderEigenvalues(*order)
+
     def reorderEigenvalues(self, *order):
         """
         Specify a new order for the eigenvalues and return it.
         """
         order = PolyASParameters.reorderEigenvalues(self, *order)
-        if "m" in self.__dict__:
-            self.m = tuple(self.m[i] for i in order)
-        if "P" in self.__dict__:
-            self.P = Matrix(SR, [self.P[i] for i in order])
-        if "Q" in self.__dict__:
-            self.Q = Matrix(SR, [[r[j] for j in order] for r in self.Q])
-        if "q" in self.__dict__:
-            self.q.reorder(order)
+        PolyASParameters.reorderEigenspaces(self, *order)
         return self.theta
+
+    def reorderParameters(self, *order):
+        """
+        Specify a new order for the parameters and return them.
+        """
+        order = self._reorder(order)
+        assert order in self.is_pPolynomial(), \
+            "scheme not P-polynomial for the given order"
+        PolyASParameters.reorderRelations(self, *order)
+        PolyASParameters.reorderParameters(self, self.p, *order)
+        return self.parameterArray()
+
+    def reorderRelations(self, *order):
+        """
+        Specify a new order for the relations.
+        """
+        self.reorderParameters(*order)
 
     def show_distancePartitions(self, **options):
         """

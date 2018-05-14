@@ -98,15 +98,17 @@ class Array3D:
                     A[t] = self[tuple(t[i] for i in p)]
         return A
 
-    def reorder(self, order):
+    def reorder(self, order, inplace = True):
         """
         Reorder each dimension in the array.
         """
         assert len(order) == self.n, "wrong number of indices"
         assert set(order) == set(range(self.n)), \
             "repeating or nonexisting indices"
-        self.A = [Matrix(SR, [[self.A[h][i, j] for j in order] for i in order])
-                  for h in order]
+        A = self if inplace else Array3D(self.n)
+        A.A = [Matrix(SR, [[self.A[h][i, j] for j in order] for i in order])
+               for h in order]
+        return A
 
     def rewrite(self, expand = False, factor = False, simplify = False):
         """
