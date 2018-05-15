@@ -11,6 +11,7 @@ from sage.rings.integer import Integer
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
+from .array3d import Array4D
 from .coefflist import CoefficientList
 from .find import find
 from .util import checkNonneg
@@ -20,6 +21,7 @@ from .util import full_simplify
 from .util import integralize
 from .util import make_expressions
 from .util import nrows
+from .util import refresh
 from .util import rewriteExp
 from .util import rewriteMatrix
 from .util import rewriteTuple
@@ -31,6 +33,23 @@ TPERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
           [1, 2, 0], [2, 0, 1], [2, 1, 0]]
 DPERMS = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
           [2, 0, 1], [1, 2, 0], [2, 1, 0]]
+
+QHPERMS = [[0, 1, 2, 3, 4, 5], [0, 2, 1, 4, 3, 5], [1, 0, 2, 3, 5, 4],
+           [1, 2, 0, 5, 3, 4], [2, 0, 1, 4, 5, 3], [2, 1, 0, 5, 4, 3],
+           [0, 3, 4, 1, 2, 5], [0, 4, 3, 2, 1, 5], [3, 0, 4, 1, 5, 2],
+           [3, 4, 0, 5, 1, 2], [4, 0, 3, 2, 5, 1], [4, 3, 0, 5, 2, 1],
+           [1, 3, 5, 0, 2, 4], [1, 5, 3, 2, 0, 4], [3, 1, 5, 0, 4, 2],
+           [3, 5, 1, 4, 0, 2], [5, 1, 3, 2, 4, 0], [5, 3, 1, 4, 2, 0],
+           [2, 4, 5, 0, 1, 3], [2, 5, 4, 1, 0, 3], [4, 2, 5, 0, 3, 1],
+           [4, 5, 2, 3, 0, 1], [5, 2, 4, 1, 3, 0], [5, 4, 2, 3, 1, 0]]
+QDPERMS = [[0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3],
+           [0, 2, 3, 1], [0, 3, 1, 2], [0, 3, 2, 1],
+           [1, 0, 2, 3], [1, 0, 3, 2], [1, 2, 0, 3],
+           [1, 2, 3, 0], [1, 3, 0, 2], [1, 3, 2, 0],
+           [2, 0, 1, 3], [2, 0, 3, 1], [2, 1, 0, 3],
+           [2, 1, 3, 0], [2, 3, 0, 1], [2, 3, 1, 0],
+           [3, 0, 1, 2], [3, 0, 2, 1], [3, 1, 0, 2],
+           [3, 1, 2, 0], [3, 2, 0, 1], [3, 2, 1, 0]]
 
 DUAL_PARAMETER = "Krein parameter"
 DUAL_PARTS = "multiplicities"
@@ -104,6 +123,7 @@ class ASParameters:
         self.triple = {}
         self.triple_solution = {}
         self.triple_solution_generator = {}
+        self.quadruple = {}
         assert (p, q, P, Q).count(None) >= 3, \
             "precisely one of p, q, P, Q must be given"
         if isinstance(p, ASParameters):
@@ -425,6 +445,7 @@ class ASParameters:
         p.triple.update(self.triple)
         p.triple_solution.update(self.triple_solution)
         p.triple_solution_generator.update(self.triple_solution_generator)
+        p.quadruple.update(self.quadruple)
 
     @staticmethod
     def _get_class():
@@ -532,6 +553,8 @@ class ASParameters:
             p.Q = self.Q.subs(*exp)
         for k, v in self.triple.items():
             p.triple[k] = v.subs(*exp)
+        for k, v in self.quadruple.items():
+            p.quadruple[k] = v.subs(*exp)
 
     def check_absoluteBound(self):
         """
@@ -788,6 +811,224 @@ class ASParameters:
         self.p.rewrite(expand = expand, factor = factor, simplify = simplify)
         return self.p
 
+    def quadrupleEquations(self, h, i, j, r, s, t, krein = None,
+                           params = None, solve = True, fresh = False,
+                           save = None):
+        """
+        Solve equations for quadruples of vertices ``w, x, y, z``
+        such that ``d(w, x) = h``, ``d(w, y) = i``, ``d(w, z) = j``,
+        ``d(x, y) = r``, ``d(x, z) = s``, ``d(y, z) = t``.
+
+        If ``krein`` is a list of quadruples,
+        the corresponding equations are used;
+        otherwise, equations for quadruples ``(A, B, C, D)``
+        such that for every ``E``, ``q[E, A, B] * q[E, C, D]`` is zero,
+        are used.
+        If ``params`` is a dictionary mapping strings to quadruples,
+        the keys will be used as variables mapped to quadruple intersection
+        numbers for corresponding quadruples.
+        If ``solve`` is ``False``,
+        only a list of equations and a set of variables is returned,
+        without solving the equations.
+        """
+        if solve and krein is None and params is None:
+            qh = (h, i, j, r, s, t)
+            if qh not in self.quadruple:
+                for p, q in zip(QHPERMS, QDPERMS):
+                    hp = tuple(qh[i] for i in p)
+                    if hp in self.quadruple:
+                        self.quadruple[qh] = self.quadruple[hp].permute(q)
+                        break
+            if qh in self.quadruple:
+                s = self.quadruple[qh]
+                if fresh:
+                    vars = set(s.variables()).difference(self.vars)
+                    if len(vars) > 0:
+                        s = s.subs(*refresh(vars))
+                        if save:
+                            self.quadruple[qh] = s
+                return s
+        Swxy = self.tripleEquations(h, i, r, fresh = True, save = save)
+        assert checkPos(Swxy[j, s, t]), \
+            "no quadruple of vertices in relations %d, %d, %d, %d, %d, %d" \
+            % (h, i, j, r, s, t)
+        Swxz = self.tripleEquations(h, j, s, fresh = True, save = save)
+        assert checkPos(Swxz[i, r, t]), \
+            "no quadruple of vertices in relations %d, %d, %d, %d, %d, %d" \
+            % (h, i, j, r, s, t)
+        Swyz = self.tripleEquations(i, j, t, fresh = True, save = save)
+        assert checkPos(Swyz[h, r, s]), \
+            "no quadruple of vertices in relations %d, %d, %d, %d, %d, %d" \
+            % (h, i, j, r, s, t)
+        Sxyz = self.tripleEquations(r, s, t, fresh = True, save = save)
+        assert checkPos(Sxyz[h, i, j]), \
+            "no quadruple of vertices in relations %d, %d, %d, %d, %d, %d" \
+            % (h, i, j, r, s, t)
+        out = []
+        R = range(self.d+1)
+        S = [[[[Integer(1) if (A, B, C, D) in [(j, s, t, 0), (i, r, 0, t),
+                                               (h, 0, r, s), (0, h, i, j)]
+                else SR.symbol("%s_%d_%d_%d_%d_%d_%d_%d_%d_%d_%d" %
+                               (self.prefix, h, i, j, r, s, t, A, B, C, D))
+                for D in R] for C in R] for B in R] for A in R]
+        vars = {x for SA in S for SB in SA for SC in SB for x in SC
+                 if not isinstance(x, Integer)}
+        for U in R:
+            for V in R:
+                for W in R:
+                    if Swxy[U, V, W] == sum(S[U][V][W][X] for X in R
+                                            if S[U][V][W][X] not in vars):
+                        for X in R:
+                            if S[U][V][W][X] in vars:
+                                vars.discard(S[U][V][W][X])
+                                S[U][V][W][X] = Integer(0)
+                    if Swxz[U, V, W] == sum(S[U][V][X][W] for X in R
+                                            if S[U][V][X][W] not in vars):
+                        for X in R:
+                            if S[U][V][X][W] in vars:
+                                vars.discard(S[U][V][X][W])
+                                S[U][V][X][W] = Integer(0)
+                    if Swyz[U, V, W] == sum(S[U][X][V][W] for X in R
+                                            if S[U][X][V][W] not in vars):
+                        for X in R:
+                            if S[U][X][V][W] in vars:
+                                vars.discard(S[U][X][V][W])
+                                S[U][X][V][W] = Integer(0)
+                    if Sxyz[U, V, W] == sum(S[X][U][V][W] for X in R
+                                            if S[X][U][V][W] not in vars):
+                        for X in R:
+                            if S[X][U][V][W] in vars:
+                                vars.discard(S[X][U][V][W])
+                                S[X][U][V][W] = Integer(0)
+        consts = set()
+        c = [[[[len([X for X in R if S[U][V][W][X] in vars])
+                for W in R] for V in R] for U in R],
+             [[[len([X for X in R if S[U][V][X][W] in vars])
+                for W in R] for V in R] for U in R],
+             [[[len([X for X in R if S[U][X][V][W] in vars])
+                for W in R] for V in R] for U in R],
+             [[[len([X for X in R if S[X][U][V][W] in vars])
+                for W in R] for V in R] for U in R]]
+        q = []
+        for X, cX in enumerate(c):
+            for U, cU in enumerate(cX):
+                for V, cV in enumerate(cU):
+                    for W, n in enumerate(cV):
+                        if n == 1:
+                            q.append((X, U, V, W))
+        while len(q) > 0:
+            X, U, V, W = q.pop()
+            if c[X][U][V][W] == 0:
+                continue
+            A, B, C, D = [(U, V, W, None), (U, V, None, W),
+                          (U, None, V, W), (None, U, V, W)][X]
+            if D is None:
+                D = next(Y for Y in R if S[A][B][C][Y] in vars)
+                x = S[A][B][C][D]
+                S[A][B][C][D] = Swxy[A, B, C] - sum(S[A][B][C][Y] for Y in R
+                                                    if Y != D)
+            elif C is None:
+                C = next(Y for Y in R if S[A][B][Y][D] in vars)
+                x = S[A][B][C][D]
+                S[A][B][C][D] = Swxz[A, B, D] - sum(S[A][B][Y][D] for Y in R
+                                                    if Y != C)
+            elif B is None:
+                B = next(Y for Y in R if S[A][Y][C][D] in vars)
+                x = S[A][B][C][D]
+                S[A][B][C][D] = Swyz[A, C, D] - sum(S[A][Y][C][D] for Y in R
+                                                    if Y != B)
+            elif A is None:
+                A = next(Y for Y in R if S[Y][B][C][D] in vars)
+                x = S[A][B][C][D]
+                S[A][B][C][D] = Sxyz[B, C, D] - sum(S[Y][B][C][D] for Y in R
+                                                    if Y != A)
+            for Y, U, V, W in [(0, A, B, C), (1, A, B, D),
+                               (2, A, C, D), (3, B, C, D)]:
+                c[Y][U][V][W] -= 1
+                if c[Y][U][V][W] == 1:
+                    q.append((Y, U, V, W))
+            out.append(x == S[A][B][C][D])
+            consts.add(x)
+        for U in R:
+            for V in R:
+                for W in R:
+                    Z = sum(S[U][V][W][X] for X in R) - Swxy[U, V, W]
+                    if isinstance(Z, Integer) or Z.is_constant():
+                        assert Z == 0, \
+                            "value of s[%d, %d, %d][%d, %d, %d] exceeded" % \
+                                (h, i, r, U, V, W)
+                    else:
+                        out.append(Z == 0)
+                    Z = sum(S[U][V][X][W] for X in R) - Swxz[U, V, W]
+                    if isinstance(Z, Integer) or Z.is_constant():
+                        assert Z == 0, \
+                            "value of s[%d, %d, %d][%d, %d, %d] exceeded" % \
+                                (h, j, s, U, V, W)
+                    else:
+                        out.append(Z == 0)
+                    Z = sum(S[U][X][V][W] for X in R) - Swyz[U, V, W]
+                    if isinstance(Z, Integer) or Z.is_constant():
+                        assert Z == 0, \
+                            "value of s[%d, %d, %d][%d, %d, %d] exceeded" % \
+                                (i, j, t, U, V, W)
+                    else:
+                        out.append(Z == 0)
+                    Z = sum(S[X][U][V][W] for X in R) - Sxyz[U, V, W]
+                    if isinstance(Z, Integer) or Z.is_constant():
+                        assert Z == 0, \
+                            "value of s[%d, %d, %d][%d, %d, %d] exceeded" % \
+                                (r, s, t, U, V, W)
+                    else:
+                        out.append(Z == 0)
+        if krein is None:
+            if save is None:
+                save = True
+            Rs = set(R)
+            pairs = {(A, B): {C for C in R if self.q[C, A, B] == 0}
+                     for A in R for B in R}
+            krein = [(A, B, C, D) for (A, B), AB in pairs.items()
+                                  for (C, D), CD in pairs.items()
+                                  if AB | CD == Rs]
+        if krein:
+            for A, B, C, D in krein:
+                Z = sum(self.Q[tA, A] * self.Q[tB, B] *
+                        self.Q[tC, C] * self.Q[tD, D] *
+                        S[tA][tB][tC][tD] for tA in R for tB in R
+                                          for tC in R for tD in R)
+                if isinstance(Z, Integer):
+                    assert Z == 0, \
+                        "Krein equation for (%d, %d, %d, %d) " \
+                        "not satisfied" % (A, B, C, D)
+                else:
+                    out.append(Z == 0)
+        if params:
+            for a, (A, B, C, D) in params.items():
+                x = SR.symbol(a)
+                out.append(S[A][B][C][D] == x)
+        vars.intersection_update(x for SA in S for SB in SA
+                                   for SC in SB for x in SC)
+        vars.update(consts)
+        vars.update(Swxy.variables())
+        vars.update(Swxz.variables())
+        vars.update(Swyz.variables())
+        vars.update(Sxyz.variables())
+        if not solve:
+            return (out, vars)
+        sol = _solve(out, tuple(vars))
+        assert len(sol) > 0, "system of equations has no solution"
+        Q = Array4D(self.d + 1)
+        for A in R:
+            for B in R:
+                for C in R:
+                    for D in R:
+                        if isinstance(S[A][B][C][D], Integer):
+                            Q[A, B, C, D] = S[A][B][C][D]
+                        else:
+                            Q[A, B, C, D] = S[A][B][C][D].subs(sol[0])
+        if save:
+            self.quadruple[h, i, j, r, s, t] = Q
+        return Q
+
     def reorderEigenspaces(self, *order):
         """
         Specify a new order for the eigenspaces.
@@ -829,6 +1070,9 @@ class ASParameters:
                                 for t, d in self.triple_solution.items()}
         self.triple_solution_generator = {tuple(order.index(i) for i in t): g
                         for t, g in self.triple_solution_generator.items()}
+        self.quadruple = {tuple(order.index(i) for i in t):
+                          s.reorder(order, inplace = False)
+                          for t, s in self.quadruple.items()}
         if "pPolynomial_ordering" in self.__dict__ \
                 and self.pPolynomial_ordering:
             self.pPolynomial_ordering = sorted([tuple(order.index(i)
@@ -889,7 +1133,7 @@ class ASParameters:
                 yield self.triple[tp][tuple(d[i] for i in q)]
 
     def tripleEquations(self, u, v, w, krein = None, params = None,
-                        solve = True, save = None):
+                        solve = True, fresh = False, save = None):
         """
         Solve equations for triples of vertices
         in relations ``u``, ``v``, ``w``.
@@ -906,11 +1150,21 @@ class ASParameters:
         """
         if solve and krein is None and params is None:
             t = (u, v, w)
-            for p, q in zip(TPERMS, DPERMS):
-                tp = tuple(t[i] for i in p)
-                if tp in self.triple:
-                    self.triple[t] = self.triple[tp].permute(q)
-                    return self.triple[t]
+            if t not in self.triple:
+                for p, q in zip(TPERMS, DPERMS):
+                    tp = tuple(t[i] for i in p)
+                    if tp in self.triple:
+                        self.triple[t] = self.triple[tp].permute(q)
+                        break
+            if t in self.triple:
+                s = self.triple[t]
+                if fresh:
+                    vars = set(s.variables()).difference(self.vars)
+                    if len(vars) > 0:
+                        s = s.subs(*refresh(vars))
+                        if save:
+                            self.triple[t] = s
+                return s
         if "Q" not in self.__dict__:
             self.dualEigenmatrix()
         if "p" not in self.__dict__:

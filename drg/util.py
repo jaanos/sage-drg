@@ -10,6 +10,7 @@ from sage.rings.real_mpfr import create_RealNumber
 from sage.structure.element import Matrix as MatrixClass
 from sage.structure.factorization_integer import IntegerFactorization
 from sage.symbolic.expression import Expression
+from sage.symbolic.relation import solve
 
 pair_keep = staticmethod(lambda i, j: (i, j))
 pair_swap = staticmethod(lambda i, j: (j, i))
@@ -192,6 +193,16 @@ def nrows(M):
     Return the number of rows in the matrix.
     """
     return M.nrows() if isinstance(M, MatrixClass) else len(M)
+
+def refresh(vars):
+    """
+    Return a list of replacement of given variables with fresh ones.
+    """
+    if len(vars) == 0:
+        return []
+    elif len(vars) == 1:
+        vars = list(vars) * 2
+    return solve([x == x for x in vars], list(vars))[0]
 
 def rewriteExp(exp, expand = False, factor = False, simplify = False):
     """

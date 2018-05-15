@@ -164,6 +164,14 @@ class Array4D:
         self.A = [Array3D(n) for i in range(n)]
         self.n = n
 
+    def __copy__(self):
+        """
+        Return a copy of the array.
+        """
+        Q = Array4D(self.n)
+        Q.A = [copy(A) for A in self.A]
+        return Q
+
     def __eq__(self, other):
         """
         Equality comparison.
@@ -248,7 +256,7 @@ class Array4D:
                         A[t] = self[tuple(t[i] for i in p)]
         return A
 
-    def reorder(self, order):
+    def reorder(self, order, inplace = True):
         """
         Reorder each dimension in the array.
         """
@@ -259,7 +267,9 @@ class Array4D:
         for l, h in enumerate(order):
             A[l].A = [Matrix(SR, [[self.A[h, i][j, k] for k in order]
                                   for j in order]) for i in order]
-        self.A = A
+        Q = self if inplace else Array4D(self.n)
+        Q.A = A
+        return Q
 
     def rewrite(self, expand = False, factor = False, simplify = False):
         """
@@ -274,12 +284,12 @@ class Array4D:
         elif simplify:
             self.map(_simplify)
 
-    def subs(self, exp):
+    def subs(self, *exp):
         """
         Substitute the given subexpressions in the array.
         """
         S = Array4D(self.n)
-        S.A = [A.subs(exp) for i, A in enumerate(self)]
+        S.A = [A.subs(*exp) for i, A in enumerate(self)]
         return S
 
     def variables(self):
