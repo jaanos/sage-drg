@@ -265,7 +265,7 @@ class Array4D:
             "repeating or nonexisting indices"
         A = [Array3D(self.n) for k in range(self.n)]
         for l, h in enumerate(order):
-            A[l].A = [Matrix(SR, [[self.A[h, i][j, k] for k in order]
+            A[l].A = [Matrix(SR, [[self.A[h][i, j, k] for k in order]
                                   for j in order]) for i in order]
         Q = self if inplace else Array4D(self.n)
         Q.A = A
