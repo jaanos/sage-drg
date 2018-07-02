@@ -5,8 +5,8 @@ from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
+from sage.matrix.constructor import diagonal_matrix
 from sage.matrix.constructor import identity_matrix
-from sage.matrix.special import diagonal_matrix
 from sage.rings.integer import Integer
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
