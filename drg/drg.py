@@ -322,6 +322,7 @@ class DRGParameters(PolyASParameters):
         if self.d == 3 and self.antipodal and isinstance(self.r, Integer) \
                 and isinstance(self.b[0], Integer) \
                 and self.b[0] - 1 == self.b[1] + self.c[2]:
+            ok = True
             if self.r % 2 == 0:
                 ok = is_squareSum(self.b[0])
             elif self.b[0] % 2 == 0:
