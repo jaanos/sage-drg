@@ -1,3 +1,4 @@
+from copy import copy
 from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
@@ -5,6 +6,7 @@ from sage.calculus.functional import simplify as _simplify
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
+from sage.matrix.special import diagonal_matrix
 from sage.rings.integer import Integer
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
@@ -17,6 +19,7 @@ from .util import _factor
 from .util import full_simplify
 from .util import integralize
 from .util import make_expressions
+from .util import nrows
 from .util import rewriteExp
 from .util import rewriteMatrix
 from .util import rewriteTuple
@@ -28,6 +31,14 @@ TPERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
           [1, 2, 0], [2, 0, 1], [2, 1, 0]]
 DPERMS = [[0, 1, 2], [1, 0, 2], [0, 2, 1],
           [2, 0, 1], [1, 2, 0], [2, 1, 0]]
+
+DUAL_PARAMETER = "Krein parameter"
+DUAL_PARTS = "multiplicities"
+DUAL_SYMBOL = "q"
+OBJECT = "association scheme"
+PARAMETER = "intersection number"
+PARTS = "subconstituents"
+SYMBOL = "p"
 
 class InfeasibleError(Exception):
     """
@@ -84,16 +95,39 @@ class ASParameters:
     d = None
     vars = None
 
-    def __init__(self, p = None, q = None):
+    def __init__(self, p = None, q = None, P = None, Q = None):
         """
         Object constructor.
         """
-        # TODO: initialize from p or q array
-        self._init_vars()
-        self.prefix = "v%x" % (hash(self) % Integer(2)**32)
+        if self._get_class() is ASParameters:
+            self._init_prefix()
         self.triple = {}
         self.triple_solution = {}
         self.triple_solution_generator = {}
+        assert (p, q, P, Q).count(None) >= 3, \
+            "precisely one of p, q, P, Q must be given"
+        if isinstance(p, ASParameters):
+            p._copy(self)
+        elif p is not None:
+            self.p = self._init_parameters(p, integral = True,
+                                           name = PARAMETER, sym = SYMBOL)
+            self._compute_kTable()
+            self._check_consistency(self.p, self.k,
+                                    name = PARAMETER, sym = SYMBOL)
+        elif q is not None:
+            self.q = self._init_parameters(q, integral = False,
+                                           name = DUAL_PARAMETER,
+                                           sym = DUAL_SYMBOL)
+            self._compute_multiplicities()
+            self._check_consistency(self.q, self.m,
+                                    name = DUAL_PARAMETER, sym = DUAL_SYMBOL)
+        elif P is not None:
+            self.P = self._init_eigenmatrix(P)
+        elif Q is not None:
+            self.Q = self._init_eigenmatrix(Q)
+        else:
+            assert self.d is not None, "insufficient data"
+        self._init_vars()
 
     def __len__(self, expand = False, factor = False, simplify = False):
         """
@@ -102,6 +136,43 @@ class ASParameters:
         self.n = rewriteExp(self.n, expand = expand, factor = factor,
                             simplify = simplify)
         return self.n
+
+    def __repr__(self):
+        """
+        String representation.
+        """
+        return "Parameters of an association scheme on %s vertices " \
+               "with %d classes" % (self.n, self.d)
+
+    def _check_consistency(self, p, k, name = None, sym = None):
+        """
+        Check for the consistency of the intersection numbers
+        or Krein parameters.
+        """
+        r = range(self.d + 1)
+        for h in r:
+            assert p[0, h, h] == k[h], \
+                "mismatch of %s %s[0, %d, %d]" % (name, sym, h, h)
+            for i in r:
+                s = 0
+                for j in r:
+                    assert p[h, i, j] == p[h, j, i], \
+                        "non-symmetric %s %s[%d, %d, %d]" % \
+                        (name, sym, h, i, j)
+                    assert p[h, i, j] * k[h] == p[j, h, i] * k[j], \
+                        "double counting mismatch for %s[%d, %d, %d]" % \
+                        (sym, h, i, j)
+                    s += p[h, i, j]
+                    for u in r:
+                        assert sum(p[v, i, j] * p[u, v, h] for v in r) == \
+                               sum(p[u, i, v] * p[v, j, h] for v in r), \
+                               "double counting mismatch for " \
+                               "sum_l %s[l, %d, %d] %s[%d, l, %d]" % \
+                               (sym, i, j, sym, u, h)
+                assert s == k[i], \
+                    "mismatch of sum_j %s[%d, %d, j]" % (sym, h, i)
+        if "n" not in self.__dict__:
+            self.n = sum(k)
 
     def _check_eigenmatrices(self):
         """
@@ -164,56 +235,196 @@ class ASParameters:
         """
         Compute the dual eigenmatrix of the association scheme.
         """
-        # TODO
-        pass
+        if "Q" in self.__dict__:
+            return
+        if "q" in self.__dict__:
+            self.Q = self._compute_eigenmatrix(self.q, expand = expand,
+                                               factor = factor,
+                                               simplify = simplify)
+        else:
+            if "P" not in self.__dict__:
+                self.eigenmatrix(expand = expand, factor = factor,
+                                 simplify = simplify)
+            self.Q = self.n * self.P.inverse()
+        self._check_eigenmatrices()
 
     def _compute_eigenmatrix(self, p, expand = False, factor = False,
                              simplify = False):
         """
         Compute and return an eigenmatrix of the association scheme.
         """
-        # TODO
         B = [Matrix(SR, [M[i] for M in p]) for i in range(self.d + 1)]
+        V = SR**(self.d + 1)
+        R = [[self.d + 1, V, [Integer(1)]]]
+        for i in range(1, self.d + 1):
+            S = sorted(([k, m, V.subspace_with_basis(b)]
+                        for k, b, m in B[i].eigenvectors_right()),
+                       key = lambda (k, v, b): CoefficientList(k, self.vars),
+                       reverse = True)
+            j = 0
+            while j < len(R):
+                m, s, r = R[j]
+                h = 0
+                while h < len(S):
+                    k, v, b = S[h]
+                    sb = s.intersection(b)
+                    d = sb.dimension()
+                    if d == v:
+                        del S[h]
+                    else:
+                        S[h][1] -= d
+                        h += 1
+                    if d == m:
+                        R[j][1] = sb
+                        r.append(k)
+                        break
+                    elif d > 0:
+                        R.insert(j, [d, sb, r + [k]])
+                        j += 1
+                        m -= d
+                        R[j][0] = m
+                j += 1
+        assert len(R) == self.d + 1 and all(len(r) == self.d + 1
+                                            for _, _, r in R), \
+            "failed to compute the eigenmatrix"
+        return Matrix(SR, [r for _, _, r in R])
 
     def _compute_kreinParameters(self, expand = False, factor = False,
                                  simplify = False):
         """
         Compute the Krein parameters.
         """
-        # TODO
-        pass
+        if "q" in self.__dict__:
+            return
+        if "m" not in self.__dict__:
+            self.multiplicities(expand = expand, factor = factor,
+                                simplify = simplify)
+        if "k" not in self.__dict__:
+            self.kTable(expand = expand, factor = factor,
+                        simplify = simplify)
+        q = Array3D(self.d + 1)
+        self._compute_parameters(q, self.Q, self.k, integral = False,
+                                 name = DUAL_PARAMETER, sym = DUAL_SYMBOL)
+        self.q = q
 
     def _compute_kTable(self, expand = False, factor = False,
                         simplify = False):
         """
         Compute the sizes of the subconstituents.
         """
-        # TODO
-        pass
+        if "k" in self.__dict__:
+            return
+        if "p" in self.__dict__:
+            k = tuple(self.p[0, i, i] for i in range(self.d + 1))
+        else:
+            if "P" not in self.__dict__:
+                self.eigenmatrix(expand = expand, factor = factor,
+                                 simplify = simplify)
+            k = tuple(integralize(x) for x in self.P[0])
+        assert k[0] == 1, \
+            "the size of the first subconstituent is not 1"
+        self.k = k
 
     def _compute_multiplicities(self, expand = False, factor = False,
                                 simplify = False):
         """
         Compute the multiplicities of the eigenspaces.
         """
-        # TODO
-        pass
+        if "m" in self.__dict__:
+            return
+        if "q" in self.__dict__:
+            m = tuple(integralize(self.q[0, i, i])
+                      for i in range(self.d + 1))
+        else:
+            if "Q" not in self.__dict__:
+                self.dualEigenmatrix(expand = expand, factor = factor,
+                                     simplify = simplify)
+            m = tuple(integralize(x) for x in self.Q[0])
+        assert m[0] == 1, "the multiplicity of the first eigenspace is not 1"
+        self.m = m
+
+    def _compute_parameters(self, p, P, m, integral = False, name = None,
+                            sym = None):
+        """
+        Compute the intersection numbers or Krein parameters
+        from the eigenmatrices.
+        """
+        for h in range(self.d + 1):
+            for i in range(self.d + 1):
+                for j in range(self.d + 1):
+                    p[h, i, j] = full_simplify(
+                                    sum(m[t] * P[t, h] * P[t, i] * P[t, j]
+                                        for t in range(self.d + 1))
+                                    / (self.n * P[0, h]))
+                    self._check_parameter(h, i, j, p[h, i, j],
+                                          integral = integral,
+                                          name = name, sym = sym)
+        self._check_consistency(p, P[0], name = name, sym = sym)
 
     def _compute_primalEigenmatrix(self, expand = False, factor = False,
                                    simplify = False):
         """
         Compute the primal eigenmatrix of the association scheme.
         """
-        # TODO
-        pass
+        if "P" in self.__dict__:
+            return
+        if "p" in self.__dict__:
+            self.P = self._compute_eigenmatrix(self.p, expand = expand,
+                                               factor = factor,
+                                               simplify = simplify)
+        else:
+            if "Q" not in self.__dict__:
+                self.dualEigenmatrix(expand = expand, factor = factor,
+                                     simplify = simplify)
+            self.P = self.n * self.Q.inverse()
+        self._check_eigenmatrices()
 
     def _compute_pTable(self, expand = False, factor = False,
                         simplify = False):
         """
         Compute the intersection numbers.
         """
-        # TODO
-        pass
+        if "p" in self.__dict__:
+            return
+        if "k" not in self.__dict__:
+            self.kTable(expand = expand, factor = factor,
+                        simplify = simplify)
+        if "m" not in self.__dict__:
+            self.multiplicities(expand = expand, factor = factor,
+                                simplify = simplify)
+        p = Array3D(self.d + 1)
+        self._compute_parameters(p, self.P, self.m, integral = True,
+                                 name = PARAMETER, sym = SYMBOL)
+        self.p = p
+        self.check_handshake()
+
+    def _copy(self, p):
+        """
+        Copy fields to the given obejct.
+        """
+        p.d = self.d
+        p.n = self.n
+        if "p" in self.__dict__:
+            p.p = copy(self.p)
+        if "q" in self.__dict__:
+            p.q = copy(self.q)
+        if "P" in self.__dict__:
+            p.P = copy(self.P)
+        if "Q" in self.__dict__:
+            p.Q = copy(self.Q)
+        if "k" in self.__dict__:
+            p.k = self.k
+        if "m" in self.__dict__:
+            p.m = self.m
+        if "fsd" in self.__dict__:
+            p.fsd = self.fsd
+        if "pPolynomial_ordering" in self.__dict__:
+            p.pPolynomial_ordering = self.pPolynomial_ordering
+        if "qPolynomial_ordering" in self.__dict__:
+            p.qPolynomial_ordering = self.qPolynomial_ordering
+        p.triple.update(self.triple)
+        p.triple_solution.update(self.triple_solution)
+        p.triple_solution_generator.update(self.triple_solution_generator)
 
     @staticmethod
     def _get_class():
@@ -222,28 +433,112 @@ class ASParameters:
         """
         return ASParameters
 
+    def _init_eigenmatrix(self, P):
+        """
+        Initialize an eigenmatrix from the specified matrix.
+        """
+        self.d = nrows(P) - 1
+        assert all(len(r) == self.d + 1 for r in P), \
+            "parameter length mismatch"
+        P = Matrix(SR, P)
+        for i, x in enumerate(P[0]):
+            P[0, i] = integralize(x)
+        self.n = sum(P[0])
+        return P
+
+    def _init_parameters(self, p, integral = False, name = None, sym = None):
+        """
+        Initialize the intersection numbers or Krein parameters
+        from the specified array.
+        """
+        self.d = nrows(p) - 1
+        if isinstance(p, Array3D):
+            a = p
+        else:
+            assert all(len(M) == self.d + 1 and all(len(r) == self.d+1
+                                                    for r in M)
+                       for M in p), "parameter length mismatch"
+            a = Array3D(self.d + 1)
+            for h in range(self.d + 1):
+                for i in range(self.d + 1):
+                    for j in range(self.d + 1):
+                        a[h, i, j] = p[h][i][j]
+        self._check_parameters(a, integral = integral,
+                               name = name, sym = sym)
+        return a
+
+    def _init_prefix(self):
+        """
+        Initialize prefix to be used for internal variables.
+        """
+        self.prefix = "v%x" % (hash(self) % Integer(2)**32)
+
     def _init_vars(self):
         """
         Initialize the list of variables.
         """
-        # TODO: obtain variables if not yet available
+        if "vars" not in self.__dict__:
+            if "p" in self.__dict__:
+                self.vars = self.p.variables()
+            elif "q" in self.__dict__:
+                self.vars = self.q.variables()
+            elif "P" in self.__dict__:
+                self.vars = variables(self.P)
+            elif "Q" in self.__dict__:
+                self.vars = variables(self.Q)
         self.vars_ordered = len(self.vars) <= 1
+
+    def _is_polynomial(self, p, i):
+        """
+        Check whether the association scheme is polynomial
+        for the given parameters and principal relation or eigenspace.
+        """
+        order = [0, i]
+        while len(order) <= self.d:
+            j = {h for h in range(self.d+1)
+                 if h not in order[-2:] and p[order[-1], i, h] != 0}
+            if len(j) != 1:
+                return False
+            j, = j
+            order.append(j)
+        return tuple(order)
+
+    def _reorder(self, order):
+        """
+        Check and normalize a given order of relations or eigenspaces.
+        """
+        if len(order) == 1 and isinstance(order[0], (tuple, list)):
+            order = order[0]
+        if 0 in order:
+            assert order[0] == 0, "zero cannot be reordered"
+        else:
+            order = [0] + list(order)
+        assert len(order) == self.d + 1, "wrong number of indices"
+        assert set(order) == set(range(self.d + 1)), \
+            "repeating or nonexisting indices"
+        return tuple(order)
 
     def _subs(self, exp, p):
         """
-        Substitute the given subexpressions in the eigenmatrices.
+        Substitute the given subexpressions in the paramaters.
         """
-        if "P" in self.__dict__:
-            p.P = self.P.subs(exp)
-        if "Q" in self.__dict__:
-            p.Q = self.Q.subs(exp)
+        if "p" in self.__dict__ and not "p" in p.__dict__:
+            p.p = self.p.subs(*exp)
+        if "q" in self.__dict__ and not "q" in p.__dict__:
+            p.q = self.q.subs(*exp)
+        if "P" in self.__dict__ and not "P" in p.__dict__:
+            p.P = self.P.subs(*exp)
+        if "Q" in self.__dict__ and not "Q" in p.__dict__:
+            p.Q = self.Q.subs(*exp)
         for k, v in self.triple.items():
-            p.triple[k] = v.subs(exp)
+            p.triple[k] = v.subs(*exp)
 
     def check_absoluteBound(self):
         """
         Check whether the absolute bound is not exceeded.
         """
+        if "m" not in self.__dict__:
+            self.multiplicities()
         if "q" not in self.__dict__:
             self.kreinParameters()
         for i in range(self.d + 1):
@@ -256,6 +551,27 @@ class ASParameters:
                        if self.q[h, i, j] != 0) > self.m[i]*self.m[j]:
                     raise InfeasibleError("absolute bound exceeded "
                                           "for (%d, %d)" % (i, j))
+
+    def check_handshake(self, metric = False, bipartite = False):
+        """
+        Verify the handshake lemma for all relations in all subconstituents.
+        """
+        if "k" not in self.__dict__:
+            self.kTable()
+        if "p" not in self.__dict__:
+            self.pTable()
+        d = [self.d, 0 if metric else self.d]
+        b = 2 if bipartite else 1
+        for i in range(1, self.d + 1):
+            if not isinstance(self.k[i], Integer) or self.k[i] % 2 == 0:
+                continue
+            d[1] += 2
+            for j in range(b, min(d) + 1, b):
+                if isinstance(self.p[i, i, j], Integer) and \
+                        self.p[i, i, j] % 2 == 1:
+                    raise InfeasibleError("handshake lemma not satisfied "
+                                          "for relation %d in subconstituent"
+                                          " %d" % (j, i))
 
     def check_quadruples(self, solver = None):
         """
@@ -407,6 +723,32 @@ class ASParameters:
                         - self.dualEigenmatrix(simplify = 2)).is_zero()
         return self.fsd
 
+    def is_pPolynomial(self):
+        """
+        Check whether the association scheme is P-polynomial,
+        and return all P-polynomial orderings if it is.
+        """
+        if "p" not in self.__dict__:
+            self.pTable()
+        if "pPolynomial_ordering" not in self.__dict__:
+            pPoly = filter(None, (self._is_polynomial(self.p, i)
+                                  for i in range(1, self.d+1)))
+            self.pPolynomial_ordering = False if len(pPoly) == 0 else pPoly
+        return self.pPolynomial_ordering
+
+    def is_qPolynomial(self):
+        """
+        Check whether the association scheme is Q-polynomial,
+        and return all Q-polynomial orderings if it is.
+        """
+        if "q" not in self.__dict__:
+            self.kreinParameters()
+        if "qPolynomial_ordering" not in self.__dict__:
+            qPoly = filter(None, (self._is_polynomial(self.q, i)
+                                  for i in range(1, self.d+1)))
+            self.qPolynomial_ordering = False if len(qPoly) == 0 else qPoly
+        return self.qPolynomial_ordering
+
     def kreinParameters(self, expand = False, factor = False,
                         simplify = False):
         """
@@ -446,6 +788,53 @@ class ASParameters:
         self.p.rewrite(expand = expand, factor = factor, simplify = simplify)
         return self.p
 
+    def reorderEigenspaces(self, *order):
+        """
+        Specify a new order for the eigenspaces.
+        """
+        order = self._reorder(order)
+        if "m" in self.__dict__:
+            self.m = tuple(self.m[i] for i in order)
+        if "P" in self.__dict__:
+            self.P = Matrix(SR, [self.P[i] for i in order])
+        if "Q" in self.__dict__:
+            self.Q = Matrix(SR, [[r[j] for j in order] for r in self.Q])
+        if "q" in self.__dict__:
+            self.q.reorder(order)
+        if "qPolynomial_ordering" in self.__dict__ \
+                and self.qPolynomial_ordering:
+            self.qPolynomial_ordering = sorted([tuple(order.index(i)
+                                                      for i in o)
+                                        for o in self.qPolynomial_ordering])
+
+    def reorderRelations(self, *order):
+        """
+        Specify a new order for the relations.
+        """
+        order = self._reorder(order)
+        if "k" in self.__dict__:
+            self.k = tuple(self.k[i] for i in order)
+        if "P" in self.__dict__:
+            self.P = Matrix(SR, [[r[j] for j in order] for r in self.P])
+        if "Q" in self.__dict__:
+            self.Q = Matrix(SR, [self.Q[i] for i in order])
+        if "p" in self.__dict__:
+            self.p.reorder(order)
+        self.triple = {tuple(order.index(i) for i in t):
+                       s.reorder(order, inplace = False)
+                       for t, s in self.triple.items()}
+        self.triple_solution = {tuple(order.index(i) for i in t):
+                                {k: s.reorder(order, inplace = False)
+                                 for k, s in d.items()}
+                                for t, d in self.triple_solution.items()}
+        self.triple_solution_generator = {tuple(order.index(i) for i in t): g
+                        for t, g in self.triple_solution_generator.items()}
+        if "pPolynomial_ordering" in self.__dict__ \
+                and self.pPolynomial_ordering:
+            self.pPolynomial_ordering = sorted([tuple(order.index(i)
+                                                      for i in o)
+                                        for o in self.pPolynomial_ordering])
+
     def set_vars(self, vars):
         """
         Set the order of the variables for eigenvalue sorting.
@@ -457,15 +846,19 @@ class ASParameters:
                                             if x not in vars)
             self.vars_ordered = True
 
-    def subs(self, exp):
+    def subs(self, *exp):
         """
         Substitute the given subexpressions in the parameters.
         """
         par = {}
         if "p" in self.__dict__:
-            par["p"] = self.p.subs(exp)
-        if "q" in self.__dict__:
-            par["q"] = self.q.subs(exp)
+            par["p"] = self.p.subs(*exp)
+        elif "q" in self.__dict__:
+            par["q"] = self.q.subs(*exp)
+        elif "P" in self.__dict__:
+            par["P"] = self.P.subs(*exp)
+        elif "Q" in self.__dict__:
+            par["Q"] = self.Q.subs(*exp)
         p = ASParameters(**par)
         self._subs(exp, p)
         return p
@@ -683,49 +1076,62 @@ class PolyASParameters(ASParameters):
     DUAL_SYMBOL = None
     OBJECT = None
     PARAMETER = None
+    PART = None
     PARTS = None
     PTR = None
     QTR = None
     SYMBOL = None
 
-    def __init__(self, b, c):
+    def __init__(self, b, c = None, order = None):
         """
         Object constructor.
 
         Check the basic properties of the intersection or Krein array.
         """
-        if self.d is None:
-            raise NotImplementedError("PolyASParameters can not be "
-                                      "instantiated directly")
-        assert self.d == len(c) == len(b), "parameter length mismatch"
-        self._init_array(b, c)
-        assert all(checkPos(x) for x in self.c[1:]), \
-            "c sequence not positive"
-        assert all(checkPos(x) for x in self.b[:-1]), \
-            "b sequence not positive"
-        self.a = tuple(full_simplify(b[0]-x-y)
-                       for x, y in zip(self.b, self.c))
-        assert self.c[1] == 1, "Invalid c[1] value"
-        assert all(checkNonneg(x) for x in self.a), \
-            "a values negative"
-        self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)), ())))
-        ASParameters.__init__(self)
+        if isinstance(b, ASParameters):
+            ASParameters.__init__(self, b)
+            if not isinstance(b, PolyASParameters) and \
+                    ("P" in b.__dict__ or "Q" in b.__dict__):
+                self._copy_cosineSequences(b)
+            if order is not None:
+                self.reorderParameters(*order)
+        else:
+            if self.d is None:
+                raise NotImplementedError("PolyASParameters can not be "
+                                          "instantiated directly")
+            assert self.d == len(c) == len(b), "parameter length mismatch"
+            self._init_array(b, c)
+            assert all(checkPos(x) for x in self.c[1:]), \
+                "c sequence not positive"
+            assert all(checkPos(x) for x in self.b[:-1]), \
+                "b sequence not positive"
+            self.a = tuple(full_simplify(b[0]-x-y)
+                           for x, y in zip(self.b, self.c))
+            assert self.c[1] == 1, "Invalid c[1] value"
+            assert all(checkNonneg(x) for x in self.a), \
+                "a values negative"
+            self.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)),
+                                      ())))
+            ASParameters.__init__(self)
+        self.hash_parameters = self.parameterArray(factor = True,
+                                                   simplify = 2)
+        self._init_prefix()
 
     def __eq__(self, other):
         """
         Compare self to other.
         """
-        ia = self.parameterArray()
         if isinstance(other, self._get_class()):
-            return ia == other.parameterArray()
+            return self.hash_parameters == other.hash_parameters
         else:
-            return not isinstance(other, ASParameters) and ia == other
+            return not isinstance(other, ASParameters) \
+                   and self.hash_parameters == other
 
     def __hash__(self):
         """
         Return the hash value.
         """
-        return hash((self.SYMBOL, self.parameterArray()))
+        return hash((self.SYMBOL, self.hash_parameters))
 
     def __repr__(self):
         """
@@ -736,11 +1142,12 @@ class PolyASParameters(ASParameters):
 
     def _check_multiplicity(self, k, i):
         """
-        Check for the feasibility of the i-th multiplicity.
-
-        By default, no checks are performed.
+        Check the valency of the i-th subconstituent or eigenspace.
         """
-        pass
+        for j in range(self.d + 1):
+            if self.a[i] >= k[i]:
+                raise InfeasibleError("valency of %s %d too large" %
+                                      (self.PART, i))
 
     def _check_parameter(self, h, i, j, v, integral = False,
                          name = None, sym = None):
@@ -763,29 +1170,33 @@ class PolyASParameters(ASParameters):
         """
         Compute the cosine sequences of the association scheme.
         """
+        if "omega" in self.__dict__:
+            return
         if "theta" not in self.__dict__:
             self.eigenvalues(expand = expand, factor = factor,
                              simplify = simplify)
-        if "omega" not in self.__dict__:
-            self.omega = Matrix(SR, self.d + 1)
-            self.omega[:, 0] = 1
-            for i in range(self.d + 1):
-                self.omega[i, 1] = self.theta[i]/self.b[0]
-                for j in range(2, self.d + 1):
-                    self.omega[i, j] = _simplify(_factor((
-                        (self.theta[i] - self.a[j-1]) * self.omega[i, j-1]
-                        - self.c[j-1] * self.omega[i, j-2]) / self.b[j-1]))
+        omega = Matrix(SR, self.d + 1)
+        omega[:, 0] = 1
+        for i in range(self.d + 1):
+            omega[i, 1] = self.theta[i]/self.b[0]
+            for j in range(2, self.d + 1):
+                omega[i, j] = _simplify(_factor((
+                    (self.theta[i] - self.a[j-1]) * omega[i, j-1]
+                    - self.c[j-1] * omega[i, j-2]) / self.b[j-1]))
+        self.omega = omega
 
     def _compute_dualEigenmatrix(self, expand = False, factor = False,
                                  simplify = False):
         """
         Compute the dual eigenmatrix of the association scheme.
         """
+        if "Q" in self.__dict__:
+            return
         params = {"expand": expand, "factor": factor, "simplify": simplify}
-        self.Q = self._compute_eigenmatrix(self.multiplicities(*params),
-                                           self.QTR, *params)
+        self.Q = self._compute_eigenmatrix(self.multiplicities(**params),
+                                           self.QTR, **params)
 
-    def _compute_dualParameters(self, q, k, m, tr, n = 1):
+    def _compute_dualParameters(self, q, k, m, tr):
         """
         Compute the Krein parameters or intersection numbers
         from the cosine sequences.
@@ -822,7 +1233,9 @@ class PolyASParameters(ASParameters):
         Compute and return the eigenvalues of the association scheme.
         """
         if "theta" not in self.__dict__:
-            if self.is_cyclic():
+            if "omega" in self.__dict__:
+                self.theta = tuple(r[1] * p[0, 1, 1] for r in self.omega)
+            elif self.is_cyclic():
                 self.theta = tuple(2*cos(2*i*pi/self.n)
                                    for i in range(self.d + 1))
             else:
@@ -881,9 +1294,11 @@ class PolyASParameters(ASParameters):
         """
         Compute the primal eigenmatrix of the association scheme.
         """
+        if "P" in self.__dict__:
+            return
         params = {"expand": expand, "factor": factor, "simplify": simplify}
-        self.P = self._compute_eigenmatrix(self.kTable(*params),
-                                           self.PTR, *params)
+        self.P = self._compute_eigenmatrix(self.kTable(**params),
+                                           self.PTR, **params)
 
     def _compute_sizes(self, k, expand = False, factor = False,
                        simplify = False):
@@ -894,6 +1309,8 @@ class PolyASParameters(ASParameters):
         if "omega" not in self.__dict__:
             self.cosineSequences(expand = expand, factor = factor,
                                  simplify = simplify)
+        if "theta" not in self.__dict__:
+            self.eigenvalues()
         if self.is_cyclic():
             m = tuple(Integer(1 if th in [2, -2] else 2)
                       for th in self.theta)
@@ -906,6 +1323,28 @@ class PolyASParameters(ASParameters):
             except TypeError:
                 raise InfeasibleError("%s not integral" % self.DUAL_PARTS)
         return m
+
+    def _copy(self, p):
+        """
+        Copy fields to the given obejct.
+        """
+        ASParameters._copy(self, p)
+        if isinstance(p, self._get_class()):
+            if "theta" in self.__dict__:
+                p.theta = self.theta
+            if "omega" in self.__dict__:
+                p.omega = copy(self.omega)
+        elif "omega" in self.__dict__:
+            if isinstance(p, PolyASParameters):
+                p.omega = self.omega.transpose()
+            elif "P" not in p.__dict__ and "Q" not in p.__dict__:
+                p.P = p.eigenmatrix()
+
+    def _copy_cosineSequences(self, P):
+        """
+        Obtain the cosine sequences from an eigenmatrix.
+        """
+        self.omega = P / diagonal_matrix(P[0])
 
     def _init_array(self, b, c):
         """
@@ -922,8 +1361,8 @@ class PolyASParameters(ASParameters):
         """
         k = [Integer(1)]
         try:
-            for i in range(self.d):
-                k.append(integralize(k[-1]*self.b[i]/self.c[i+1]))
+            for i in range(1, self.d + 1):
+                k.append(integralize(k[-1]*self.b[i-1]/self.c[i]))
                 self._check_multiplicity(k, i)
         except TypeError:
             raise InfeasibleError("%s not integral" % self.PARTS)
@@ -935,9 +1374,9 @@ class PolyASParameters(ASParameters):
         Substitute the given subexpressions in the parameters.
         """
         if "theta" in self.__dict__:
-            p.theta = tuple(subs(th, exp) for th in self.theta)
+            p.theta = tuple(subs(th, *exp) for th in self.theta)
         if "omega" in self.__dict__:
-            p.omega = self.omega.subs(exp)
+            p.omega = self.omega.subs(*exp)
         ASParameters._subs(self, exp, p)
 
     def aTable(self, expand = False, factor = False, simplify = False):
@@ -978,6 +1417,8 @@ class PolyASParameters(ASParameters):
         rewriteMatrix(self.omega, expand = expand, factor = factor,
                       simplify = simplify)
         if ev is not None:
+            if "theta" not in self.__dict__:
+                self.eigenvalues()
             try:
                 index = self.theta.index(ev)
             except ValueError as ex:
@@ -986,6 +1427,14 @@ class PolyASParameters(ASParameters):
         if index is not None:
             return self.omega[index]
         return Matrix(SR, self.omega)
+
+    def eigenvalues(self, expand = False, factor = False, simplify = False):
+        """
+        Compute and return the eigenvalues of the association scheme.
+
+        Not implemented, to be overridden.
+        """
+        raise NotImplementedError
 
     def format_parameterArray(self):
         """
@@ -1034,17 +1483,32 @@ class PolyASParameters(ASParameters):
         Performs the part of the reordering that is common
         to P- and Q-polynomial association schemes.
         """
+        order = self._reorder(order)
         if "theta" not in self.__dict__:
             self.eigenvalues()
-        if len(order) == 1 and isinstance(order[0], (tuple, list)):
-            order = order[0]
-        assert len(order) == self.d, "wrong number of indices"
-        order = [0] + list(order)
-        assert set(order) == set(range(self.d + 1)), \
-            "repeating or nonexisting indices"
         self.theta = tuple(self.theta[i] for i in order)
         if "omega" in self.__dict__:
             self.omega = Matrix(SR, [self.omega[i] for i in order])
         if "fsd" in self.__dict__:
             del self.fsd
         return order
+
+    def reorderParameters(self, p, *order):
+        """
+        Specify a new order for the parameters and return it.
+
+        Performs the part of the reordering that is common
+        to P- and Q-polynomial association schemes.
+        """
+        self.a = tuple(p[i, i, 1] for i in range(self.d + 1))
+        self.b = tuple(p[i, i+1, 1] if i < self.d else Integer(0)
+                       for i in range(self.d + 1))
+        self.c = tuple(p[i, i-1, 1] if i > 0 else Integer(0)
+                       for i in range(self.d + 1))
+        if "omega" in self.__dict__:
+            self.omega = Matrix(SR, [[r[i] for i in order]
+                                     for r in self.omega])
+        if "theta" in self.__dict__:
+            del self.theta
+        if "fsd" in self.__dict__:
+            del self.fsd

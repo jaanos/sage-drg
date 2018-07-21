@@ -7,6 +7,7 @@ from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.rings.integer import Integer
 from sage.rings.real_mpfr import create_RealNumber
+from sage.structure.element import Matrix as MatrixClass
 from sage.structure.factorization_integer import IntegerFactorization
 from sage.symbolic.expression import Expression
 
@@ -186,6 +187,12 @@ def matrixMap(fun, M):
     for i in range(M.nrows()):
         M[i] = map(fun, M[i])
 
+def nrows(M):
+    """
+    Return the number of rows in the matrix.
+    """
+    return M.nrows() if isinstance(M, MatrixClass) else len(M)
+
 def rewriteExp(exp, expand = False, factor = False, simplify = False):
     """
     Rewrite an expression.
@@ -253,12 +260,12 @@ def subconstituent_name(h):
         o = "%dth" % h
     return "%s subconstituent" % o
 
-def subs(exp, s):
+def subs(exp, *s):
     """
     Substitute the given subexpressions in the expression.
     """
     if isinstance(exp, Expression):
-        return exp.subs(s)
+        return exp.subs(*s)
     return exp
 
 def variables(exp):
@@ -267,6 +274,9 @@ def variables(exp):
     """
     if isinstance(exp, Expression):
         return exp.variables()
+    elif isinstance(exp, MatrixClass):
+        return tuple(set(sum((variables(x)
+                              for r in exp for x in r), ())))
     else:
         return ()
 
