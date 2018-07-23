@@ -1448,7 +1448,7 @@ class PolyASParameters(ASParameters):
         Check whether the association scheme is cyclic.
         """
         return self.b[0] == 2 and self.c[-1] in [1, 2] and \
-            all(x == 1 for x in self.b[1:] + self.c[:-1])
+            all(x == 1 for x in self.b[1:-1] + self.c[1:-1])
 
     def match(self, *ial):
         """
