@@ -1,5 +1,8 @@
+from sage.misc.functional import numerical_approx
+from sage.rings.complex_number import ComplexNumber
 from sage.rings.integer import Integer
 from sage.symbolic.expression import Expression
+from sage.symbolic.ring import SR
 from .util import checkNonneg
 from .util import checkPos
 from .util import variables
@@ -40,12 +43,22 @@ class CoefficientList:
                 val = Integer(0)
             else:
                 val = other.val
-            if checkPos(self.val - val):
+            d = SR(self.val - val)
+            if d.is_constant():
+                d = numerical_approx(d)
+                if isinstance(d, ComplexNumber):
+                    p = (d.real_part(), d.imag_part())
+                else:
+                    p = (d, 0)
+                if p > (0, 0):
+                    return 1
+                elif p < (0, 0):
+                    return -1
+            elif checkPos(self.val - val):
                 return 1
             elif checkPos(val - self.val):
                 return -1
-            else:
-                return 0
+            return 0
         if other is None:
             keys = set()
         else:
