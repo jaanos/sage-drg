@@ -1,5 +1,7 @@
 # Distance-regular graph parameter checking in Sage
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1418410.svg)](https://doi.org/10.5281/zenodo.1418410)
+
 A Sage package for checking the feasibility of distance-regular graph parameter sets.
 A more detailed description, along with some results, is available in a [manuscript](https://arxiv.org/abs/1803.10797) currently available on arXiv.
 
@@ -38,9 +40,11 @@ A collection of sample Jupyter notebooks giving some nonexistence results.
 
 ## Citing
 
-If you use `sage-drg` in your research, please cite the manuscript:
+If you use `sage-drg` in your research, please cite both the manuscript and the repository:
 
-* J. Vidali. Using symbolic computation to prove nonexistence of distance-regular graphs, 2018. [arXiv:1803.10797](http://arxiv.org/abs/1803.10797).
+* J. Vidali. Using symbolic computation to prove nonexistence of distance-regular graphs, 2018. [`arXiv:1803.10797`](http://arxiv.org/abs/1803.10797).
+
+* J. Vidali. `jaanos/sage-drg`: `sage-drg` v0.8, 2018. [`https://github.com/jaanos/sage-drg/`](https://github.com/jaanos/sage-drg/), [`doi:10.5281/zenodo.1418410`](http://dx.doi.org/10.5281/zenodo.1418410).
 
 ```latex
 @other {v18a,
@@ -48,5 +52,13 @@ If you use `sage-drg` in your research, please cite the manuscript:
      TITLE = {Using symbolic computation to prove nonexistence of distance-regular graphs},
       NOTE = {\href{http://arxiv.org/abs/1803.10797}{\texttt{arXiv:1803.10797}}},
       YEAR = {2018},
+}
+
+@software{v18b,
+   AUTHOR = {Vidali, Janoš},
+    TITLE = {{\tt jaanos/sage-drg}: {\tt sage-drg} v0.8},
+     NOTE = {\url{https://github.com/jaanos/sage-drg/},
+             \href{http://dx.doi.org/10.5281/zenodo.1418410}{\texttt{10.5281/zenodo.1418410}}},
+     YEAR = {2018},
 }
 ```
