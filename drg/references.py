@@ -1,14 +1,6 @@
 # -*- coding: utf-8 -*-
 
 refs = {
-    "AzarijaMarc15": {
-        "type": "unpublished",
-        "authors": [("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
-        "title": "There is no (75,32,10,16) strongly regular graph",
-        "note": "manuscript",
-        "url": "https://arxiv.org/abs/1509.05933",
-        "year": 2015
-    },
     "AzarijaMarc16": {
         "type": "unpublished",
         "authors": [("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
@@ -16,6 +8,17 @@ refs = {
         "note": "manuscript",
         "url": "https://arxiv.org/abs/1603.02032",
         "year": 2016
+    },
+    "AzarijaMarc18": {
+        "type": "article",
+        "authors": [("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
+        "title": "There is no (75,32,10,16) strongly regular graph",
+        "journal": "Linear Algebra Appl.",
+        "fjournal": "Linear Algebra and its Applications",
+        "volume": 557,
+        "pages": (62, 83),
+        "url": "https://dx.doi.org/10.1016/j.laa.2018.07.019",
+        "year": 2018
     },
     "BCN": {
         "type": "book",
@@ -603,11 +606,14 @@ refs = {
         "note": "manuscript",
         "year": 2013
     },
-    "Vidali16": {
+    "Vidali18": {
         "type": "unpublished",
         "authors": [("Vidali", (u"Janoš", ))],
-        "note": "unpublished result",
-        "year": 2016
+        "title": "Using symbolic computation "
+                 "to prove nonexistence of distance-regular graphs",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1803.10797",
+        "year": 2018
     },
     "Weng99": {
         "type": "article",
