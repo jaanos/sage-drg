@@ -48,14 +48,14 @@ If you use `sage-drg` in your research, please cite both the manuscript and the 
 
 ```latex
 @other {v18a,
-    AUTHOR = {Vidali, Janoš},
+    AUTHOR = {Vidali, Jano\v{s}},
      TITLE = {Using symbolic computation to prove nonexistence of distance-regular graphs},
       NOTE = {\href{http://arxiv.org/abs/1803.10797}{\texttt{arXiv:1803.10797}}},
       YEAR = {2018},
 }
 
 @software{v18b,
-   AUTHOR = {Vidali, Janoš},
+   AUTHOR = {Vidali, Jano\v{s}},
     TITLE = {{\tt jaanos/sage-drg}: {\tt sage-drg} v0.8},
      NOTE = {\url{https://github.com/jaanos/sage-drg/},
              \href{http://dx.doi.org/10.5281/zenodo.1418410}{\texttt{10.5281/zenodo.1418410}}},
@@ -65,6 +65,6 @@ If you use `sage-drg` in your research, please cite both the manuscript and the 
 
 Additionally, `sage-drg` has been used in the following research:
 
-* A. Gavrilyuk, S. Suda, J. Vidali. On tight 4-designs in Hamming association schemes, 2018. [`arXiv:1809.07553`](http://arxiv.org/abs/1809.07553).
+* A. Gavrilyuk, S. Suda and J. Vidali. On tight 4-designs in Hamming association schemes, 2018. [`arXiv:1809.07553`](http://arxiv.org/abs/1809.07553).
 
 If you would like your research to be listed here, feel free to open an issue or pull request.
