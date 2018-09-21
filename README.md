@@ -62,3 +62,9 @@ If you use `sage-drg` in your research, please cite both the manuscript and the 
      YEAR = {2018},
 }
 ```
+
+Additionally, `sage-drg` has been used in the following research:
+
+* A. Gavrilyuk, S. Suda, J. Vidali. On tight 4-designs in Hamming association schemes, 2018. [`arXiv:1809.07553`](http://arxiv.org/abs/1809.07553).
+
+If you would like your research to be listed here, feel free to open an issue or pull request.
