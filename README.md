@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1418410.svg)](https://doi.org/10.5281/zenodo.1418410)
 
-[![Launch in Binder](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=index.ipynb)](https://mybinder.org/badge.svg)
+[![Launch in Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=index.ipynb)
 
 A Sage package for checking the feasibility of distance-regular graph parameter sets.
 A more detailed description, along with some results, is available in a [manuscript](https://arxiv.org/abs/1803.10797) currently available on arXiv.
