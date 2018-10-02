@@ -99,16 +99,21 @@ refs = {
         "url": "http://dx.doi.org/10.1016/j.jctb.2013.05.005",
         "year": 2013
     },
-    "BMPRV15": {
-        "type": "unpublished",
+    "BMPRV18": {
+        "type": "incollection",
         "authors": [("Bondarenko", ("Andriy", "V.")), ("Mellit", "A."),
                     ("Prymak", ("Andriy", "V.")), ("Radchenko", ("Danylo", )),
                     ("Viazovska", ("Maryna", "S."))],
         "title": "There is no strongly regular graph with parameters "
-                 "(460,153,32,60)",
-        "note": "manuscript",
-        "url": "https://arxiv.org/abs/1509.06286",
-        "year": 2015
+                 "(460, 153, 32, 60)",
+        "booktitle": "Contemporary computational mathematics -- "
+                     "a celebration of the 80th birthday of Ian Sloan",
+        "publisher": "Springer",
+        "address": "Cham",
+        "volume": (1, 2),
+        "pages": (131, 134),
+        "url": "http://dx.doi.org/10.1007/978-3-319-72456-0_7",
+        "year": 2018
     },
     "BPR17": {
         "type": "article",
@@ -426,6 +431,16 @@ refs = {
         "pages": (163, 197),
         "url": "http://dx.doi.org/10.1023/A:1026544111089",
         "year": 2000
+    },
+    "KIPR18": {
+        "type": "unpublished",
+        "authors": [("Koolen", ("Jack", "H.")), ("Iqbal", ("Quaid", )),
+                    ("Park", ("Jongyook", )), ("Ur Rehman", ("Masood", ))],
+        "title": "There does not exist a distance-regular graph "
+                 r"with intersection array $\{80, 54, 12; 1, 6, 60\}$",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1809.10029",
+        "year": 2018
     },
     "Koolen92": {
         "type": "article",
