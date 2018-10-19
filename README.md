@@ -44,12 +44,12 @@ A collection of sample Jupyter notebooks giving some nonexistence results.
 
 If you use `sage-drg` in your research, please cite both the manuscript and the repository:
 
-* J. Vidali. Using symbolic computation to prove nonexistence of distance-regular graphs. *Electron. J. Combin.*, 25(4)#P4.21, 2018. http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21
+* J. Vidali. Using symbolic computation to prove nonexistence of distance-regular graphs. *Electron. J. Combin.*, 25(4)#P4.21, 2018. [`http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21`](http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21).
 
 * J. Vidali. `jaanos/sage-drg`: `sage-drg` v0.8, 2018. [`https://github.com/jaanos/sage-drg/`](https://github.com/jaanos/sage-drg/), [`doi:10.5281/zenodo.1418410`](http://dx.doi.org/10.5281/zenodo.1418410).
 
 ```latex
-@other {v18a,
+@article{v18a,
     AUTHOR = {Vidali, Jano\v{s}},
      TITLE = {Using symbolic computation to prove nonexistence of distance-regular graphs},
    JOURNAL = {Electron. J. Combin.},
