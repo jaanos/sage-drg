@@ -267,6 +267,15 @@ refs = {
         "url": "http://dx.doi.org/10.1134/S1064562411040028",
         "year": 2011
     },
+    "GavrilyukKoolen18": {
+        "type": "unpublished",
+        "authors": [("Gavrilyuk", ("Alexander", "L.")),
+                    ("Koolen", ("Jack", "H."))],
+        "title": "On a characterization of the Grassmann graphs",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1806.02652",
+        "year": 2018
+    },
     "GavrilyukMakhnev05": {
         "type": "article",
         "authors": [("Gavrilyuk", ("Alexander", "L.")),
