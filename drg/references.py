@@ -259,11 +259,11 @@ refs = {
         "title": "Distance-regular graphs with intersection arrays "
                  r"$\{55, 36, 11; 1, 4, 45\}$ and $\{56, 36, 9; 1, 3, 48\}$ "
                  "do not exist",
-        "journal": "Dokl. Akad. Nauk",
-        "fjournal": "Doklady Akademii Nauk",
-        "volume": 439,
+        "journal": "Dokl. Math.",
+        "fjournal": "Doklady Mathematics",
+        "volume": 84,
         "number": 1,
-        "pages": (14, 17),
+        "pages": (444, 446),
         "url": "http://dx.doi.org/10.1134/S1064562411040028",
         "year": 2011
     },
@@ -272,11 +272,11 @@ refs = {
         "authors": [("Gavrilyuk", ("Alexander", "L.")),
                     ("Makhnev", ("Alexander", "Alexeevich"))],
         "title": "Krein graphs without triangles",
-        "journal": "Dokl. Akad. Nauk",
-        "fjournal": "Doklady Akademii Nauk",
-        "volume": 403,
-        "number": 6,
-        "pages": (727, 730),
+        "journal": "Dokl. Math.",
+        "fjournal": "Doklady Mathematics",
+        "volume": 72,
+        "number": 1,
+        "pages": (591, 594),
         "year": 2005
     },
     "GavrilyukMakhnev12": {
@@ -606,28 +606,17 @@ refs = {
         "url": "http://dx.doi.org/10.1016/j.ejc.2012.02.005",
         "year": 2012
     },
-    "Vidali13": {
-        "type": "phdthesis",
-        "authors": [("Vidali", (u"Janoš", ))],
-        "title": "Codes in distance-regular graphs",
-        "school": "University of Ljubljana",
-        "year": 2013
-    },
-    "Vidali13a": {
-        "type": "unpublished",
-        "authors": [("Vidali", (u"Janoš", ))],
-        "title": "There is no distance-regular graph with intersection array "
-                 r"$\{55, 54, 50, 35, 10; 1, 5, 20, 45, 55\}$",
-        "note": "manuscript",
-        "year": 2013
-    },
     "Vidali18": {
-        "type": "unpublished",
+        "type": "article",
         "authors": [("Vidali", (u"Janoš", ))],
         "title": "Using symbolic computation "
                  "to prove nonexistence of distance-regular graphs",
-        "note": "manuscript",
-        "url": "https://arxiv.org/abs/1803.10797",
+        "journal": "Electron. J. Combin",
+        "fjournal": "Electronic Journal of Combinatorics",
+        "volume": 25,
+        "number": 4,
+        "pages": "P4.21",
+        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21",
         "year": 2018
     },
     "Weng99": {
