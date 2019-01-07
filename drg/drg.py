@@ -442,8 +442,15 @@ class DRGParameters(PolyASParameters):
                 b = integralize(b)
             except TypeError:
                 continue
-            if x <= y and is_constant(alpha) and is_constant(beta) and \
-                    alpha >= 1 and alpha == b - 1 and y >= (b**d-1)/(b-1):
+            if not (is_constant(alpha) and is_constant(beta)):
+                continue
+            if alpha == b and ((b == 6 and d >= 7) or
+                        (b >= 10 and d >= 6 and not checkPrimePower(b))) \
+                    and beta + 1 == (b**(d+1) - 1) / (b - 1):
+                raise InfeasibleError("not a Grassmann graph",
+                                      ("GavrilyukKoolen18", "Thm. 1.2."))
+            if x <= y and alpha >= 1 and alpha == b - 1 \
+                    and y >= (b**d-1)/(b-1):
                 t = hard_floor((1 + self.a[1] + b**2 * (b**2 + b + 1))
                                / (b**3 + b**2 + 2*b - 1))
                 if x <= t and (d != 3 or b != 2 or

@@ -1,14 +1,6 @@
 # -*- coding: utf-8 -*-
 
 refs = {
-    "AzarijaMarc15": {
-        "type": "unpublished",
-        "authors": [("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
-        "title": "There is no (75,32,10,16) strongly regular graph",
-        "note": "manuscript",
-        "url": "https://arxiv.org/abs/1509.05933",
-        "year": 2015
-    },
     "AzarijaMarc16": {
         "type": "unpublished",
         "authors": [("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
@@ -16,6 +8,17 @@ refs = {
         "note": "manuscript",
         "url": "https://arxiv.org/abs/1603.02032",
         "year": 2016
+    },
+    "AzarijaMarc18": {
+        "type": "article",
+        "authors": [("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
+        "title": "There is no (75,32,10,16) strongly regular graph",
+        "journal": "Linear Algebra Appl.",
+        "fjournal": "Linear Algebra and its Applications",
+        "volume": 557,
+        "pages": (62, 83),
+        "url": "https://dx.doi.org/10.1016/j.laa.2018.07.019",
+        "year": 2018
     },
     "BCN": {
         "type": "book",
@@ -96,16 +99,21 @@ refs = {
         "url": "http://dx.doi.org/10.1016/j.jctb.2013.05.005",
         "year": 2013
     },
-    "BMPRV15": {
-        "type": "unpublished",
+    "BMPRV18": {
+        "type": "incollection",
         "authors": [("Bondarenko", ("Andriy", "V.")), ("Mellit", "A."),
                     ("Prymak", ("Andriy", "V.")), ("Radchenko", ("Danylo", )),
                     ("Viazovska", ("Maryna", "S."))],
         "title": "There is no strongly regular graph with parameters "
-                 "(460,153,32,60)",
-        "note": "manuscript",
-        "url": "https://arxiv.org/abs/1509.06286",
-        "year": 2015
+                 "(460, 153, 32, 60)",
+        "booktitle": "Contemporary computational mathematics -- "
+                     "a celebration of the 80th birthday of Ian Sloan",
+        "publisher": "Springer",
+        "address": "Cham",
+        "volume": (1, 2),
+        "pages": (131, 134),
+        "url": "http://dx.doi.org/10.1007/978-3-319-72456-0_7",
+        "year": 2018
     },
     "BPR17": {
         "type": "article",
@@ -251,24 +259,33 @@ refs = {
         "title": "Distance-regular graphs with intersection arrays "
                  r"$\{55, 36, 11; 1, 4, 45\}$ and $\{56, 36, 9; 1, 3, 48\}$ "
                  "do not exist",
-        "journal": "Dokl. Akad. Nauk",
-        "fjournal": "Doklady Akademii Nauk",
-        "volume": 439,
+        "journal": "Dokl. Math.",
+        "fjournal": "Doklady Mathematics",
+        "volume": 84,
         "number": 1,
-        "pages": (14, 17),
+        "pages": (444, 446),
         "url": "http://dx.doi.org/10.1134/S1064562411040028",
         "year": 2011
+    },
+    "GavrilyukKoolen18": {
+        "type": "unpublished",
+        "authors": [("Gavrilyuk", ("Alexander", "L.")),
+                    ("Koolen", ("Jack", "H."))],
+        "title": "On a characterization of the Grassmann graphs",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1806.02652",
+        "year": 2018
     },
     "GavrilyukMakhnev05": {
         "type": "article",
         "authors": [("Gavrilyuk", ("Alexander", "L.")),
                     ("Makhnev", ("Alexander", "Alexeevich"))],
         "title": "Krein graphs without triangles",
-        "journal": "Dokl. Akad. Nauk",
-        "fjournal": "Doklady Akademii Nauk",
-        "volume": 403,
-        "number": 6,
-        "pages": (727, 730),
+        "journal": "Dokl. Math.",
+        "fjournal": "Doklady Mathematics",
+        "volume": 72,
+        "number": 1,
+        "pages": (591, 594),
         "year": 2005
     },
     "GavrilyukMakhnev12": {
@@ -423,6 +440,16 @@ refs = {
         "pages": (163, 197),
         "url": "http://dx.doi.org/10.1023/A:1026544111089",
         "year": 2000
+    },
+    "KIPR18": {
+        "type": "unpublished",
+        "authors": [("Koolen", ("Jack", "H.")), ("Iqbal", ("Quaid", )),
+                    ("Park", ("Jongyook", )), ("Ur Rehman", ("Masood", ))],
+        "title": "There does not exist a distance-regular graph "
+                 r"with intersection array $\{80, 54, 12; 1, 6, 60\}$",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1809.10029",
+        "year": 2018
     },
     "Koolen92": {
         "type": "article",
@@ -588,26 +615,18 @@ refs = {
         "url": "http://dx.doi.org/10.1016/j.ejc.2012.02.005",
         "year": 2012
     },
-    "Vidali13": {
-        "type": "phdthesis",
+    "Vidali18": {
+        "type": "article",
         "authors": [("Vidali", (u"Janoš", ))],
-        "title": "Codes in distance-regular graphs",
-        "school": "University of Ljubljana",
-        "year": 2013
-    },
-    "Vidali13a": {
-        "type": "unpublished",
-        "authors": [("Vidali", (u"Janoš", ))],
-        "title": "There is no distance-regular graph with intersection array "
-                 r"$\{55, 54, 50, 35, 10; 1, 5, 20, 45, 55\}$",
-        "note": "manuscript",
-        "year": 2013
-    },
-    "Vidali16": {
-        "type": "unpublished",
-        "authors": [("Vidali", (u"Janoš", ))],
-        "note": "unpublished result",
-        "year": 2016
+        "title": "Using symbolic computation "
+                 "to prove nonexistence of distance-regular graphs",
+        "journal": "Electron. J. Combin",
+        "fjournal": "Electronic Journal of Combinatorics",
+        "volume": 25,
+        "number": 4,
+        "pages": "P4.21",
+        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21",
+        "year": 2018
     },
     "Weng99": {
         "type": "article",

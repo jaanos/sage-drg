@@ -1310,7 +1310,8 @@ class PolyASParameters(ASParameters):
             self.cosineSequences(expand = expand, factor = factor,
                                  simplify = simplify)
         if "theta" not in self.__dict__:
-            self.eigenvalues()
+            self.eigenvalues(expand = expand, factor = factor,
+                             simplify = simplify)
         if self.is_cyclic():
             m = tuple(Integer(1 if th in [2, -2] else 2)
                       for th in self.theta)
@@ -1418,7 +1419,8 @@ class PolyASParameters(ASParameters):
                       simplify = simplify)
         if ev is not None:
             if "theta" not in self.__dict__:
-                self.eigenvalues()
+                self.eigenvalues(expand = expand, factor = factor,
+                                 simplify = simplify)
             try:
                 index = self.theta.index(ev)
             except ValueError as ex:
@@ -1448,7 +1450,7 @@ class PolyASParameters(ASParameters):
         Check whether the association scheme is cyclic.
         """
         return self.b[0] == 2 and self.c[-1] in [1, 2] and \
-            all(x == 1 for x in self.b[1:] + self.c[:-1])
+            all(x == 1 for x in self.b[1:-1] + self.c[1:-1])
 
     def match(self, *ial):
         """
