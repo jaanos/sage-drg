@@ -533,24 +533,41 @@ class ASParameters:
         for k, v in self.triple.items():
             p.triple[k] = v.subs(*exp)
 
-    def check_absoluteBound(self):
+    def check_absoluteBound(self, expand = False, factor = False,
+                            simplify = False):
         """
         Check whether the absolute bound is not exceeded.
         """
         if "m" not in self.__dict__:
-            self.multiplicities()
+            self.multiplicities(expand = expand, factor = factor,
+                                simplify = simplify)
         if "q" not in self.__dict__:
-            self.kreinParameters()
+            self.kreinParameters(expand = expand, factor = factor,
+                                 simplify = simplify)
+        ineqs = {}
         for i in range(self.d + 1):
-            if sum(self.m[h] for h in range(self.d + 1)
-                   if self.q[h, i, i] != 0) > self.m[i]*(self.m[i] + 1)/2:
+            ineq = self.m[i]*(self.m[i] + 1)/2 - \
+                sum(self.m[h] for h in range(self.d + 1)
+                    if self.q[h, i, i] != 0)
+            if ineq < 0:
                 raise InfeasibleError("absolute bound exceeded "
                                       "for (%d, %d)" % (i, i))
+            elif not (ineq >= 0):
+                ineqs[i, i] = rewriteExp(ineq, expand = expand,
+                                         factor = factor,
+                                         simplify = simplify)
             for j in range(i+1, self.d + 1):
-                if sum(self.m[h] for h in range(self.d + 1)
-                       if self.q[h, i, j] != 0) > self.m[i]*self.m[j]:
+                ineq = self.m[i]*self.m[j] - \
+                    sum(self.m[h] for h in range(self.d + 1)
+                        if self.q[h, i, j] != 0)
+                if ineq < 0:
                     raise InfeasibleError("absolute bound exceeded "
                                           "for (%d, %d)" % (i, j))
+                elif not (ineq >= 0):
+                    ineqs[i, j] = rewriteExp(ineq, expand = expand,
+                                             factor = factor,
+                                             simplify = simplify)
+        return ineqs
 
     def check_handshake(self, metric = False, bipartite = False):
         """
