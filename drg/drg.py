@@ -945,15 +945,19 @@ class DRGParameters(PolyASParameters):
                                           "Terwilliger graph",
                                           ("BCN", "Cor. 1.16.6."))
                 return
-        if self.c[2] >= 2 and (small
-                or self.b[1]*(self.c[1]-1) > self.a[1]*(self.a[1]-1)
-                or (self.d >= 3 and self.c[3] > 1
-                                and 2*self.c[2] > self.c[3])) and \
-                any(self.c[i] + self.a[1] + self.b[i+1] + 2
-                    > self.b[i] + self.c[i+1]
-                    for i in range(self.d)):
-            raise InfeasibleError("Terwilliger's diameter bound not reached",
-                                  ("BCN", "Thm. 5.2.1."))
+        aab = self.a[1]*(self.a[1]-1) / self.b[1]
+        aabc = self.c[2]-1 > aab
+        if self.c[2] >= 2 and (small or aabc or
+                               (self.d >= 3 and self.c[3] > 1
+                                and 2*self.c[2] > self.c[3])):
+            if aabc and aab < self.b[2] - self.b[1] + self.a[1] + 1:
+                raise InfeasibleError("Quadrangle per claw bound "
+                                      "exceeded", ("BCN", "Thm. 5.2.1.(ii)"))
+            elif any(self.c[i] + self.a[1] + self.b[i+1] + 2
+                     > self.b[i] + self.c[i+1]
+                     for i in range(self.d)):
+                raise InfeasibleError("Terwilliger's diameter bound "
+                                      "not reached", ("BCN", "Thm. 5.2.1."))
 
     def complementaryGraph(self):
         """
