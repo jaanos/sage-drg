@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from sage.symbolic.ring import SR
+from .util import symbol
 
 sporadic = {
     ((14, 12), (1, 4)): "WilbrinkBrouwer83",
@@ -54,8 +54,8 @@ sporadic = {
     ((15, 14, 12, 6, 1, 1), (1, 1, 3, 12, 14, 15)): "IvanovShpectorov90"
 }
 
-r = SR.symbol("__r")
-t = SR.symbol("__t")
+r = symbol("__r")
+t = symbol("__t")
 
 families = {
     ((r**2*(r+3), (r+1)*(r**2+2*r-2)), (1, r*(r+1))):

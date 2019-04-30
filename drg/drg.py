@@ -35,6 +35,7 @@ from .util import pair_swap
 from .util import rewriteExp
 from .util import subconstituent_name
 from .util import subs
+from .util import symbol
 from .util import variables
 
 class DRGParameters(PolyASParameters):
@@ -384,7 +385,7 @@ class DRGParameters(PolyASParameters):
         nonexistence has been shown as a part of an infinite family.
         """
         if self.d >= 3:
-            s = SR.symbol("__s")
+            s = symbol("__s")
             sols = sorted([s.subs(ss) for ss in
                            _solve((s+1)*(self.a[1]+1)
                                   - s*(s+1)*(self.c[2]-1)/2
@@ -1050,7 +1051,7 @@ class DRGParameters(PolyASParameters):
         Check whether the graph can be a bilinear forms graph
         of diameter at least 2.
         """
-        s = SR.symbol("__s")
+        s = symbol("__s")
         for q in sorted([s.subs(ss) for ss in
                          _solve(s*(s+1) == self.c[2], s)], reverse = True):
             if not checkPrimePower(q):
@@ -1162,7 +1163,7 @@ class DRGParameters(PolyASParameters):
         """
         Check whether the graph can be a Hamming (or Doob) graph.
         """
-        z = SR.symbol()
+        z = symbol()
         return len(_solve([SR(x) == (self.d-i) * z
                            for i, x in enumerate(self.b[:-1])] +
                            [SR(x) == i+1 for i, x in enumerate(self.c[1:])],
@@ -1173,7 +1174,7 @@ class DRGParameters(PolyASParameters):
         Check whether the graph can be a Hermitean forms graph
         of diameter at least 2.
         """
-        s = SR.symbol("__s")
+        s = symbol("__s")
         for q in sorted([s.subs(ss) for ss in
                          _solve(s*(s+1) == self.c[2], s)]):
             if not checkPrimePower(-q):
@@ -1188,7 +1189,7 @@ class DRGParameters(PolyASParameters):
         """
         Check whether the graph can be a Johnson graph.
         """
-        z = SR.symbol()
+        z = symbol()
         return len(_solve([SR(x) == (self.d-i) * (self.d - z - i)
                            for i, x in enumerate(self.b[:-1])] +
                            [SR(x) == (i+1)**2 for i, x
