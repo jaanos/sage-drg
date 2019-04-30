@@ -3,11 +3,11 @@ from sage.numerical.mip import MIPSolverException
 from sage.numerical.mip import MixedIntegerLinearProgram
 from sage.rings.infinity import Infinity
 from sage.symbolic.relation import solve
-from sage.symbolic.ring import SR
 from .util import is_constant
 from .util import integralize
 from .util import make_expressions
 from .util import round
+from .util import symbol
 from .util import variables
 from .util import verify
 
@@ -32,7 +32,7 @@ def find(expressions, vars, conditions = None, solver = None):
                      for e, (l, u) in expressions.items()
                      if not is_constant(e))
         _, x = min((abs(opt.coefficient(y)), y) for y in variables(opt))
-        s = SR.symbol("__opt")
+        s = symbol("__opt")
         xsol = solve(s == opt, x)[0]
         rest = vars - {x}
         zero = [z == 0 for z in vars]

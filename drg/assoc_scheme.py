@@ -25,6 +25,7 @@ from .util import rewriteMatrix
 from .util import rewriteTuple
 from .util import sort_solution
 from .util import subs
+from .util import symbol
 from .util import variables
 
 TPERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
@@ -939,8 +940,8 @@ class ASParameters:
         out = []
         r = range(self.d+1)
         s = [[[Integer(1) if (h, i, j) in [(v, w, 0), (u, 0, w), (0, u, v)]
-               else SR.symbol("%s_%d_%d_%d_%d_%d_%d" %
-                              (self.prefix, u, v, w, h, i, j))
+               else symbol("%s_%d_%d_%d_%d_%d_%d" %
+                           (self.prefix, u, v, w, h, i, j))
                for j in r] for i in r] for h in r]
         for i in r:
             for j in r:
@@ -1056,7 +1057,7 @@ class ASParameters:
                     out.append(l == 0)
         if params:
             for a, (h, i, j) in params.items():
-                x = SR.symbol(a)
+                x = symbol(a)
                 out.append(s[h][i][j] == x)
         vars.intersection_update(sum([sum(l, []) for l in s], []))
         vars.update(consts)
