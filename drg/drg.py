@@ -35,6 +35,7 @@ from .util import pair_swap
 from .util import rewriteExp
 from .util import subconstituent_name
 from .util import subs
+from .util import symbol
 from .util import variables
 
 class DRGParameters(PolyASParameters):
@@ -384,7 +385,7 @@ class DRGParameters(PolyASParameters):
         nonexistence has been shown as a part of an infinite family.
         """
         if self.d >= 3:
-            s = SR.symbol("__s")
+            s = symbol("__s")
             sols = sorted([s.subs(ss) for ss in
                            _solve((s+1)*(self.a[1]+1)
                                   - s*(s+1)*(self.c[2]-1)/2
@@ -442,8 +443,15 @@ class DRGParameters(PolyASParameters):
                 b = integralize(b)
             except TypeError:
                 continue
-            if x <= y and is_constant(alpha) and is_constant(beta) and \
-                    alpha >= 1 and alpha == b - 1 and y >= (b**d-1)/(b-1):
+            if not (is_constant(alpha) and is_constant(beta)):
+                continue
+            if alpha == b and ((b == 6 and d >= 7) or
+                        (b >= 10 and d >= 6 and not checkPrimePower(b))) \
+                    and beta + 1 == (b**(d+1) - 1) / (b - 1):
+                raise InfeasibleError("not a Grassmann graph",
+                                      ("GavrilyukKoolen18", "Thm. 1.2."))
+            if x <= y and alpha >= 1 and alpha == b - 1 \
+                    and y >= (b**d-1)/(b-1):
                 t = hard_floor((1 + self.a[1] + b**2 * (b**2 + b + 1))
                                / (b**3 + b**2 + 2*b - 1))
                 if x <= t and (d != 3 or b != 2 or
@@ -938,15 +946,19 @@ class DRGParameters(PolyASParameters):
                                           "Terwilliger graph",
                                           ("BCN", "Cor. 1.16.6."))
                 return
-        if self.c[2] >= 2 and (small
-                or self.b[1]*(self.c[1]-1) > self.a[1]*(self.a[1]-1)
-                or (self.d >= 3 and self.c[3] > 1
-                                and 2*self.c[2] > self.c[3])) and \
-                any(self.c[i] + self.a[1] + self.b[i+1] + 2
-                    > self.b[i] + self.c[i+1]
-                    for i in range(self.d)):
-            raise InfeasibleError("Terwilliger's diameter bound not reached",
-                                  ("BCN", "Thm. 5.2.1."))
+        aab = self.a[1]*(self.a[1]-1) / self.b[1]
+        aabc = self.c[2]-1 > aab
+        if self.c[2] >= 2 and (small or aabc or
+                               (self.d >= 3 and self.c[3] > 1
+                                and 2*self.c[2] > self.c[3])):
+            if aabc and aab < self.b[2] - self.b[1] + self.a[1] + 1:
+                raise InfeasibleError("Quadrangle per claw bound "
+                                      "exceeded", ("BCN", "Thm. 5.2.1.(ii)"))
+            elif any(self.c[i] + self.a[1] + self.b[i+1] + 2
+                     > self.b[i] + self.c[i+1]
+                     for i in range(self.d)):
+                raise InfeasibleError("Terwilliger's diameter bound "
+                                      "not reached", ("BCN", "Thm. 5.2.1."))
 
     def complementaryGraph(self):
         """
@@ -1039,7 +1051,7 @@ class DRGParameters(PolyASParameters):
         Check whether the graph can be a bilinear forms graph
         of diameter at least 2.
         """
-        s = SR.symbol("__s")
+        s = symbol("__s")
         for q in sorted([s.subs(ss) for ss in
                          _solve(s*(s+1) == self.c[2], s)], reverse = True):
             if not checkPrimePower(q):
@@ -1151,7 +1163,7 @@ class DRGParameters(PolyASParameters):
         """
         Check whether the graph can be a Hamming (or Doob) graph.
         """
-        z = SR.symbol()
+        z = symbol()
         return len(_solve([SR(x) == (self.d-i) * z
                            for i, x in enumerate(self.b[:-1])] +
                            [SR(x) == i+1 for i, x in enumerate(self.c[1:])],
@@ -1162,7 +1174,7 @@ class DRGParameters(PolyASParameters):
         Check whether the graph can be a Hermitean forms graph
         of diameter at least 2.
         """
-        s = SR.symbol("__s")
+        s = symbol("__s")
         for q in sorted([s.subs(ss) for ss in
                          _solve(s*(s+1) == self.c[2], s)]):
             if not checkPrimePower(-q):
@@ -1177,7 +1189,7 @@ class DRGParameters(PolyASParameters):
         """
         Check whether the graph can be a Johnson graph.
         """
-        z = SR.symbol()
+        z = symbol()
         return len(_solve([SR(x) == (self.d-i) * (self.d - z - i)
                            for i, x in enumerate(self.b[:-1])] +
                            [SR(x) == (i+1)**2 for i, x

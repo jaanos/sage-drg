@@ -27,6 +27,7 @@ from .util import rewriteMatrix
 from .util import rewriteTuple
 from .util import sort_solution
 from .util import subs
+from .util import symbol
 from .util import variables
 
 TPERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
@@ -556,24 +557,41 @@ class ASParameters:
         for k, v in self.quadruple.items():
             p.quadruple[k] = v.subs(*exp)
 
-    def check_absoluteBound(self):
+    def check_absoluteBound(self, expand = False, factor = False,
+                            simplify = False):
         """
         Check whether the absolute bound is not exceeded.
         """
         if "m" not in self.__dict__:
-            self.multiplicities()
+            self.multiplicities(expand = expand, factor = factor,
+                                simplify = simplify)
         if "q" not in self.__dict__:
-            self.kreinParameters()
+            self.kreinParameters(expand = expand, factor = factor,
+                                 simplify = simplify)
+        ineqs = {}
         for i in range(self.d + 1):
-            if sum(self.m[h] for h in range(self.d + 1)
-                   if self.q[h, i, i] != 0) > self.m[i]*(self.m[i] + 1)/2:
+            ineq = self.m[i]*(self.m[i] + 1)/2 - \
+                sum(self.m[h] for h in range(self.d + 1)
+                    if self.q[h, i, i] != 0)
+            if ineq < 0:
                 raise InfeasibleError("absolute bound exceeded "
                                       "for (%d, %d)" % (i, i))
+            elif not (ineq >= 0):
+                ineqs[i, i] = rewriteExp(ineq, expand = expand,
+                                         factor = factor,
+                                         simplify = simplify)
             for j in range(i+1, self.d + 1):
-                if sum(self.m[h] for h in range(self.d + 1)
-                       if self.q[h, i, j] != 0) > self.m[i]*self.m[j]:
+                ineq = self.m[i]*self.m[j] - \
+                    sum(self.m[h] for h in range(self.d + 1)
+                        if self.q[h, i, j] != 0)
+                if ineq < 0:
                     raise InfeasibleError("absolute bound exceeded "
                                           "for (%d, %d)" % (i, j))
+                elif not (ineq >= 0):
+                    ineqs[i, j] = rewriteExp(ineq, expand = expand,
+                                             factor = factor,
+                                             simplify = simplify)
+        return ineqs
 
     def check_handshake(self, metric = False, bipartite = False):
         """
@@ -1176,8 +1194,8 @@ class ASParameters:
         out = []
         r = range(self.d+1)
         s = [[[Integer(1) if (h, i, j) in [(v, w, 0), (u, 0, w), (0, u, v)]
-               else SR.symbol("%s_%d_%d_%d_%d_%d_%d" %
-                              (self.prefix, u, v, w, h, i, j))
+               else symbol("%s_%d_%d_%d_%d_%d_%d" %
+                           (self.prefix, u, v, w, h, i, j))
                for j in r] for i in r] for h in r]
         for i in r:
             for j in r:
@@ -1293,7 +1311,7 @@ class ASParameters:
                     out.append(l == 0)
         if params:
             for a, (h, i, j) in params.items():
-                x = SR.symbol(a)
+                x = symbol(a)
                 out.append(s[h][i][j] == x)
         vars.intersection_update(sum([sum(l, []) for l in s], []))
         vars.update(consts)
@@ -1564,7 +1582,8 @@ class PolyASParameters(ASParameters):
             self.cosineSequences(expand = expand, factor = factor,
                                  simplify = simplify)
         if "theta" not in self.__dict__:
-            self.eigenvalues()
+            self.eigenvalues(expand = expand, factor = factor,
+                             simplify = simplify)
         if self.is_cyclic():
             m = tuple(Integer(1 if th in [2, -2] else 2)
                       for th in self.theta)
@@ -1672,7 +1691,8 @@ class PolyASParameters(ASParameters):
                       simplify = simplify)
         if ev is not None:
             if "theta" not in self.__dict__:
-                self.eigenvalues()
+                self.eigenvalues(expand = expand, factor = factor,
+                                 simplify = simplify)
             try:
                 index = self.theta.index(ev)
             except ValueError as ex:
@@ -1702,7 +1722,7 @@ class PolyASParameters(ASParameters):
         Check whether the association scheme is cyclic.
         """
         return self.b[0] == 2 and self.c[-1] in [1, 2] and \
-            all(x == 1 for x in self.b[1:] + self.c[:-1])
+            all(x == 1 for x in self.b[1:-1] + self.c[1:-1])
 
     def match(self, *ial):
         """

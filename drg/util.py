@@ -11,6 +11,7 @@ from sage.structure.element import Matrix as MatrixClass
 from sage.structure.factorization_integer import IntegerFactorization
 from sage.symbolic.expression import Expression
 from sage.symbolic.relation import solve
+from sage.symbolic.ring import SR
 
 pair_keep = staticmethod(lambda i, j: (i, j))
 pair_swap = staticmethod(lambda i, j: (j, i))
@@ -278,6 +279,15 @@ def subs(exp, *s):
     if isinstance(exp, Expression):
         return exp.subs(*s)
     return exp
+
+def symbol(a = None):
+    """
+    Return a variable from the symbolic ring with the given name.
+    If an expression is given, it is returned unchanged.
+    """
+    if isinstance(a, Expression):
+        return a
+    return SR.symbol(a)
 
 def variables(exp):
     """
