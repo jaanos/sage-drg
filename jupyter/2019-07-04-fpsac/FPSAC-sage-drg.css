@@ -1,0 +1,14 @@
+em {
+    color: blue;
+    font-style: normal !important;
+}
+
+strong {
+    color: red;
+    font-weight: normal !important;
+}
+
+del {
+    color: green;
+    text-decoration: none;
+}
