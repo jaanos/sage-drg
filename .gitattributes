@@ -1,1 +1,2 @@
 jupyter/rise-patch/** linguist-vendored
+*.slides.html linguist-generated
