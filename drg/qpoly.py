@@ -8,6 +8,7 @@ from .util import pair_keep
 from .util import pair_swap
 from .util import subs
 
+
 class QPolyParameters(PolyASParameters):
     """
     A class for parameters of a Q-polynomial association scheme
@@ -27,7 +28,7 @@ class QPolyParameters(PolyASParameters):
     PTR = pair_swap
     QTR = pair_keep
 
-    def __init__(self, b, c = None, order = None):
+    def __init__(self, b, c=None, order=None):
         """
         Object constructor.
 
@@ -46,7 +47,7 @@ class QPolyParameters(PolyASParameters):
             else:
                 order = self._reorder(order)
             assert order in o, "scheme not Q-polynomial for given order"
-            PolyASParameters.__init__(self, b, order = order)
+            PolyASParameters.__init__(self, b, order=order)
             if isinstance(b, QPolyParameters):
                 return
         else:
@@ -57,8 +58,8 @@ class QPolyParameters(PolyASParameters):
             self._compute_parameters(self.q, self.m)
         self.bipartite = all(a == 0 for a in self.a)
 
-    def _compute_kreinParameters(self, expand = False, factor = False,
-                                 simplify = False):
+    def _compute_kreinParameters(self, expand=False, factor=False,
+                                 simplify=False):
         """
         Compute the Krein parameters.
 
@@ -67,17 +68,16 @@ class QPolyParameters(PolyASParameters):
         """
         pass
 
-    def _compute_kTable(self, expand = False, factor = False,
-                        simplify = False):
+    def _compute_kTable(self, expand=False, factor=False, simplify=False):
         """
         Compute the sizes of the subconstituents.
         """
         if "k" not in self.__dict__:
-            self.k = self._compute_sizes(self.m, expand = expand,
-                                         factor = factor, simplify = simplify)
+            self.k = self._compute_sizes(self.m, expand=expand,
+                                         factor=factor, simplify=simplify)
 
-    def _compute_multiplicities(self, expand = False, factor = False,
-                                simplify = False):
+    def _compute_multiplicities(self, expand=False, factor=False,
+                                simplify=False):
         """
         Compute the multiplicities of the eigenspaces.
 
@@ -86,13 +86,12 @@ class QPolyParameters(PolyASParameters):
         """
         pass
 
-    def _compute_pTable(self, expand = False, factor = False,
-                        simplify = False):
+    def _compute_pTable(self, expand=False, factor=False, simplify=False):
         """
         Compute the intersection numbers.
         """
         if "k" not in self.__dict__:
-            self.kTable(expand = expand, factor = factor, simplify = simplify)
+            self.kTable(expand=expand, factor=factor, simplify=simplify)
         if "p" not in self.__dict__:
             p = Array3D(self.d + 1)
             self._compute_dualParameters(p, self.m, self.k, self.QTR)
@@ -120,13 +119,13 @@ class QPolyParameters(PolyASParameters):
         """
         return QPolyParameters
 
-    def eigenvalues(self, expand = False, factor = False, simplify = False):
+    def eigenvalues(self, expand=False, factor=False, simplify=False):
         """
         Compute and return the dual eigenvalues of the first eigenspace
         of the Q-polynomial association scheme.
         """
-        return self._compute_eigenvalues(self.q, expand = expand,
-                                         factor = factor, simplify = simplify)
+        return self._compute_eigenvalues(self.q, expand=expand,
+                                         factor=factor, simplify=simplify)
 
     def reorderEigenspaces(self, *order):
         """
@@ -168,9 +167,9 @@ class QPolyParameters(PolyASParameters):
         self._subs(exp, p)
         if "p" in self.__dict__:
             p.p = self.p.subs(*exp)
-            p._check_parameters(p.p, integral = self.DUAL_INTEGRAL,
-                                name = self.DUAL_PARAMETER,
-                                sym = self.DUAL_SYMBOL)
+            p._check_parameters(p.p, integral=self.DUAL_INTEGRAL,
+                                name=self.DUAL_PARAMETER,
+                                sym=self.DUAL_SYMBOL)
         return p
 
     kreinArray = PolyASParameters.parameterArray

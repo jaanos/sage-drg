@@ -11,7 +11,8 @@ from .util import symbol
 from .util import variables
 from .util import verify
 
-def find(expressions, vars, conditions = None, solver = None):
+
+def find(expressions, vars, conditions=None, solver=None):
     """
     Generate assignments of values to variables
     such that the values of the expressions are integral
@@ -36,15 +37,18 @@ def find(expressions, vars, conditions = None, solver = None):
         xsol = solve(s == opt, x)[0]
         rest = vars - {x}
         zero = [z == 0 for z in vars]
-        lp = MixedIntegerLinearProgram(maximization = False,
-                                       solver = solver)
-        v = lp.new_variable(real = True)
-        w = lp.new_variable(integer = True)
+        lp = MixedIntegerLinearProgram(maximization=False,
+                                       solver=solver)
+        v = lp.new_variable(real=True)
+        w = lp.new_variable(integer=True)
         lp.add_constraint(lp[1] == 1)
+
         def makeLPExpression(e):
             return sum(e.coefficient(y) * v[str(y)] for y in vars) \
                    + e.subs(zero) * lp[1]
+
         lpopt = makeLPExpression(opt)
+
         def addCondition(c):
             op = c.operator()
             if op is operator.gt:
@@ -55,6 +59,7 @@ def find(expressions, vars, conditions = None, solver = None):
                 return
             lp.add_constraint(op(makeLPExpression(c.lhs()),
                                  makeLPExpression(c.rhs())))
+
     else:
         x = None
     for i, (e, (l, u)) in enumerate(expressions.items()):
@@ -89,7 +94,7 @@ def find(expressions, vars, conditions = None, solver = None):
         eq = xsol.subs(s == vmin)
         g = find(make_expressions((e.subs(eq), l, u)
                                   for e, (l, u) in expressions.items()),
-                 vars = rest, conditions = {c.subs(eq) for c in conditions})
+                 vars=rest, conditions={c.subs(eq) for c in conditions})
         try:
             while vnew == vmin:
                 sol = next(g)
@@ -97,8 +102,8 @@ def find(expressions, vars, conditions = None, solver = None):
                 while t is not None:
                     b, c = t
                     if b:
-                        t = (yield find(expressions, vars = vars,
-                                        conditions = conditions | {c}))
+                        t = (yield find(expressions, vars=vars,
+                                        conditions=conditions | {c}))
                     else:
                         if c in conditions or verify(c):
                             t = yield

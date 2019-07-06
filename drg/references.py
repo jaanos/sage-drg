@@ -364,7 +364,8 @@ refs = {
         "volume": 22,
         "number": 2,
         "pages": "2.37",
-        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/view/v22i2p37",
+        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/"
+               "view/v22i2p37",
         "year": 2015,
     },
     "IvanovShpectorov90": {
@@ -599,7 +600,8 @@ refs = {
         "volume": 23,
         "number": 1,
         "pages": "1.32",
-        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/view/v23i1p32",
+        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/"
+               "view/v23i1p32",
         "year": 2016,
     },
     "Urlep12": {
@@ -625,7 +627,8 @@ refs = {
         "volume": 25,
         "number": 4,
         "pages": "P4.21",
-        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21",
+        "url": "http://www.combinatorics.org/ojs/index.php/eljc/article/"
+               "view/v25i4p21",
         "year": 2018
     },
     "Weng99": {

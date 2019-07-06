@@ -38,6 +38,7 @@ from .util import subs
 from .util import symbol
 from .util import variables
 
+
 class DRGParameters(PolyASParameters):
     """
     A class for parameters of a distance-regular graph
@@ -57,8 +58,8 @@ class DRGParameters(PolyASParameters):
     QTR = pair_swap
     SYMBOL = "p"
 
-    def __init__(self, b, c = None, alpha = None, beta = None,
-                 complement = None, order = None):
+    def __init__(self, b, c=None, alpha=None, beta=None,
+                 complement=None, order=None):
         """
         Object constructor.
 
@@ -84,7 +85,7 @@ class DRGParameters(PolyASParameters):
             else:
                 order = self._reorder(order)
             assert order in o, "scheme not P-polynomial for given order"
-            PolyASParameters.__init__(self, b, order = order)
+            PolyASParameters.__init__(self, b, order=order)
             self._check_intersectionArray()
             if isinstance(b, DRGParameters):
                 return
@@ -118,7 +119,7 @@ class DRGParameters(PolyASParameters):
                              == 0 for i in range(self.d) if i != m)
         self.bipartite = all(a == 0 for a in self.a)
         if not isinstance(b, ASParameters):
-            self.check_handshake(metric = True, bipartite = self.bipartite)
+            self.check_handshake(metric=True, bipartite=self.bipartite)
         if self.antipodal:
             try:
                 self.r = integralize(1 + self.b[m] / self.c[self.d - m])
@@ -147,7 +148,7 @@ class DRGParameters(PolyASParameters):
             if complement is None:
                 complement = DRGParameters((self.k[2], self.p[2, 2, 1]),
                                            (Integer(1), self.p[1, 2, 2]),
-                                           complement = self)
+                                           complement=self)
             self.complement = self.add_subgraph(complement, "complement")
 
     def _check_intersectionArray(self):
@@ -156,17 +157,17 @@ class DRGParameters(PolyASParameters):
         """
         assert all(checkNonneg(self.b[i] - self.b[i+1])
                    for i in range(self.d)), \
-                   "b sequence not non-ascending"
+            "b sequence not non-ascending"
         assert all(checkNonneg(self.c[i+1] - self.c[i])
                    for i in range(self.d)), \
-                   "c sequence not non-descending"
-        if any(self.b[j] < self.c[i] for i in range(self.d+1)
-                                     for j in range(self.d-i+1)):
+            "c sequence not non-descending"
+        if any(self.b[j] < self.c[i]
+               for i in range(self.d+1) for j in range(self.d-i+1)):
             raise InfeasibleError("b[j] < c[i] with i+j <= d",
                                   ("BCN", "Proposition 4.1.6.(ii)"))
 
-    def _check_parameter(self, h, i, j, v, integral = True,
-                         name = None, sym = None):
+    def _check_parameter(self, h, i, j, v, integral=True,
+                         name=None, sym=None):
         """
         Check for the feasibility
         of an intersection number or Krein parameter.
@@ -175,24 +176,23 @@ class DRGParameters(PolyASParameters):
         and, if requested, also for integrality.
         """
         return PolyASParameters._check_parameter(self, h, i, j, v,
-                                                 integral = integral,
-                                                 name = name, sym = sym)
+                                                 integral=integral,
+                                                 name=name, sym=sym)
 
-    def _compute_kreinParameters(self, expand = False, factor = False,
-                                 simplify = False):
+    def _compute_kreinParameters(self, expand=False, factor=False,
+                                 simplify=False):
         """
         Compute the Krein parameters.
         """
         if "m" not in self.__dict__:
-            self.multiplicities(expand = expand, factor = factor,
-                                simplify = simplify)
+            self.multiplicities(expand=expand, factor=factor,
+                                simplify=simplify)
         if "q" not in self.__dict__:
             q = Array3D(self.d + 1)
             self._compute_dualParameters(q, self.k, self.m, self.PTR)
             self.q = q
 
-    def _compute_kTable(self, expand = False, factor = False,
-                        simplify = False):
+    def _compute_kTable(self, expand=False, factor=False, simplify=False):
         """
         Compute the sizes of the subconstituents.
 
@@ -201,17 +201,17 @@ class DRGParameters(PolyASParameters):
         """
         pass
 
-    def _compute_multiplicities(self, expand = False, factor = False,
-                                simplify = False):
+    def _compute_multiplicities(self, expand=False, factor=False,
+                                simplify=False):
         """
         Compute the multiplicities of the eigenspaces.
         """
         if "m" not in self.__dict__:
-            self.m = self._compute_sizes(self.k, expand = expand,
-                                         factor = factor, simplify = simplify)
+            self.m = self._compute_sizes(self.k, expand=expand,
+                                         factor=factor, simplify=simplify)
 
-    def _compute_pTable(self, expand = False, factor = False,
-                        simplify = False):
+    def _compute_pTable(self, expand=False, factor=False,
+                        simplify=False):
         """
         Compute the intersection numbers.
 
@@ -278,14 +278,14 @@ class DRGParameters(PolyASParameters):
             try:
                 ia = DRGParameters(*ia)
             except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = part)
+                raise InfeasibleError(ex, part=part)
         if ia.n == self.n:
             self.distance_graphs[ia] = part
         else:
             self.subgraphs[ia] = part
         return ia
 
-    def all_subconstituents(self, compute = False):
+    def all_subconstituents(self, compute=False):
         """
         Return a dictionary of parameters for subconstituents
         which are known to be distance-regular.
@@ -293,7 +293,7 @@ class DRGParameters(PolyASParameters):
         out = {}
         for i in range(self.d+1):
             try:
-                out[i] = self.subconstituent(i, compute = compute)
+                out[i] = self.subconstituent(i, compute=compute)
             except AssertionError:
                 pass
         return out
@@ -424,7 +424,7 @@ class DRGParameters(PolyASParameters):
                 if diam is not None:
                     sols = [s + [diam] for s in sols]
                 if any(checkConditions(cond, sol) for sol in sols):
-                    raise InfeasibleError(refs = ref)
+                    raise InfeasibleError(refs=ref)
         if self.d >= 3 and self.a[1] == 0 and self.a[2] > 0 and \
                 self.c[2] > 2:
             raise InfeasibleError("classical with a[1] = 0, "
@@ -446,7 +446,8 @@ class DRGParameters(PolyASParameters):
             if not (is_constant(alpha) and is_constant(beta)):
                 continue
             if alpha == b and ((b == 6 and d >= 7) or
-                        (b >= 10 and d >= 6 and not checkPrimePower(b))) \
+                               (b >= 10 and d >= 6 and
+                                not checkPrimePower(b))) \
                     and beta + 1 == (b**(d+1) - 1) / (b - 1):
                 raise InfeasibleError("not a Grassmann graph",
                                       ("GavrilyukKoolen18", "Thm. 1.2."))
@@ -491,8 +492,9 @@ class DRGParameters(PolyASParameters):
                         (self.d >= 2*i and self.c[2*i] == 1) or \
                         any(self.a[j] > 0 for j
                             in range(1, self.d - 2*i + 1)) or \
-                        (i < self.d and (self.c[2] - 1)*self.a[i+1]
-                                        + self.a[1] > self.a[i]):
+                        (i < self.d and
+                         (self.c[2] - 1)*self.a[i+1] + self.a[1]
+                         > self.a[i]):
                     raise InfeasibleError("Godsil's diameter bound "
                                           "not reached",
                                           ("BCN", "Lem. 5.3.1."))
@@ -546,7 +548,7 @@ class DRGParameters(PolyASParameters):
                                 if i > 0 and j < self.d else 0
                             if ppm + ppz + ppp < self.b[i] or \
                                     pzm + self.p[h, i, j] + pzp \
-                                        < self.a[i] + 1 or \
+                                    < self.a[i] + 1 or \
                                     pmm + pmz + pmp < self.c[i]:
                                 raise InfeasibleError("counting argument",
                                                       "Lambeck93")
@@ -555,13 +557,14 @@ class DRGParameters(PolyASParameters):
                 kka = self.k[self.d] * (self.k[self.d] - self.a[self.d] - 1)
                 try:
                     if (self.k[1] > ka and self.k[1] > kka) or \
-                            (self.k[2] > kka and (self.k[1] > ka or
-                                self.k[1] > self.a[self.d] *
-                                    (self.a[1] + 2 - self.a[self.d])) and
-                                (self.b[self.d-1] > 1 or
-                                 not (self.a[1] + 1 == self.a[self.d]) or
-                                 integralize(self.k[1]/self.a[self.d])
-                                    > self.k[self.d])):
+                        (self.k[2] > kka and
+                         (self.k[1] > ka or
+                          self.k[1] > self.a[self.d] *
+                          (self.a[1] + 2 - self.a[self.d])) and
+                         (self.b[self.d-1] > 1 or
+                          not (self.a[1] + 1 == self.a[self.d]) or
+                          integralize(self.k[1]/self.a[self.d])
+                            > self.k[self.d])):
                         raise TypeError
                 except TypeError:
                     raise InfeasibleError("last subconstituent too small",
@@ -613,8 +616,9 @@ class DRGParameters(PolyASParameters):
                     raise InfeasibleError("handshake lemma not satisfied "
                                           "for maximal cliques")
                 if self.a[1] * self.c[2] > self.a[2] or \
-                        (c2one and 1 + self.b[1]*(self.b[1]+1) *
-                                        (self.a[1]+2)/(1 + self.a[1]) > vkll):
+                        (c2one and
+                         1 + self.b[1]*(self.b[1]+1) *
+                            (self.a[1]+2)/(1 + self.a[1]) > vkll):
                     raise InfeasibleError("graph with maximal cliques",
                                           ("BCN", "Prop. 4.3.3."))
                 self.maxCliques = True
@@ -642,9 +646,9 @@ class DRGParameters(PolyASParameters):
             sols = _solve([SR(l) == r for l, r
                            in zip(self.b[:-1] + self.c[1:], b + c)], vars)
             if any(checkConditions(cond, sol) for sol in sols):
-                raise InfeasibleError(refs = ref)
+                raise InfeasibleError(refs=ref)
 
-    def check_feasible(self, checked = None, skip = None, derived = True):
+    def check_feasible(self, checked=None, skip=None, derived=True):
         """
         Check whether the intersection array is feasible.
         """
@@ -686,22 +690,22 @@ class DRGParameters(PolyASParameters):
             return
         checked.add(ia)
         self.distanceGraphs()
-        self.all_subconstituents(compute = derived > 1)
+        self.all_subconstituents(compute=derived > 1)
         for ia, part in self.subgraphs.items():
             try:
                 ia.check_feasible(checked)
             except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = part)
+                raise InfeasibleError(ex, part=part)
         if "complement" in self.__dict__:
             try:
                 self.complement.check_feasible(checked)
             except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = "complement")
+                raise InfeasibleError(ex, part="complement")
         for ia, part in self.distance_graphs.items():
             try:
                 ia.check_feasible(checked)
             except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = part)
+                raise InfeasibleError(ex, part=part)
 
     def check_genPoly(self):
         """
@@ -719,13 +723,14 @@ class DRGParameters(PolyASParameters):
                 st2 = 2*st
             except TypeError:
                 st = st2 = Integer(1)
-            if g not in [2, 4, 6, 8, 12] or (s > 1 and t > 1 and \
-                    (g == 12 or
-                     (g == 8 and (not st2.is_square() or
-                                  s > t**2 or t > s**2)) or
-                     (g == 6 and (not st.is_square()
-                                  or s > t**3 or t > s**3)) or
-                     (g == 4 and (s > t**2 or t > s**2)))):
+            if g not in [2, 4, 6, 8, 12] or \
+                    (s > 1 and t > 1 and
+                     (g == 12 or
+                      (g == 8 and (not st2.is_square() or
+                                   s > t**2 or t > s**2)) or
+                      (g == 6 and (not st.is_square()
+                                   or s > t**3 or t > s**3)) or
+                      (g == 4 and (s > t**2 or t > s**2)))):
                 raise InfeasibleError("no corresponding generalized polygon",
                                       ("BCN", "Thm. 6.5.1."))
             if g == 4:
@@ -837,11 +842,10 @@ class DRGParameters(PolyASParameters):
                             raise InfeasibleError("locally strongly regular "
                                                   "antipodal graph with d=4",
                                                   u"JurišićKoolen00")
-                    self.subconstituents[1] = self.add_subgraph(((self.a[1],
-                                                            -(bp+1)*(bm+1)),
-                                                                 (Integer(1),
-                                                                  mu)),
-                                                            "local graph")
+                    self.subconstituents[1] = self.add_subgraph(
+                        ((self.a[1], -(bp+1)*(bm+1)), (Integer(1), mu)),
+                        "local graph")
+
             def checkMul(h):
                 if self.antipodal and self.omega[h, self.d] != 1 and \
                       self.m[h] < self.k[1] + self.r - 2:
@@ -854,6 +858,7 @@ class DRGParameters(PolyASParameters):
                     return ("m[%d] < k" % h, ("BCN", "Thm. 4.4.4."))
                 else:
                     return None
+
             d = {h: checkMul(h) for h in range(1, self.d)}
             s = {h for h, v in d.items() if v is not None}
             if not s.issubset([i, j]):
@@ -870,7 +875,7 @@ class DRGParameters(PolyASParameters):
             if len(r) == 0:
                 return
             p = next(iter(r)).minpoly()
-            a = NumberField(p, names = ('a', )).gen()
+            a = NumberField(p, names=('a', )).gen()
             if len(r) == 1 or p.degree() != 2 or \
                     len({t.minpoly() for t in r}) == 2 or \
                     not a.is_integral():
@@ -907,7 +912,7 @@ class DRGParameters(PolyASParameters):
         """
         ia = self.intersectionArray()
         if ia in sporadic:
-            raise InfeasibleError(refs = sporadic[ia])
+            raise InfeasibleError(refs=sporadic[ia])
 
     def check_terwilliger(self):
         """
@@ -977,17 +982,17 @@ class DRGParameters(PolyASParameters):
         for idx in subsets(range(1, self.d + 1)):
             if len(idx) > 0 and len(idx) < self.d and idx != [1]:
                 part = "distance-%s graph" % (idx if len(idx) > 1
-                                                  else idx[0])
+                                              else idx[0])
                 try:
                     dg = self.add_subgraph(self.mergeClasses(*idx), part)
                     out[tuple(idx)] = dg
                 except (InfeasibleError, AssertionError) as ex:
-                    raise InfeasibleError(ex, part = part)
+                    raise InfeasibleError(ex, part=part)
                 except IndexError:
                     pass
         return out
 
-    def distancePartition(self, h = 0):
+    def distancePartition(self, h=0):
         """
         Return the diagram of the distance partition
         corresponding to a vertex (if h = 0)
@@ -995,25 +1000,23 @@ class DRGParameters(PolyASParameters):
         """
         return PartitionGraph(self, h)
 
-    def eigenvalues(self, expand = False, factor = False, simplify = False):
+    def eigenvalues(self, expand=False, factor=False, simplify=False):
         """
         Compute and return the eigenvalues of the graph.
         """
-        return self._compute_eigenvalues(self.p, expand = expand,
-                                         factor = factor, simplify = simplify)
+        return self._compute_eigenvalues(self.p, expand=expand,
+                                         factor=factor, simplify=simplify)
 
-    def genPoly_parameters(self, expand = False, factor = False,
-                           simplify = False):
+    def genPoly_parameters(self, expand=False, factor=False, simplify=False):
         """
         Determine the parameters of the generalized polygon
         whose collinearity graph has matching parameters.
         """
         try:
-            t = rewriteExp(self.c[self.d] - 1, expand = expand,
-                           factor = factor, simplify = simplify)
+            t = rewriteExp(self.c[self.d] - 1, expand=expand,
+                           factor=factor, simplify=simplify)
             s = rewriteExp(integralize(self.b[0] / self.c[self.d]),
-                           expand = expand, factor = factor,
-                           simplify = simplify)
+                           expand=expand, factor=factor, simplify=simplify)
             st = s * t
             if any(c != 1 or b != st
                    for b, c in zip(self.b[1:-1], self.c[1:-1])):
@@ -1053,7 +1056,7 @@ class DRGParameters(PolyASParameters):
         """
         s = symbol("__s")
         for q in sorted([s.subs(ss) for ss in
-                         _solve(s*(s+1) == self.c[2], s)], reverse = True):
+                         _solve(s*(s+1) == self.c[2], s)], reverse=True):
             if not checkPrimePower(q):
                 continue
             beta = self.b[0] * (q-1) / (q**self.d - 1)
@@ -1097,10 +1100,11 @@ class DRGParameters(PolyASParameters):
                     continue
                 alpha = self.c[2] / (b+1) - 1
                 beta = self.k[1] / q_int(self.d, b)
-                if all(self.b[i] == (q_int(self.d, b) - q_int(i, b))
-                                  * (beta - alpha * q_int(i, b)) and
-                       self.c[i+1] == q_int(i+1, b)
-                                    * (1 + alpha * q_int(i, b))
+                if all(self.b[i] ==
+                       (q_int(self.d, b) - q_int(i, b)) *
+                       (beta - alpha * q_int(i, b)) and
+                       self.c[i+1] ==
+                       q_int(i+1, b) * (1 + alpha * q_int(i, b))
                        for i in range(self.d)):
                     clas.append((self.d, b, alpha, beta))
             self.classical = False if len(clas) == 0 else clas
@@ -1135,7 +1139,7 @@ class DRGParameters(PolyASParameters):
         if self.d < 2:
             return False
         s = sqrt(self.c[2])
-        for q in sorted([-1+s, -1-s], reverse = True):
+        for q in sorted([-1+s, -1-s], reverse=True):
             if not checkPrimePower(q):
                 continue
             beta = self.b[0] * (q-1) / (q**self.d - 1)
@@ -1157,7 +1161,7 @@ class DRGParameters(PolyASParameters):
               for i, x in enumerate(self.b[:-1])]
         c = [SR(x) == (i+1) * (2*i + 1) for i, x in enumerate(self.c[1:])]
         return len(_solve(b1 + c, self.vars)) > 0 or \
-               len(_solve(b2 + c, self.vars)) > 0
+            len(_solve(b2 + c, self.vars)) > 0
 
     def is_hamming(self):
         """
@@ -1166,7 +1170,7 @@ class DRGParameters(PolyASParameters):
         z = symbol()
         return len(_solve([SR(x) == (self.d-i) * z
                            for i, x in enumerate(self.b[:-1])] +
-                           [SR(x) == i+1 for i, x in enumerate(self.c[1:])],
+                          [SR(x) == i+1 for i, x in enumerate(self.c[1:])],
                           self.vars + (z, ))) > 0
 
     def is_hermitean(self):
@@ -1192,8 +1196,8 @@ class DRGParameters(PolyASParameters):
         z = symbol()
         return len(_solve([SR(x) == (self.d-i) * (self.d - z - i)
                            for i, x in enumerate(self.b[:-1])] +
-                           [SR(x) == (i+1)**2 for i, x
-                            in enumerate(self.c[1:])],
+                          [SR(x) == (i+1)**2 for i, x
+                           in enumerate(self.c[1:])],
                           self.vars + (z, ))) > 0
 
     def is_locallyPetersen(self):
@@ -1221,7 +1225,7 @@ class DRGParameters(PolyASParameters):
                 return True
         return False
 
-    def localGraph(self, compute = False):
+    def localGraph(self, compute=False):
         """
         Return parameters of the local graph
         if it is known to be distance-regular.
@@ -1229,7 +1233,7 @@ class DRGParameters(PolyASParameters):
         If compute is set to True,
         then the relevant triple intersection numbers will be computed.
         """
-        return self.subconstituent(1, compute = compute)
+        return self.subconstituent(1, compute=compute)
 
     def mergeClasses(self, *args, **kargs):
         """
@@ -1316,7 +1320,7 @@ class DRGParameters(PolyASParameters):
         for h in range(self.d + 1):
             self.distancePartition(h).show(**options)
 
-    def subconstituent(self, h, compute = False):
+    def subconstituent(self, h, compute=False):
         """
         Return parameters of the h-th subconstituent
         if it is known to be distance-regular.
@@ -1365,13 +1369,13 @@ class DRGParameters(PolyASParameters):
         complement = kargs.get("complement", False)
         p = DRGParameters(*[[subs(x, *exp) for x in l]
                             for l in self.intersectionArray()],
-                          complement = complement)
+                          complement=complement)
         self._subs(exp, p)
         if "q" in self.__dict__:
             p.q = self.q.subs(*exp)
-            p._check_parameters(p.q, integral = self.DUAL_INTEGRAL,
-                                name = self.DUAL_PARAMETER,
-                                sym = self.DUAL_SYMBOL)
+            p._check_parameters(p.q, integral=self.DUAL_INTEGRAL,
+                                name=self.DUAL_PARAMETER,
+                                sym=self.DUAL_SYMBOL)
         for h, s in enumerate(self.subconstituents):
             if s is None:
                 continue
@@ -1380,24 +1384,24 @@ class DRGParameters(PolyASParameters):
                 p.subconstituents[h] = \
                     p.add_subgraph(self.subconstituents[h].subs(*exp), name)
             except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = name)
+                raise InfeasibleError(ex, part=name)
         if "complement" in self.__dict__ and "complement" not in p.__dict__:
             try:
-                p.complement = self.complement.subs(*exp, complement = p)
+                p.complement = self.complement.subs(*exp, complement=p)
             except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = "complement")
+                raise InfeasibleError(ex, part="complement")
         for ia, part in self.subgraphs.items():
             try:
                 p.add_subgraph(ia.subs(*exp), part)
             except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = part)
+                raise InfeasibleError(ex, part=part)
         for ia, part in self.distance_graphs.items():
             if "complement" in self.__dict__ and ia is self.complement:
                 continue
             try:
                 p.add_subgraph(ia.subs(*exp), part)
             except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part = part)
+                raise InfeasibleError(ex, part=part)
         return p
 
     def valency(self):
