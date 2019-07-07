@@ -58,9 +58,9 @@ class PartitionGraph(Graph):
         Takes a graph parameters object
         and an integer denoting the distance between the initial vertices.
         """
-        assert h >= 0 and h <= p.d, "distance not in feasible range"
+        assert h >= 0 and h <= p._.d, "distance not in feasible range"
         d = dict(sum([[((i, j), x) for j, x in enumerate(r) if x != 0]
-                      for i, r in enumerate(p.p[h])],  []))
+                      for i, r in enumerate(p._.p[h])],  []))
         if h == 0:
             pos = lambda (i, j): (i, )
         else:
