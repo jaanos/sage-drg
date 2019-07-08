@@ -7,6 +7,7 @@ from .util import _factor
 from .util import full_simplify
 from .util import variables
 
+
 class Array3D:
     """
     A three-dimensional array of expressions.
@@ -107,7 +108,7 @@ class Array3D:
                     A[t] = self[tuple(t[i] for i in p)]
         return A
 
-    def reorder(self, order, inplace = True):
+    def reorder(self, order, inplace=True):
         """
         Reorder each dimension in the array.
         """
@@ -119,7 +120,7 @@ class Array3D:
                for h in order]
         return A
 
-    def rewrite(self, expand = False, factor = False, simplify = False):
+    def rewrite(self, expand=False, factor=False, simplify=False):
         """
         Rewrite the array.
         """
@@ -149,6 +150,7 @@ class Array3D:
                               for M in self for r in M for x in r), ())))
 
     substitute = subs
+
 
 class Array4D:
     """
@@ -256,7 +258,7 @@ class Array4D:
                         A[t] = self[tuple(t[i] for i in p)]
         return A
 
-    def reorder(self, order, inplace = True):
+    def reorder(self, order, inplace=True):
         """
         Reorder each dimension in the array.
         """
@@ -271,7 +273,7 @@ class Array4D:
         Q.A = A
         return Q
 
-    def rewrite(self, expand = False, factor = False, simplify = False):
+    def rewrite(self, expand=False, factor=False, simplify=False):
         """
         Rewrite the array.
         """

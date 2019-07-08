@@ -16,6 +16,7 @@ from sage.symbolic.ring import SR
 pair_keep = staticmethod(lambda i, j: (i, j))
 pair_swap = staticmethod(lambda i, j: (j, i))
 
+
 def checkNonneg(exp):
     """
     Check whether an expression can be nonnegative.
@@ -26,6 +27,7 @@ def checkNonneg(exp):
     """
     return not (exp < 0)
 
+
 def checkPos(exp):
     """
     Check whether an expression can be positive.
@@ -35,6 +37,7 @@ def checkPos(exp):
     Otherwise, returns ``False``.
     """
     return not (exp <= 0)
+
 
 def checkPowerOf(exp, base):
     """
@@ -51,6 +54,7 @@ def checkPowerOf(exp, base):
             or exp.is_power_of(base)
     except TypeError:
         return False
+
 
 def checkPrimePower(exp):
     """
@@ -69,6 +73,7 @@ def checkPrimePower(exp):
     except TypeError:
         return False
 
+
 def _factor(exp):
     """
     Factor an expression.
@@ -76,6 +81,7 @@ def _factor(exp):
     if isinstance(exp, Expression) and not exp.is_zero():
         return exp.factor()
     return exp
+
 
 def full_simplify(exp):
     """
@@ -85,7 +91,8 @@ def full_simplify(exp):
         return exp.full_simplify()
     return exp
 
-def hard_ceiling(exp, val = None):
+
+def hard_ceiling(exp, val=None):
     """
     Return the smallest integer greater than ``exp``,
     or ``val`` if ``exp`` is complex.
@@ -103,7 +110,8 @@ def hard_ceiling(exp, val = None):
         pass
     return exp
 
-def hard_floor(exp, val = None):
+
+def hard_floor(exp, val=None):
     """
     Return the greatest integer smaller than ``exp``,
     or ``val`` if ``exp`` is complex.
@@ -120,6 +128,7 @@ def hard_floor(exp, val = None):
     except TypeError:
         pass
     return exp
+
 
 def integralize(exp):
     """
@@ -143,15 +152,17 @@ def integralize(exp):
         mp = exp.minpoly()
         if mp.degree() == 1:
             return Integer(mp.any_root())
-    except:
+    except Exception:
         pass
     raise TypeError("attempt to coerce non-integer to Integer")
+
 
 def is_constant(x):
     """
     Determine whether an expression is constant.
     """
     return not isinstance(x, Expression) or x.is_constant()
+
 
 def is_squareSum(x):
     """
@@ -168,6 +179,7 @@ def is_squareSum(x):
         y -= i
     return False
 
+
 def make_expressions(exps):
     """
     Prepare a dictionary of expressions
@@ -182,6 +194,7 @@ def make_expressions(exps):
             d[e] = (l, u)
     return d
 
+
 def matrixMap(fun, M):
     """
     Replace each value in matrix ``M`` by its image under ``fun``.
@@ -189,11 +202,13 @@ def matrixMap(fun, M):
     for i in range(M.nrows()):
         M[i] = map(fun, M[i])
 
+
 def nrows(M):
     """
     Return the number of rows in the matrix.
     """
     return M.nrows() if isinstance(M, MatrixClass) else len(M)
+
 
 def refresh(vars):
     """
@@ -205,7 +220,8 @@ def refresh(vars):
         vars = list(vars) * 2
     return solve([x == x for x in vars], list(vars))[0]
 
-def rewriteExp(exp, expand = False, factor = False, simplify = False):
+
+def rewriteExp(exp, expand=False, factor=False, simplify=False):
     """
     Rewrite an expression.
     """
@@ -219,7 +235,8 @@ def rewriteExp(exp, expand = False, factor = False, simplify = False):
         exp = _simplify(exp)
     return exp
 
-def rewriteMatrix(M, expand = False, factor = False, simplify = False):
+
+def rewriteMatrix(M, expand=False, factor=False, simplify=False):
     """
     Rewrite a matrix.
     """
@@ -232,7 +249,8 @@ def rewriteMatrix(M, expand = False, factor = False, simplify = False):
     elif simplify:
         matrixMap(_simplify, M)
 
-def rewriteTuple(t, expand = False, factor = False, simplify = False):
+
+def rewriteTuple(t, expand=False, factor=False, simplify=False):
     """
     Rewrite a tuple.
     """
@@ -246,17 +264,20 @@ def rewriteTuple(t, expand = False, factor = False, simplify = False):
         t = tuple(map(_simplify, t))
     return t
 
+
 def round(x):
     """
     Return ``x`` rounded to an ``Integer``.
     """
     return create_RealNumber(x).round()
 
+
 def sort_solution(sol):
     """
     Sort a solution to an equation by the variable names.
     """
-    return tuple(sorted(sol, key = lambda e: str(e.lhs())))
+    return tuple(sorted(sol, key=lambda e: str(e.lhs())))
+
 
 def subconstituent_name(h):
     """
@@ -272,6 +293,7 @@ def subconstituent_name(h):
         o = "%dth" % h
     return "%s subconstituent" % o
 
+
 def subs(exp, *s):
     """
     Substitute the given subexpressions in the expression.
@@ -280,7 +302,8 @@ def subs(exp, *s):
         return exp.subs(*s)
     return exp
 
-def symbol(a = None):
+
+def symbol(a=None):
     """
     Return a variable from the symbolic ring with the given name.
     If an expression is given, it is returned unchanged.
@@ -288,6 +311,7 @@ def symbol(a = None):
     if isinstance(a, Expression):
         return a
     return SR.symbol(a)
+
 
 def variables(exp):
     """
@@ -300,6 +324,7 @@ def variables(exp):
                               for r in exp for x in r), ())))
     else:
         return ()
+
 
 def verify(exp):
     """

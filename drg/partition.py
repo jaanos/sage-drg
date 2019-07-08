@@ -1,12 +1,13 @@
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 
+
 class Bubble:
     """
     An object representing a set of vertices in a partition of the graph.
     """
 
-    def __init__(self, v, i, j = None):
+    def __init__(self, v, i, j=None):
         """
         Object constructor.
 
@@ -44,21 +45,22 @@ class Bubble:
         return abs(self.i - other.i) <= 1 and \
             (self.j is other.j or abs(self.j - other.j) <= 1)
 
+
 class PartitionGraph(Graph):
     """
     A diagram representing a partition of a distance-regular graph.
     """
 
-    def __init__(self, p, h = 0):
+    def __init__(self, p, h=0):
         """
         Object constructor.
 
         Takes a graph parameters object
         and an integer denoting the distance between the initial vertices.
         """
-        assert h >= 0 and h <= p.d, "distance not in feasible range"
+        assert h >= 0 and h <= p._.d, "distance not in feasible range"
         d = dict(sum([[((i, j), x) for j, x in enumerate(r) if x != 0]
-                      for i, r in enumerate(p.p[h])],  []))
+                      for i, r in enumerate(p._.p[h])],  []))
         if h == 0:
             pos = lambda (i, j): (i, )
         else:
@@ -67,9 +69,10 @@ class PartitionGraph(Graph):
         V = b.values()
         Graph.__init__(self,
                        [V, lambda u, v: p.has_edges(h, u.i, u.j, v.i, v.j)],
-                       loops = False, name = p.format_parameterArray())
+                       loops=False, name=p.format_parameterArray())
         self._pos = {v: (v.i, Integer(0)) if v.j is None
-                        else (v.j+v.i, v.j-v.i) for v in V}
+                     else (v.j+v.i, v.j-v.i)
+                     for v in V}
         self._distance = h
 
     def _repr_(self):

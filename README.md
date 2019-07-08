@@ -38,6 +38,7 @@ InfeasibleError: nonexistence by JurišićVidali12
 ### [`jupyter`](jupyter)
 
 A collection of sample Jupyter notebooks giving some nonexistence results.
+Also includes a [conference presentation](jupyter/2019-07-04-fpsac/).
 
 
 ## Citing
