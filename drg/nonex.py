@@ -85,6 +85,7 @@ classicalFamilies = {
         ([r >= 2, t >= 4], "DeBruynVanhove15")
 }
 
+
 def checkConditions(cond, sol):
     """
     Check whether the given conditions hold for the given values of variables.

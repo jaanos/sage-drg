@@ -7,12 +7,13 @@ from .util import checkNonneg
 from .util import checkPos
 from .util import variables
 
+
 class CoefficientList:
     """
     A list of coefficients of an expression.
     """
 
-    def __init__(self, exp, vars = None):
+    def __init__(self, exp, vars=None):
         """
         Object constructor.
 
@@ -63,7 +64,7 @@ class CoefficientList:
             keys = set()
         else:
             keys = set(other.val.iterkeys())
-        for k in sorted(keys.union(self.val.iterkeys()), reverse = True):
+        for k in sorted(keys.union(self.val.iterkeys()), reverse=True):
             if k not in keys:
                 c = self.val[k].__cmp__(None)
             elif k not in self.val:
