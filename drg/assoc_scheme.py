@@ -7,9 +7,17 @@ from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
 from sage.matrix.special import diagonal_matrix
+from sage.misc.latex import LatexExpr
 from sage.rings.integer import Integer
+from sage.structure.sage_object import SageObject
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
+from sage.typeset.ascii_art import ascii_art
+from sage.typeset.symbols import ascii_left_curly_brace
+from sage.typeset.symbols import ascii_right_curly_brace
+from sage.typeset.symbols import unicode_left_curly_brace
+from sage.typeset.symbols import unicode_right_curly_brace
+from sage.typeset.unicode_art import unicode_art
 from .array3d import Array3D
 from .coefflist import CoefficientList
 from .find import find
@@ -117,7 +125,7 @@ class Parameters:
         return "Parameter storage of <%s>" % repr(self._parameters)
 
 
-class ASParameters:
+class ASParameters(SageObject):
     """
     A class for parameters of a general association scheme
     and checking their feasibility.
@@ -1139,6 +1147,7 @@ class PolyASParameters(ASParameters):
     DUAL_PARTS = None
     DUAL_SYMBOL = None
     OBJECT = None
+    OBJECT_LATEX = None
     PARAMETER = None
     PART = None
     PARTS = None
@@ -1202,7 +1211,15 @@ class PolyASParameters(ASParameters):
         String representation.
         """
         return "Parameters of a %s with %s %s" % \
-            (self.OBJECT, self.ARRAY, self.format_parameterArray())
+            (self.OBJECT, self.ARRAY, self._format_parameterArray())
+
+    def _ascii_art_(self):
+        """
+        ASCII art representation.
+        """
+        return ascii_art("Parameters of a %s with %s " %
+                         (self.OBJECT, self.ARRAY),
+                         self._format_parameterArray_ascii())
 
     def _check_multiplicity(self, k, i):
         """
@@ -1412,6 +1429,43 @@ class PolyASParameters(ASParameters):
         """
         self._.omega = P / diagonal_matrix(P[0])
 
+    def _format_parameterArray(self):
+        """
+        Return a string representation of the intersection array.
+        """
+        return "{%s; %s}" % tuple(', '.join(str(x) for x in l)
+                                  for l in self.parameterArray())
+
+    def _format_parameterArray_ascii(self):
+        """
+        Return an ASCII art representation of the intersection array.
+        """
+        art = ascii_art(*sum(zip([x._ascii_art_()
+                                  for l in self.parameterArray() for x in l],
+                                 ([", "] * (self.classes()-1) + ["; "]) * 2),
+                             ())[:-1])
+        return ascii_left_curly_brace.character_art(art.height()) + art \
+            + ascii_right_curly_brace.character_art(art.height())
+
+    def _format_parameterArray_latex(self):
+        """
+        Return a LaTeX representation of the intersection array.
+        """
+        return r"\{%s; %s\}" % tuple(', '.join(x._latex_() for x in l)
+                                     for l in self.parameterArray())
+
+    def _format_parameterArray_unicode(self):
+        """
+        Return a Unicode art representation of the intersection array.
+        """
+        art = unicode_art(*sum(zip([x._unicode_art_()
+                                    for l in self.parameterArray()
+                                    for x in l],
+                                   ([", "] * (self.classes()-1)
+                                    + ["; "]) * 2), ())[:-1])
+        return unicode_left_curly_brace.character_art(art.height()) + art \
+            + unicode_right_curly_brace.character_art(art.height())
+
     def _init_array(self, b, c):
         """
         Initialize the intersection or Krein array.
@@ -1435,6 +1489,14 @@ class PolyASParameters(ASParameters):
         self._.n = sum(k)
         return k
 
+    def _latex_(self):
+        """
+        LaTeX representation.
+        """
+        return LatexExpr(r"\text{Parameters of a %s with %s } %s" %
+                         (self.OBJECT_LATEX, self.ARRAY,
+                          self._format_parameterArray_latex()))
+
     def _subs(self, exp, p):
         """
         Substitute the given subexpressions in the parameters.
@@ -1444,6 +1506,14 @@ class PolyASParameters(ASParameters):
         if self._has("omega"):
             p._.omega = self._.omega.subs(*exp)
         ASParameters._subs(self, exp, p)
+
+    def _unicode_art_(self):
+        """
+        Unicode art representation.
+        """
+        return unicode_art("Parameters of a %s with %s " %
+                           (self.OBJECT, self.ARRAY),
+                           self._format_parameterArray_ascii())
 
     def aTable(self, full=False, expand=False, factor=False, simplify=False):
         """
@@ -1508,13 +1578,6 @@ class PolyASParameters(ASParameters):
         Not implemented, to be overridden.
         """
         raise NotImplementedError
-
-    def format_parameterArray(self):
-        """
-        Return a string representation of the intersection array.
-        """
-        return "{%s; %s}" % tuple(', '.join(str(x) for x in l)
-                                  for l in self.parameterArray())
 
     def is_cyclic(self):
         """

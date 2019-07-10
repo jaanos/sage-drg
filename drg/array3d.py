@@ -5,6 +5,7 @@ from sage.matrix.constructor import Matrix
 from sage.misc.latex import LatexExpr
 from sage.structure.sage_object import SageObject
 from sage.symbolic.ring import SR
+from sage.typeset.ascii_art import ascii_art
 from sage.typeset.unicode_art import unicode_art
 from .util import _factor
 from .util import full_simplify
@@ -88,6 +89,17 @@ class Array3D(SageObject):
         """
         k1, k2, k3 = key
         self.A[k1][k2, k3] = value
+
+    def _ascii_art_(self):
+        """
+        ASCII art representation of the array.
+        """
+        l = len(repr(self.n - 1))
+        fmt = '%{}d: '.format(l)
+        art = [M._ascii_art_() for M in self.A]
+        return ascii_art("\n".join((fmt % i) + "\n"*a.height()
+                                   for i, a in enumerate(art))) + \
+            ascii_art("\n".join(sum([a._matrix + [""] for a in art], [])))
 
     def _latex_(self):
         """

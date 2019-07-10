@@ -21,6 +21,7 @@ class QPolyParameters(PolyASParameters):
     DUAL_PARTS = "subconstituents"
     DUAL_SYMBOL = "p"
     OBJECT = "Q-polynomial association scheme"
+    OBJECT_LATEX = "$Q$-polynomial association scheme"
     PARAMETER = "Krein parameter"
     PART = "eigenspace"
     PARTS = "multiplicities"

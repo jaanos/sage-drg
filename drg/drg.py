@@ -51,6 +51,7 @@ class DRGParameters(PolyASParameters):
     DUAL_PARTS = "multiplicities"
     DUAL_SYMBOL = "q"
     OBJECT = "distance-regular graph"
+    OBJECT_LATEX = "distance-regular graph"
     PARAMETER = "intersection number"
     PART = "subconstituent"
     PARTS = "subconstituents"
