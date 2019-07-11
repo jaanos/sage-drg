@@ -164,6 +164,12 @@ class ASParameters(SageObject):
             assert self._.d is not None, "insufficient data"
         self._init_vars()
 
+    def __hash__(self):
+        """
+        Return the hash value.
+        """
+        return hash(id(self))
+
     def __len__(self, expand=False, factor=False, simplify=False):
         """
         Return the number of vertices.
@@ -1451,8 +1457,9 @@ class PolyASParameters(ASParameters):
         """
         Return a LaTeX representation of the intersection array.
         """
-        return r"\{%s; %s\}" % tuple(', '.join(x._latex_() for x in l)
-                                     for l in self.parameterArray())
+        return r"\left\{%s; %s\right\}" % tuple(', '.join(x._latex_()
+                                                          for x in l) for l
+                                                in self.parameterArray())
 
     def _format_parameterArray_unicode(self):
         """
