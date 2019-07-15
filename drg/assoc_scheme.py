@@ -7,6 +7,7 @@ from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
 from sage.matrix.special import diagonal_matrix
+from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
 from sage.rings.integer import Integer
 from sage.structure.sage_object import SageObject
@@ -1446,7 +1447,7 @@ class PolyASParameters(ASParameters):
         """
         Return an ASCII art representation of the intersection array.
         """
-        art = ascii_art(*sum(zip([x._ascii_art_()
+        art = ascii_art(*sum(zip([ascii_art(x)
                                   for l in self.parameterArray() for x in l],
                                  ([", "] * (self.classes()-1) + ["; "]) * 2),
                              ())[:-1])
@@ -1457,7 +1458,7 @@ class PolyASParameters(ASParameters):
         """
         Return a LaTeX representation of the intersection array.
         """
-        return r"\left\{%s; %s\right\}" % tuple(', '.join(x._latex_()
+        return r"\left\{%s; %s\right\}" % tuple(', '.join(latex(x)
                                                           for x in l) for l
                                                 in self.parameterArray())
 
@@ -1465,7 +1466,7 @@ class PolyASParameters(ASParameters):
         """
         Return a Unicode art representation of the intersection array.
         """
-        art = unicode_art(*sum(zip([x._unicode_art_()
+        art = unicode_art(*sum(zip([unicode_art(x)
                                     for l in self.parameterArray()
                                     for x in l],
                                    ([", "] * (self.classes()-1)
@@ -1520,7 +1521,7 @@ class PolyASParameters(ASParameters):
         """
         return unicode_art("Parameters of a %s with %s " %
                            (self.OBJECT, self.ARRAY),
-                           self._format_parameterArray_ascii())
+                           self._format_parameterArray_unicode())
 
     def aTable(self, full=False, expand=False, factor=False, simplify=False):
         """
