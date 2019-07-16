@@ -580,7 +580,7 @@ class ASParameters(SageObject):
         if self._has("P") and not p._has("P"):
             p._.P = self._.P.subs(*exp)
         if self._has("Q") and not p._has("Q"):
-            p._.Q = self.Q._.subs(*exp)
+            p._.Q = self._.Q.subs(*exp)
         for k, v in self._.triple.items():
             p._.triple[k] = v.subs(*exp)
 
