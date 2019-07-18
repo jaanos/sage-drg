@@ -9,9 +9,9 @@
 * [![DRG-55-54-50-35-10-bipartite.ipynb](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=jupyter/DRG-55-54-50-35-10-bipartite.ipynb)
 [`DRG-55-54-50-35-10-bipartite.ipynb`](DRG-55-54-50-35-10-bipartite.ipynb) - proof of nonexistence of a bipartite distance-regular graph with intersection array {55, 54, 50, 35, 10; 1, 5, 20, 45, 55} with 3500 vertices
 * [![DRG-d3-2param.ipynb](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=jupyter/DRG-d3-2param.ipynb)
-[`DRG-d3-2param.ipynb`](DRG-d3-2param.ipynb) - proof of nonexistence of a family of distance-regular graphs with intersection arrays {(2*r*+1)(4*r*+1)(4*t*-1), 8*r*(4*rt*-*r*+2*t*), (*r*+*t*)(4*r*+1); 1, (*r*+*t*)(4*r*+1), 4*r*(2*r*+1)(4*t*-1)} (*r*, *t* >= 1)
+[`DRG-d3-2param.ipynb`](DRG-d3-2param.ipynb) - proof of nonexistence of a family of distance-regular graphs with intersection arrays {(2*r*+1)(4*r*+1)(4*t*-1), 8*r*(4*rt*-*r*+2*t*), (*r*+*t*)(4*r*+1); 1, (*r*+*t*)(4*r*+1), 4*r*(2*r*+1)(4*t*-1)} (*r*, *t* ≥ 1)
 * [![QPoly-d4-tight4design.ipynb](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=jupyter/QPoly-d4-tight4design.ipynb)
-[`QPoly-d4-tight4design.ipynb`](QPoly-d4-tight4design.ipynb) - proof of nonexistence of a *Q*-polynomial association scheme with Krein array {*r*<sup>2</sup>-4, *r*<sup>2</sup>-9, 10, 1; 1, 2, *r*<sup>2</sup>-9, *r*<sup>2</sup>-4} (*r* ≠ 9)
+[`QPoly-d4-tight4design.ipynb`](QPoly-d4-tight4design.ipynb) - proof of nonexistence of a *Q*-polynomial association scheme with Krein array {*r*<sup>2</sup>-4, *r*<sup>2</sup>-9, 12(*s*-1)/*s*, 1; 1, 12/*s*, *r*<sup>2</sup>-9, *r*<sup>2</sup>-4} (*s* ≥ 4)
 
 ## RISE presentations
 
