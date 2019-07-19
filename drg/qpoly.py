@@ -121,6 +121,16 @@ class QPolyParameters(PolyASParameters):
         """
         return QPolyParameters
 
+    def _is_trivial(self):
+        """
+        Check whether the Q-polynomial association scheme is trivial
+        for the purposes of feasibility checking.
+
+        Returns ``True`` if the scheme has one class
+        or principal multiplicity two.
+        """
+        return PolyASParameters._is_trivial(self) or self._.m[1] == 2
+
     def eigenvalues(self, expand=False, factor=False, simplify=False):
         """
         Compute and return the dual eigenvalues of the first eigenspace

@@ -22,11 +22,16 @@ from sage.typeset.unicode_art import unicode_art
 from .array3d import Array3D
 from .coefflist import CoefficientList
 from .find import find
+from .nonex import checkConditions
+from .nonex import families
+from .nonex import sporadic
+from .util import checklist
 from .util import checkNonneg
 from .util import checkPos
 from .util import _factor
 from .util import full_simplify
 from .util import integralize
+from .util import is_integral
 from .util import make_expressions
 from .util import nrows
 from .util import rewriteExp
@@ -115,6 +120,7 @@ class Parameters:
         Object constructor.
         """
         self._parameters = p
+        self.polynomial_orderings = {}
         self.triple = {}
         self.triple_solution = {}
         self.triple_solution_generator = {}
@@ -126,12 +132,17 @@ class Parameters:
         return "Parameter storage of <%s>" % repr(self._parameters)
 
 
+check_ASParameters = []
+check = checklist(check_ASParameters)
+
+
 class ASParameters(SageObject):
     """
     A class for parameters of a general association scheme
     and checking their feasibility.
     """
     _ = None
+    _checklist = check_ASParameters
 
     def __init__(self, p=None, q=None, P=None, Q=None):
         """
@@ -227,6 +238,15 @@ class ASParameters(SageObject):
                 * identity_matrix(SR, self._.d + 1):
             warn(Warning("the eigenmatrices do not multiply "
                          "into a multiple of the identity matrix"))
+
+    def _check_family(self):
+        """
+        Check whether the association scheme has parameters for which
+        nonexistence has been shown as a part of an infinite family.
+
+        Currently does nothing for general association schemes.
+        """
+        return
 
     @staticmethod
     def _check_parameter(h, i, j, v, integral=False, name=None, sym=None):
@@ -465,12 +485,28 @@ class ASParameters(SageObject):
         p._.triple_solution.update(self._.triple_solution)
         p._.triple_solution_generator.update(self._.triple_solution_generator)
 
+    def _derived(self, derived=True):
+        """
+        Generate parameters sets of derived association schemes.
+        """
+        self.polynomialOrders()
+        for pa, part in self._.polynomial_orderings.items():
+            yield (pa, part, True)
+
     @staticmethod
     def _get_class():
         """
         Return the principal class of the object.
         """
         return ASParameters
+
+    def _get_parameters(self):
+        """
+        Return the defining parameter set, if any.
+
+        Currently, this is not defined for general association schemes.
+        """
+        return None
 
     def _has(self, name):
         """
@@ -554,6 +590,15 @@ class ASParameters(SageObject):
             order.append(j)
         return tuple(order)
 
+    def _is_trivial(self):
+        """
+        Check whether the association scheme is trivial
+        for the purposes of feasibility checking.
+
+        Returns ``True`` if the scheme has one class.
+        """
+        return self._.d == 1
+
     def _reorder(self, order):
         """
         Check and normalize a given order of relations or eigenspaces.
@@ -584,40 +629,47 @@ class ASParameters(SageObject):
         for k, v in self._.triple.items():
             p._.triple[k] = v.subs(*exp)
 
-    def check_absoluteBound(self, expand=False, factor=False,
-                            simplify=False):
+    def add_polyOrder(self, pa, part):
         """
-        Check whether the absolute bound is not exceeded.
+        Add a polynomial ordering into the list.
         """
-        if not self._has("m"):
-            self.multiplicities(expand=expand, factor=factor,
-                                simplify=simplify)
-        if not self._has("q"):
-            self.kreinParameters(expand=expand, factor=factor,
-                                 simplify=simplify)
-        ineqs = {}
-        for i in range(self._.d + 1):
-            ineq = self._.m[i]*(self._.m[i] + 1)/2 - \
-                sum(self._.m[h] for h in range(self._.d + 1)
-                    if self._.q[h, i, i] != 0)
-            if ineq < 0:
-                raise InfeasibleError("absolute bound exceeded "
-                                      "for (%d, %d)" % (i, i))
-            elif not (ineq >= 0):
-                ineqs[i, i] = rewriteExp(ineq, expand=expand,
-                                         factor=factor, simplify=simplify)
-            for j in range(i+1, self._.d + 1):
-                ineq = self._.m[i]*self._.m[j] - \
-                    sum(self._.m[h] for h in range(self._.d + 1)
-                        if self._.q[h, i, j] != 0)
-                if ineq < 0:
-                    raise InfeasibleError("absolute bound exceeded "
-                                          "for (%d, %d)" % (i, j))
-                elif not (ineq >= 0):
-                    ineqs[i, j] = rewriteExp(ineq, expand=expand,
-                                             factor=factor,
-                                             simplify=simplify)
-        return ineqs
+        if pa in self._.polynomial_orderings:
+            return next(g for g in self._.polynomial_orderings if g == pa)
+        self._.polynomial_orderings[pa] = part
+        return pa
+
+    def check_feasible(self, checked=None, skip=None, derived=True, levels=3):
+        """
+        Check whether the parameter set is feasible.
+        """
+        if self._is_trivial():
+            return
+        par = self._get_parameters()
+        if checked is None:
+            checked = set()
+        if par in checked:
+            return
+        if skip is None:
+            skip = set()
+        elif isinstance(skip, str):
+            skip = {skip}
+        else:
+            skip = set(skip)
+        for i, lvl in enumerate(self._checklist[:levels]):
+            for name, check in lvl:
+                if name not in skip:
+                    check(self)
+                    if i > 1:
+                        skip.add(name)
+        if not derived:
+            return
+        if par is not None:
+            checked.add(par)
+        for par, part, reorder in self._derived(derived):
+            try:
+                par.check_feasible(checked, skip if reorder else None)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=part)
 
     def check_handshake(self, metric=False, bipartite=False):
         """
@@ -639,122 +691,6 @@ class ASParameters(SageObject):
                     raise InfeasibleError("handshake lemma not satisfied "
                                           "for relation %d in subconstituent"
                                           " %d" % (j, i))
-
-    def check_quadruples(self, solver=None):
-        """
-        Check whether the existence of a forbidden quadruple of vertices
-        is implied by the triple intersection numbers.
-        """
-        if not self._has("p"):
-            self.pTable()
-        r = self._.triple_solution = {}
-        g = self._.triple_solution_generator = {}
-        zero = {}
-        done = {}
-        for u in range(self._.d + 1):
-            for v in range(u, self._.d + 1):
-                for w in range(v, self._.d + 1):
-                    if self._.p[u, v, w] == 0:
-                        continue
-                    S = self.tripleEquations(u, v, w)
-                    g[u, v, w] = find(
-                        make_expressions((S[h, i, j], 0,
-                                          min(self._.p[u, h, i],
-                                              self._.p[v, h, j],
-                                              self._.p[w, i, j]))
-                                         for h in range(self._.d + 1)
-                                         for i in range(self._.d + 1)
-                                         for j in range(self._.d + 1)),
-                        S.variables(), solver=solver)
-                    try:
-                        sol = sort_solution(next(g[u, v, w]))
-                    except StopIteration:
-                        raise InfeasibleError(
-                            "no solution found for a triple of vertices "
-                            "at distances (%d, %d, %d)" % (u, v, w))
-                    s = S.subs(sol)
-                    r[u, v, w] = {sol: s}
-                    zero[u, v, w] = {(h, i, j)
-                                     for h in range(self._.d + 1)
-                                     for i in range(self._.d + 1)
-                                     for j in range(self._.d + 1)
-                                     if s[h, i, j] == 0
-                                     and self._check_zero(h, i, j, u, v, w)}
-                    done[u, v, w] = set()
-        check = {t for t in g if len(zero[t]) > 0}
-        while len(check) > 0:
-            for t in list(check):
-                if t not in check:
-                    continue
-                check.discard(t)
-                u, v, w = t
-                for d in list(zero[t]):
-                    if d not in zero[t]:
-                        continue
-                    try:
-                        sol = sort_solution(
-                            next(g[t].send((True,
-                                            self._.triple[t][d] >= 1))))
-                        if sol not in r[t]:
-                            s = r[t][sol] = self._.triple[t].subs(sol)
-                            zero[t] -= {z for z in zero[t] if s[z] != 0}
-                    except (StopIteration, KeyError):
-                        h, i, j = d
-                        seen = {(t, d)}
-                        for lt, ld in {((u, h, i), (v, w, j)),
-                                       ((v, h, j), (u, w, i)),
-                                       ((w, i, j), (u, v, h))}:
-                            st = tuple(sorted(lt))
-                            if st not in zero:
-                                continue
-                            for tp, dp in zip(TPERMS, DPERMS):
-                                if tuple(lt[k] for k in tp) != st:
-                                    continue
-                                sd = tuple(ld[k] for k in dp)
-                                if (st, sd) in seen:
-                                    continue
-                                seen.add((st, sd))
-                                l = len(r[st])
-                                for sol, s in r[st].items():
-                                    if s[sd] != 0:
-                                        del r[st][sol]
-                                try:
-                                    g[st].send((False,
-                                                self._.triple[st][sd] == 0))
-                                    if len(r[st]) == 0:
-                                        sol = sort_solution(next(g[st]))
-                                        r[st][sol] = \
-                                            self._.triple[st].subs(sol)
-                                        l += 1
-                                except StopIteration:
-                                    del g[st]
-                                except KeyError:
-                                    pass
-                                if len(r[st]) == 0:
-                                    raise InfeasibleError(
-                                        "found forbidden quadruple "
-                                        "wxyz with d(w, x) = %d, "
-                                        "d(w, y) = %d, d(w, z) = %d, "
-                                        "d(x, y) = %d, d(x, z) = %d, "
-                                        "d(y, z) = %d" % (sd + st))
-                                if len(r[st]) < l:
-                                    zero[st] = {(sh, si, sj)
-                                                for sh in range(self._.d + 1)
-                                                for si in range(self._.d + 1)
-                                                for sj in range(self._.d + 1)
-                                                if
-                                                (sh, si, sj) not in done[st]
-                                                and self._check_zero(sh, si,
-                                                                     sj, *st)
-                                                and all(
-                                                    s[sh, si, sj] == 0
-                                                    for s in r[st].values())}
-                                    if len(zero[st]) == 0:
-                                        check.discard(st)
-                                    else:
-                                        check.add(st)
-                        zero[t].discard(d)
-                        done[t].add(d)
 
     def classes(self):
         """
@@ -838,6 +774,25 @@ class ASParameters(SageObject):
         self._.m = rewriteTuple(self._.m, expand=expand, factor=factor,
                                 simplify=simplify)
         return self._.m
+
+    def polynomialOrders(self):
+        """
+        Return a dictionary of all P- or Q-polynomial orderings.
+        """
+        from .drg import DRGParameters
+        from .qpoly import QPolyParameters
+        out = {}
+        if self.is_pPolynomial():
+            for order in self._.pPolynomial_ordering:
+                pa = self.add_polyOrder(DRGParameters(self, order=order),
+                                        "P-polynomial ordering %s" % (order, ))
+                out["P", order] = pa
+        if self.is_qPolynomial():
+            for order in self._.qPolynomial_ordering:
+                pa = self.add_polyOrder(QPolyParameters(self, order=order),
+                                        "Q-polynomial ordering %s" % (order, ))
+                out["Q", order] = pa
+        return out
 
     def pTable(self, expand=False, factor=False, simplify=False):
         """
@@ -1135,6 +1090,179 @@ class ASParameters(SageObject):
         """
         return self._.vars
 
+    @check(0)
+    def check_sporadic(self):
+        """
+        Check whether the association scheme has parameters
+        for which nonexistence has been shown sporadically.
+        """
+        par = self._get_parameters()
+        if par is None:
+            return
+        if par in sporadic:
+            raise InfeasibleError(refs=sporadic[par])
+
+    @check(0)
+    def check_family(self):
+        """
+        Check whether the association scheme has parameters for which
+        nonexistence has been shown as a part of an infinite family.
+        """
+        self._check_family()
+
+    @check(2)
+    def check_absoluteBound(self, expand=False, factor=False,
+                            simplify=False):
+        """
+        Check whether the absolute bound is not exceeded.
+        """
+        if not self._has("m"):
+            self.multiplicities(expand=expand, factor=factor,
+                                simplify=simplify)
+        if not self._has("q"):
+            self.kreinParameters(expand=expand, factor=factor,
+                                 simplify=simplify)
+        ineqs = {}
+        for i in range(self._.d + 1):
+            ineq = self._.m[i]*(self._.m[i] + 1)/2 - \
+                sum(self._.m[h] for h in range(self._.d + 1)
+                    if self._.q[h, i, i] != 0)
+            if ineq < 0:
+                raise InfeasibleError("absolute bound exceeded "
+                                      "for (%d, %d)" % (i, i))
+            elif not (ineq >= 0):
+                ineqs[i, i] = rewriteExp(ineq, expand=expand,
+                                         factor=factor, simplify=simplify)
+            for j in range(i+1, self._.d + 1):
+                ineq = self._.m[i]*self._.m[j] - \
+                    sum(self._.m[h] for h in range(self._.d + 1)
+                        if self._.q[h, i, j] != 0)
+                if ineq < 0:
+                    raise InfeasibleError("absolute bound exceeded "
+                                          "for (%d, %d)" % (i, j))
+                elif not (ineq >= 0):
+                    ineqs[i, j] = rewriteExp(ineq, expand=expand,
+                                             factor=factor,
+                                             simplify=simplify)
+        return ineqs
+
+    @check(3)
+    def check_quadruples(self, solver=None):
+        """
+        Check whether the existence of a forbidden quadruple of vertices
+        is implied by the triple intersection numbers.
+        """
+        if not self._has("p"):
+            self.pTable()
+        r = self._.triple_solution = {}
+        g = self._.triple_solution_generator = {}
+        zero = {}
+        done = {}
+        for u in range(self._.d + 1):
+            for v in range(u, self._.d + 1):
+                for w in range(v, self._.d + 1):
+                    if self._.p[u, v, w] == 0:
+                        continue
+                    S = self.tripleEquations(u, v, w)
+                    g[u, v, w] = find(
+                        make_expressions((S[h, i, j], 0,
+                                          min(self._.p[u, h, i],
+                                              self._.p[v, h, j],
+                                              self._.p[w, i, j]))
+                                         for h in range(self._.d + 1)
+                                         for i in range(self._.d + 1)
+                                         for j in range(self._.d + 1)),
+                        S.variables(), solver=solver)
+                    try:
+                        sol = sort_solution(next(g[u, v, w]))
+                    except StopIteration:
+                        raise InfeasibleError(
+                            "no solution found for a triple of vertices "
+                            "at distances (%d, %d, %d)" % (u, v, w))
+                    s = S.subs(sol)
+                    r[u, v, w] = {sol: s}
+                    zero[u, v, w] = {(h, i, j)
+                                     for h in range(self._.d + 1)
+                                     for i in range(self._.d + 1)
+                                     for j in range(self._.d + 1)
+                                     if s[h, i, j] == 0
+                                     and self._check_zero(h, i, j, u, v, w)}
+                    done[u, v, w] = set()
+        check = {t for t in g if len(zero[t]) > 0}
+        while len(check) > 0:
+            for t in list(check):
+                if t not in check:
+                    continue
+                check.discard(t)
+                u, v, w = t
+                for d in list(zero[t]):
+                    if d not in zero[t]:
+                        continue
+                    try:
+                        sol = sort_solution(
+                            next(g[t].send((True,
+                                            self._.triple[t][d] >= 1))))
+                        if sol not in r[t]:
+                            s = r[t][sol] = self._.triple[t].subs(sol)
+                            zero[t] -= {z for z in zero[t] if s[z] != 0}
+                    except (StopIteration, KeyError):
+                        h, i, j = d
+                        seen = {(t, d)}
+                        for lt, ld in {((u, h, i), (v, w, j)),
+                                       ((v, h, j), (u, w, i)),
+                                       ((w, i, j), (u, v, h))}:
+                            st = tuple(sorted(lt))
+                            if st not in zero:
+                                continue
+                            for tp, dp in zip(TPERMS, DPERMS):
+                                if tuple(lt[k] for k in tp) != st:
+                                    continue
+                                sd = tuple(ld[k] for k in dp)
+                                if (st, sd) in seen:
+                                    continue
+                                seen.add((st, sd))
+                                l = len(r[st])
+                                for sol, s in r[st].items():
+                                    if s[sd] != 0:
+                                        del r[st][sol]
+                                try:
+                                    g[st].send((False,
+                                                self._.triple[st][sd] == 0))
+                                    if len(r[st]) == 0:
+                                        sol = sort_solution(next(g[st]))
+                                        r[st][sol] = \
+                                            self._.triple[st].subs(sol)
+                                        l += 1
+                                except StopIteration:
+                                    del g[st]
+                                except KeyError:
+                                    pass
+                                if len(r[st]) == 0:
+                                    raise InfeasibleError(
+                                        "found forbidden quadruple "
+                                        "wxyz with d(w, x) = %d, "
+                                        "d(w, y) = %d, d(w, z) = %d, "
+                                        "d(x, y) = %d, d(x, z) = %d, "
+                                        "d(y, z) = %d" % (sd + st))
+                                if len(r[st]) < l:
+                                    zero[st] = {(sh, si, sj)
+                                                for sh in range(self._.d + 1)
+                                                for si in range(self._.d + 1)
+                                                for sj in range(self._.d + 1)
+                                                if
+                                                (sh, si, sj) not in done[st]
+                                                and self._check_zero(sh, si,
+                                                                     sj, *st)
+                                                and all(
+                                                    s[sh, si, sj] == 0
+                                                    for s in r[st].values())}
+                                    if len(zero[st]) == 0:
+                                        check.discard(st)
+                                    else:
+                                        check.add(st)
+                        zero[t].discard(d)
+                        done[t].add(d)
+
     intersectionNumbers = pTable
     kreinParameters = qTable
     multiplicities = mTable
@@ -1227,6 +1355,22 @@ class PolyASParameters(ASParameters):
         return ascii_art("Parameters of a %s with %s " %
                          (self.OBJECT, self.ARRAY),
                          self._format_parameterArray_ascii())
+
+    def _check_family(self):
+        """
+        Check whether the association scheme has parameter array for which
+        nonexistence has been shown as a part of an infinite family.
+        """
+        for (s, (b, c)), (cond, ref) in families.items():
+            if s != self.SYMBOL or len(b) != self._.d:
+                continue
+            vars = tuple(set(sum(map(variables, b + c), ())))
+            sols = _solve([SR(l) == r for l, r
+                           in zip(self._.b[:-1] + self._.c[1:], b + c)],
+                          vars)
+            if any(checkConditions(cond, sol) for sol in sols
+                   if is_integral(sol)):
+                raise InfeasibleError(refs=ref)
 
     def _check_multiplicity(self, k, i):
         """
@@ -1473,6 +1617,15 @@ class PolyASParameters(ASParameters):
                                     + ["; "]) * 2), ())[:-1])
         return unicode_left_curly_brace.character_art(art.height()) + art \
             + unicode_right_curly_brace.character_art(art.height())
+
+    def _get_parameters(self):
+        """
+        Return the defining parameter set, if any.
+
+        Returns the intersection or Krein array
+        together with an appropriate symbol.
+        """
+        return (self.SYMBOL, self.parameterArray())
 
     def _init_array(self, b, c):
         """

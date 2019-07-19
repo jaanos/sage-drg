@@ -1,4 +1,5 @@
 import operator
+import re
 from sage.arith.misc import factor as factorize
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
@@ -14,6 +15,32 @@ from sage.symbolic.ring import SR
 
 pair_keep = staticmethod(lambda i, j: (i, j))
 pair_swap = staticmethod(lambda i, j: (j, i))
+
+CHECK_LEVELS = 4
+
+
+def checklist(checks, inherit=None):
+    """
+    Initialize the list of feasibility checking functions
+    and return a decorator for the functions.
+    """
+    if inherit is None:
+        for i in range(CHECK_LEVELS):
+            checks.append([])
+    else:
+        for lvl in inherit:
+            checks.append(lvl[:])
+
+    def check(level):
+        def decorator(fun):
+            name = re.match(r'^check_(.*)', fun.func_name)
+            if name is None:
+                raise ValueError(
+                    "a checking function should begin with check_")
+            checks[level].append((name.group(1), fun))
+            return fun
+        return decorator
+    return check
 
 
 def checkNonneg(exp):
@@ -161,6 +188,18 @@ def is_constant(x):
     Determine whether an expression is constant.
     """
     return not isinstance(x, Expression) or x.is_constant()
+
+
+def is_integral(sol):
+    """
+    Determine whether a solution of a system of equations can be integral.
+    """
+    try:
+        for eq in sol:
+            integralize(eq.rhs())
+        return True
+    except TypeError:
+        return False
 
 
 def is_squareSum(x):
