@@ -17,14 +17,17 @@ class QPolyParameters(PolyASParameters):
 
     ARRAY = "Krein array"
     DUAL_INTEGRAL = True
+    DUAL_MATRIX = "P"
     DUAL_PARAMETER = "intersection number"
     DUAL_PARTS = "subconstituents"
     DUAL_SYMBOL = "p"
+    MATRIX = "Q"
     OBJECT = "Q-polynomial association scheme"
     OBJECT_LATEX = "$Q$-polynomial association scheme"
     PARAMETER = "Krein parameter"
     PART = "eigenspace"
     PARTS = "multiplicities"
+    PART_SCHEME = "eigenspace-%s scheme"
     SYMBOL = "q"
     PTR = pair_swap
     QTR = pair_keep
@@ -131,6 +134,19 @@ class QPolyParameters(PolyASParameters):
         """
         return PolyASParameters._is_trivial(self) or self._.m[1] == 2
 
+    def _subs(self, exp, p, seen):
+        """
+        Substitute the given subexpressions in the parameters.
+        """
+        p, new = PolyASParameters._subs(self, exp, p, seen)
+        if new:
+            if self._has("p") and not p._has("p"):
+                p._.p = self._.p.subs(*exp)
+                p._check_parameters(p._.p, integral=self.DUAL_INTEGRAL,
+                                    name=self.DUAL_PARAMETER,
+                                    sym=self.DUAL_SYMBOL)
+        return p
+
     def eigenvalues(self, expand=False, factor=False, simplify=False):
         """
         Compute and return the dual eigenvalues of the first eigenspace
@@ -138,6 +154,14 @@ class QPolyParameters(PolyASParameters):
         """
         return self._compute_eigenvalues(self._.q, expand=expand,
                                          factor=factor, simplify=simplify)
+
+    def merge(self, *args, **kargs):
+        """
+        Return parameters of a Q-polynomial association scheme obtained
+        by merging specified eigenspaces.
+        """
+        return PolyASParameters.merge(self, self._.m, self._.q,
+                                      *args, **kargs)
 
     def reorderEigenspaces(self, *order):
         """
@@ -170,18 +194,12 @@ class QPolyParameters(PolyASParameters):
         """
         self.reorderEigenvalues(*order)
 
-    def subs(self, *exp):
+    def subs(self, *exp, **kargs):
         """
         Substitute the given subexpressions in the parameters.
         """
-        p = QPolyParameters(*[[subs(x, *exp) for x in l]
-                              for l in self.kreinArray()])
-        self._subs(exp, p)
-        if self._has("p"):
-            p._.p = self._.p.subs(*exp)
-            p._check_parameters(p._.p, integral=self.DUAL_INTEGRAL,
-                                name=self.DUAL_PARAMETER,
-                                sym=self.DUAL_SYMBOL)
-        return p
+        return self._subs(exp, QPolyParameters(*[[subs(x, *exp) for x in l]
+                                                 for l in self.kreinArray()]),
+                          kargs.get("seen", {}))
 
     kreinArray = PolyASParameters.parameterArray

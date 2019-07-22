@@ -9,6 +9,7 @@ from sage.matrix.constructor import identity_matrix
 from sage.matrix.special import diagonal_matrix
 from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
+from sage.misc.misc import subsets
 from sage.rings.integer import Integer
 from sage.structure.sage_object import SageObject
 from sage.symbolic.relation import solve as _solve
@@ -121,6 +122,7 @@ class Parameters:
         """
         self._parameters = p
         self.polynomial_orderings = {}
+        self.subschemes = {}
         self.triple = {}
         self.triple_solution = {}
         self.triple_solution_generator = {}
@@ -481,6 +483,8 @@ class ASParameters(SageObject):
             p._.pPolynomial_ordering = self._.pPolynomial_ordering
         if self._has("qPolynomial_ordering"):
             p._.qPolynomial_ordering = self._.qPolynomial_ordering
+        p._.polynomial_orderings.update(self._.polynomial_orderings)
+        p._.subschemes.update(self._.subschemes)
         p._.triple.update(self._.triple)
         p._.triple_solution.update(self._.triple_solution)
         p._.triple_solution_generator.update(self._.triple_solution_generator)
@@ -492,6 +496,8 @@ class ASParameters(SageObject):
         self.polynomialOrders()
         for pa, part in self._.polynomial_orderings.items():
             yield (pa, part, True)
+        for pa, part in self._.subschemes.items():
+            yield (pa, part, False)
 
     @staticmethod
     def _get_class():
@@ -614,10 +620,13 @@ class ASParameters(SageObject):
             "repeating or nonexisting indices"
         return tuple(order)
 
-    def _subs(self, exp, p):
+    def _subs(self, exp, p, seen):
         """
         Substitute the given subexpressions in the paramaters.
         """
+        if id(self) in seen:
+            return (seen[id(self)], False)
+        seen[id(self)] = p
         if self._has("p") and not p._has("p"):
             p._.p = self._.p.subs(*exp)
         if self._has("q") and not p._has("q"):
@@ -628,15 +637,36 @@ class ASParameters(SageObject):
             p._.Q = self._.Q.subs(*exp)
         for k, v in self._.triple.items():
             p._.triple[k] = v.subs(*exp)
+        for par, part in self._.subschemes.items():
+            try:
+                p.add_subscheme(par.subs(*exp, seen=seen), part)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=part)
+        for par, part in self._.polynomial_orderings.items():
+            try:
+                p.add_subscheme(par.subs(*exp, seen=seen), part)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=part)
+        return (p, True)
 
-    def add_polyOrder(self, pa, part):
+    def add_subscheme(self, par, part):
         """
-        Add a polynomial ordering into the list.
+        Add a derived scheme into the list.
         """
-        if pa in self._.polynomial_orderings:
-            return next(g for g in self._.polynomial_orderings if g == pa)
-        self._.polynomial_orderings[pa] = part
-        return pa
+        if par in self._.polynomial_orderings:
+            return next(s for s in self._.polynomial_orderings if s == par)
+        elif par in self._.subschemes:
+            return next(s for s in self._.subschemes if s == par)
+        elif not isinstance(par, ASParameters):
+            try:
+                par = ASParameters(*par)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=part)
+        if par._.n == self._.n:
+            self._.polynomial_orderings[par] = part
+        else:
+            self._.subschemes[par] = part
+        return par
 
     def check_feasible(self, checked=None, skip=None, derived=True, levels=3):
         """
@@ -784,12 +814,12 @@ class ASParameters(SageObject):
         out = {}
         if self.is_pPolynomial():
             for order in self._.pPolynomial_ordering:
-                pa = self.add_polyOrder(DRGParameters(self, order=order),
+                pa = self.add_subscheme(DRGParameters(self, order=order),
                                         "P-polynomial ordering %s" % (order, ))
                 out["P", order] = pa
         if self.is_qPolynomial():
             for order in self._.qPolynomial_ordering:
-                pa = self.add_polyOrder(QPolyParameters(self, order=order),
+                pa = self.add_subscheme(QPolyParameters(self, order=order),
                                         "Q-polynomial ordering %s" % (order, ))
                 out["Q", order] = pa
         return out
@@ -868,7 +898,7 @@ class ASParameters(SageObject):
                                               if x not in vars)
             self._.vars_ordered = True
 
-    def subs(self, *exp):
+    def subs(self, *exp, **kargs):
         """
         Substitute the given subexpressions in the parameters.
         """
@@ -881,8 +911,7 @@ class ASParameters(SageObject):
             par["P"] = self._.P.subs(*exp)
         elif self._has("Q"):
             par["Q"] = self._.Q.subs(*exp)
-        p = ASParameters(**par)
-        self._subs(exp, p)
+        p, new = self._subs(exp, ASParameters(**par), kargs.get("seen", {}))
         return p
 
     def triple_generator(self, t, d):
@@ -1278,14 +1307,17 @@ class PolyASParameters(ASParameters):
     """
     ARRAY = None
     DUAL_INTEGRAL = None
+    DUAL_MATRIX = None
     DUAL_PARAMETER = None
     DUAL_PARTS = None
     DUAL_SYMBOL = None
+    MATRIX = None
     OBJECT = None
     OBJECT_LATEX = None
     PARAMETER = None
     PART = None
     PARTS = None
+    PART_SCHEME = None
     PTR = None
     QTR = None
     SYMBOL = None
@@ -1658,15 +1690,17 @@ class PolyASParameters(ASParameters):
                          (self.OBJECT_LATEX, self.ARRAY,
                           self._format_parameterArray_latex()))
 
-    def _subs(self, exp, p):
+    def _subs(self, exp, p, seen):
         """
         Substitute the given subexpressions in the parameters.
         """
-        if self._has("theta"):
-            p._.theta = tuple(subs(th, *exp) for th in self._.theta)
-        if self._has("omega"):
-            p._.omega = self._.omega.subs(*exp)
-        ASParameters._subs(self, exp, p)
+        p, new = ASParameters._subs(self, exp, p, seen)
+        if new:
+            if self._has("theta"):
+                p._.theta = tuple(subs(th, *exp) for th in self._.theta)
+            if self._has("omega"):
+                p._.omega = self._.omega.subs(*exp)
+        return (p, new)
 
     def _unicode_art_(self):
         """
@@ -1762,6 +1796,52 @@ class PolyASParameters(ASParameters):
                 return True
         return False
 
+    def merge(self, k, p, *args, **kargs):
+        """
+        Return parameters of a polynomial scheme obtained
+        by merging specified subconstituents or eigenspaces.
+        """
+        adj = set(args)
+        conditions = kargs.get("conditions", False)
+        assert all(i >= 1 and i <= self._.d for i in adj), \
+            "indices out of bounds"
+        if conditions:
+            eqs = []
+        else:
+            b = [sum(k[j] for j in adj)]
+            c = [1]
+        cur = adj
+        idx = set(range(1, self._.d+1)).difference(adj)
+        while len(idx) > 0:
+            nxt = {i for i in idx if any(checkPos(p[h, i, j])
+                                         for h in cur for j in adj)}
+            if len(nxt) == 0:
+                break
+            bi = {sum(p[h, i, j] for i in nxt for j in adj) for h in cur}
+            ci = {sum(p[h, i, j] for i in cur for j in adj) for h in nxt}
+            if conditions:
+                ib = iter(bi)
+                ic = iter(ci)
+                b0 = SR(next(ib))
+                c0 = SR(next(ic))
+                for bb in ib:
+                    eqs.append(b0 == bb)
+                for cc in ic:
+                    eqs.append(c0 == cc)
+            else:
+                if len(bi) > 1 or len(ci) > 1:
+                    raise IndexError("merging %s %s does not yield "
+                                     "a %s-polynomial scheme" %
+                                     (self.PARTS, sorted(adj), self.MATRIX))
+                b.append(next(iter(bi)))
+                c.append(next(iter(ci)))
+            cur = nxt
+            idx.difference_update(nxt)
+        if conditions:
+            return _solve(eqs, self._.vars)
+        else:
+            return self._get_class()(b, c)
+
     def parameterArray(self, expand=False, factor=False, simplify=False):
         """
         Return the intersection or Krein array of the association scheme
@@ -1769,6 +1849,25 @@ class PolyASParameters(ASParameters):
         """
         return (self.bTable(expand=expand, factor=factor, simplify=simplify),
                 self.cTable(expand=expand, factor=factor, simplify=simplify))
+
+    def partSchemes(self):
+        """
+        Return a dictionary of all parameter sets
+        obtained by taking all subsets of {1, ..., d}
+        as relations or eigenspaces.
+        """
+        out = {}
+        for idx in subsets(range(1, self._.d + 1)):
+            if len(idx) > 0 and len(idx) < self._.d and idx != [1]:
+                part = self.PART_SCHEME % (idx if len(idx) > 1 else idx[0])
+                try:
+                    ps = self.add_subscheme(self.merge(*idx), part)
+                    out[tuple(idx)] = ps
+                except (InfeasibleError, AssertionError) as ex:
+                    raise InfeasibleError(ex, part=part)
+                except IndexError:
+                    pass
+        return out
 
     def reorderEigenvalues(self, *order):
         """
