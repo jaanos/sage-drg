@@ -788,7 +788,8 @@ class ASParameters(SageObject):
                 pass
         return out
 
-    def check_feasible(self, checked=None, skip=None, derived=True, levels=3):
+    def check_feasible(self, checked=None, skip=None, derived=True, levels=3,
+                       queue=None):
         """
         Check whether the parameter set is feasible.
         """
@@ -815,11 +816,24 @@ class ASParameters(SageObject):
             return
         if par is not None:
             checked.add(par)
+        do_bfs = False
+        if queue is None:
+            queue = []
+            do_bfs = True
         for par, part, reorder in self._derived(derived):
-            try:
-                par.check_feasible(checked, skip if reorder else None)
-            except (InfeasibleError, AssertionError) as ex:
-                raise InfeasibleError(ex, part=part)
+            if par in checked:
+                continue
+            queue.append((par, part, skip if reorder else None))
+        if do_bfs:
+            i = 0
+            while i < len(queue):
+                par, part, skip = queue[i]
+                try:
+                    par.check_feasible(checked=checked, skip=skip,
+                                       levels=levels, queue=queue)
+                except (InfeasibleError, AssertionError) as ex:
+                    raise InfeasibleError(ex, part=part)
+                i += 1
 
     def check_handshake(self, metric=False, bipartite=False):
         """
