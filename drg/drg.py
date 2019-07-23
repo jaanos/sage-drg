@@ -33,7 +33,6 @@ from .util import is_squareSum
 from .util import pair_keep
 from .util import pair_swap
 from .util import rewriteExp
-from .util import subconstituent_name
 from .util import subs
 from .util import symbol
 from .util import variables
@@ -121,7 +120,6 @@ class DRGParameters(PolyASParameters):
             self._.k = tuple(self._init_multiplicities())
             self._.p = Array3D(self._.d + 1)
             self._compute_parameters(self._.p, self._.k)
-        self._.subconstituents = [None] * (self._.d + 1)
         m = floor(self._.d / 2)
         self._.antipodal = all(full_simplify(
             self._.b[i] - self._.c[self._.d - i]) == 0
@@ -155,12 +153,9 @@ class DRGParameters(PolyASParameters):
                       for i in range(m))
             self._.half = self.add_subscheme(DRGParameters(b, c),
                                              "bipartite half")
-        if self._.d == 2 and checkPos(self._.b[0] - self._.c[2]) \
-                and complement is not False:
+        if self._.d == 2 and complement is not False:
             if complement is None:
-                complement = DRGParameters((self._.k[2], self._.p[2, 2, 1]),
-                                           (Integer(1), self._.p[1, 2, 2]),
-                                           complement=self)
+                complement = self._complement()
             self._.complement = self.add_subscheme(complement, "complement")
 
     def _check_intersectionArray(self):
@@ -190,6 +185,12 @@ class DRGParameters(PolyASParameters):
         return PolyASParameters._check_parameter(self, h, i, j, v,
                                                  integral=integral,
                                                  name=name, sym=sym)
+
+    def _complement(self):
+        """
+        Return the parameters of the complement of a strongly regular graph.
+        """
+        return PolyASParameters._complement(self, self._.k, self._.p)
 
     def _compute_kreinParameters(self, expand=False, factor=False,
                                  simplify=False):
@@ -238,7 +239,6 @@ class DRGParameters(PolyASParameters):
         """
         PolyASParameters._copy(self, p)
         if isinstance(p, DRGParameters):
-            p._.subconstituents = list(self._.subconstituents)
             p._.antipodal = self._.antipodal
             p._.bipartite = self._.bipartite
             if self._has("r"):
@@ -247,22 +247,12 @@ class DRGParameters(PolyASParameters):
                 p._.quotient = self._.quotient
             if self._has("half"):
                 p._.half = self._.half
-            if self._has("complement"):
-                p._.complement = self._.complement
 
     def _copy_cosineSequences(self, p):
         """
         Obtain the cosine sequences from the eigenmatrix.
         """
         PolyASParameters._copy_cosineSequences(self, p.eigenmatrix())
-
-    def _derived(self, derived=True):
-        """
-        Generate parameters sets of derived association schemes.
-        """
-        self.all_subconstituents(compute=derived > 1)
-        for par, part, reorder in PolyASParameters._derived(self, derived):
-            yield (par, part, reorder)
 
     @staticmethod
     def _get_class():
@@ -293,6 +283,16 @@ class DRGParameters(PolyASParameters):
         """
         return PolyASParameters._is_trivial(self) or self._.k[1] == 2
 
+    @staticmethod
+    def _subconstituent_name(h):
+        """
+        Return a properly formatted ordinal for the given subconstituent.
+        """
+        if h == 1:
+            return "local graph"
+        else:
+            return PolyASParameters._subconstituent_name(h)
+
     def _subs(self, exp, p, seen):
         """
         Substitute the given subexpressions in the parameters.
@@ -304,35 +304,7 @@ class DRGParameters(PolyASParameters):
                 p._check_parameters(p._.q, integral=self.DUAL_INTEGRAL,
                                     name=self.DUAL_PARAMETER,
                                     sym=self.DUAL_SYMBOL)
-            for h, s in enumerate(self._.subconstituents):
-                if s is None:
-                    continue
-                name = subconstituent_name(h)
-                try:
-                    p._.subconstituents[h] = p.add_subscheme(
-                        self._.subconstituents[h].subs(*exp, seen=seen),
-                        name)
-                except (InfeasibleError, AssertionError) as ex:
-                    raise InfeasibleError(ex, part=name)
-            if self._has("complement") and not p._has("complement"):
-                try:
-                    p._.complement = self._.complement.subs(*exp, seen=seen)
-                except (InfeasibleError, AssertionError) as ex:
-                    raise InfeasibleError(ex, part="complement")
         return p
-
-    def all_subconstituents(self, compute=False):
-        """
-        Return a dictionary of parameters for subconstituents
-        which are known to be distance-regular.
-        """
-        out = {}
-        for i in range(self._.d+1):
-            try:
-                out[i] = self.subconstituent(i, compute=compute)
-            except AssertionError:
-                pass
-        return out
 
     def antipodalQuotient(self):
         """
@@ -634,7 +606,6 @@ class DRGParameters(PolyASParameters):
             "scheme not P-polynomial for the given order"
         PolyASParameters.reorderRelations(self, *order)
         PolyASParameters.reorderParameters(self, self._.p, *order)
-        self._.subconstituents = [None for i in order]
         return self.parameterArray()
 
     def reorderRelations(self, *order):
@@ -653,43 +624,28 @@ class DRGParameters(PolyASParameters):
     def subconstituent(self, h, compute=False):
         """
         Return parameters of the h-th subconstituent
-        if it is known to be distance-regular.
+        if it is known to form an association scheme.
+        If the resulting scheme is P-polynomial,
+        the parameters are returned as such.
 
         If compute is set to True,
         then the relevant triple intersection numbers will be computed.
         """
-        name = subconstituent_name(h)
-        assert self._.p[0, h, h] > 1, "%s consists of a single vertex" % name
-        assert all(self.has_edges(h, h, i, h, i+1)
-                   for i in range(self._.d)), "%s is disconnected" % name
         if h == 1:
             if self._.subconstituents[h] is None:
                 self.check_2graph()
             if self._.subconstituents[h] is None:
                 self.check_localEigenvalues()
         if self._.subconstituents[h] is None:
-            l = max(i for i in range(self._.d+1)
-                    if checkPos(self._.p[h, h, i]))
-            if compute:
-                for i in range(1, l + 1):
-                    assert checkPos(self._.p[h, h, i]), \
-                        "%s is disconnected" % name
-                    t = self.tripleEquations(h, h, i)
-            vars = set(self._.vars)
-            b = tuple(next(x for x in self.triple_generator((h, h, i),
-                                                            (h, i+1, 1))
-                           if vars.issuperset(variables(x)))
-                      for i in range(l))
-            c = tuple(next(x for x in self.triple_generator((h, h, i+1),
-                                                            (h, i, 1))
-                           if vars.issuperset(variables(x)))
-                      for i in range(l))
-            assert 0 not in b and 0 not in c, "%s is disconnected" % name
-            if len(b) == l and len(c) == l:
-                self._.subconstituents[h] = \
-                    self.add_subscheme(DRGParameters(b, c), name)
-        assert self._.subconstituents[h] is not None, \
-            "%s is not known to be distance-regular" % name
+            subc, rels = PolyASParameters.subconstituent(self, h,
+                                                         compute=compute,
+                                                         return_rels=True)
+            if subc is not None and len(rels) > 1 and rels[1] == 1 \
+                    and subc.is_pPolynomial() \
+                    and tuple(range(subc._.d+1)) \
+                    in subc._.pPolynomial_ordering:
+                self._.subconstituents[h] = DRGParameters(subc,
+                    order=tuple(range(subc._.d+1)))
         return self._.subconstituents[h]
 
     def subs(self, *exp, **kargs):

@@ -3,6 +3,7 @@ from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
+from sage.combinat.set_partition import SetPartitions
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
@@ -121,7 +122,7 @@ class Parameters:
         Object constructor.
         """
         self._parameters = p
-        self.polynomial_orderings = {}
+        self.fusion_schemes = {}
         self.subschemes = {}
         self.triple = {}
         self.triple_solution = {}
@@ -146,7 +147,7 @@ class ASParameters(SageObject):
     _ = None
     _checklist = check_ASParameters
 
-    def __init__(self, p=None, q=None, P=None, Q=None):
+    def __init__(self, p=None, q=None, P=None, Q=None, complement=None):
         """
         Object constructor.
         """
@@ -176,6 +177,11 @@ class ASParameters(SageObject):
             self._.Q = self._init_eigenmatrix(Q)
         else:
             assert self._.d is not None, "insufficient data"
+        self._.subconstituents = [None] * (self._.d + 1)
+        if self._.d == 2 and complement is not False:
+            if complement is None:
+                complement = self._complement()
+            self._.complement = self.add_subscheme(complement, "complement")
         self._init_vars()
 
     def __hash__(self):
@@ -292,6 +298,22 @@ class ASParameters(SageObject):
         """
         return self._.p[u, h, i] != 0 and self._.p[v, h, j] != 0 and \
             self._.p[w, i, j] != 0
+
+    def _complement(self):
+        """
+        Return the parameters of the complement of a strongly regular graph.
+        """
+        assert self._.d == 2, "the complement is only defined for two classes"
+        kargs = {"complement": self}
+        if self._has("p"):
+            kargs["p"] = self._.p.reorder([0, 2, 1], inplace=False)
+        elif self._has("q"):
+            kargs["q"] = self._.q.reorder([0, 2, 1], inplace=False)
+        elif self._has("P"):
+            kargs["P"] = self._.P[[0, 2, 1], [0, 2, 1]]
+        elif self._has("Q"):
+            kargs["Q"] = self._.Q[[0, 2, 1], [0, 2, 1]]
+        return ASParameters(**kargs)
 
     def _compute_dualEigenmatrix(self, expand=False, factor=False,
                                  simplify=False):
@@ -483,8 +505,11 @@ class ASParameters(SageObject):
             p._.pPolynomial_ordering = self._.pPolynomial_ordering
         if self._has("qPolynomial_ordering"):
             p._.qPolynomial_ordering = self._.qPolynomial_ordering
-        p._.polynomial_orderings.update(self._.polynomial_orderings)
+        if self._has("complement"):
+            p._.complement = self._.complement
+        p._.fusion_schemes.update(self._.fusion_schemes)
         p._.subschemes.update(self._.subschemes)
+        p._.subconstituents = list(self._.subconstituents)
         p._.triple.update(self._.triple)
         p._.triple_solution.update(self._.triple_solution)
         p._.triple_solution_generator.update(self._.triple_solution_generator)
@@ -494,7 +519,10 @@ class ASParameters(SageObject):
         Generate parameters sets of derived association schemes.
         """
         self.polynomialOrders()
-        for pa, part in self._.polynomial_orderings.items():
+        self.all_subconstituents(compute=derived > 1)
+        if derived > 1:
+            self.all_fusions()
+        for pa, part in self._.fusion_schemes.items():
             yield (pa, part, True)
         for pa, part in self._.subschemes.items():
             yield (pa, part, False)
@@ -596,14 +624,41 @@ class ASParameters(SageObject):
             order.append(j)
         return tuple(order)
 
+    @staticmethod
+    def _merge_parts(parts, p, sym=None):
+        """
+        Return a parameter set for a scheme
+        with merged subconstituents or eigenspaces.
+        """
+        d = len(parts)
+        concat = sum(parts, [])
+        assert parts[0] == [0], "identity not preserved"
+        assert all(len(pt) > 0 for pt in parts), "empty group specified"
+        assert len(concat) == len(set(concat)), "repeated part specified"
+        assert set(concat) == set(range(len(p))), "invalid part specified"
+        a = Array3D(d)
+        for h in range(d):
+            for i in range(d):
+                for j in range(d):
+                    a[h, i, j] = sum(p[parts[h][0], ii, jj]
+                                     for ii in parts[i] for jj in parts[j])
+                    if not all(a[h, i, j] == sum(p[hh, ii, jj]
+                                                 for ii in parts[i]
+                                                 for jj in parts[j])
+                               for hh in parts[h][1:]):
+                        raise IndexError(
+                            "inconsistent parameters for %s[%d, %d, %d]" % \
+                            (sym, h, i, j))
+        return a
+
     def _is_trivial(self):
         """
         Check whether the association scheme is trivial
         for the purposes of feasibility checking.
 
-        Returns ``True`` if the scheme has one class.
+        Returns ``True`` if the scheme has at most one class.
         """
-        return self._.d == 1
+        return self._.d <= 1
 
     def _reorder(self, order):
         """
@@ -619,6 +674,21 @@ class ASParameters(SageObject):
         assert set(order) == set(range(self._.d + 1)), \
             "repeating or nonexisting indices"
         return tuple(order)
+
+    @staticmethod
+    def _subconstituent_name(h):
+        """
+        Return a properly formatted ordinal for the given subconstituent.
+        """
+        if h == 1:
+            o = "1st"
+        elif h == 2:
+            o = "2nd"
+        elif h == 3:
+            o = "3rd"
+        else:
+            o = "%dth" % h
+        return "%s subconstituent" % o
 
     def _subs(self, exp, p, seen):
         """
@@ -642,19 +712,33 @@ class ASParameters(SageObject):
                 p.add_subscheme(par.subs(*exp, seen=seen), part)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part=part)
-        for par, part in self._.polynomial_orderings.items():
+        for par, part in self._.fusion_schemes.items():
             try:
                 p.add_subscheme(par.subs(*exp, seen=seen), part)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part=part)
+        for h, s in enumerate(self._.subconstituents):
+            if s is None:
+                continue
+            name = self._subconstituent_name(h)
+            try:
+                p._.subconstituents[h] = p.add_subscheme(
+                    self._.subconstituents[h].subs(*exp, seen=seen), name)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=name)
+        if self._has("complement") and not p._has("complement"):
+            try:
+                p._.complement = self._.complement.subs(*exp, seen=seen)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part="complement")
         return (p, True)
 
     def add_subscheme(self, par, part):
         """
         Add a derived scheme into the list.
         """
-        if par in self._.polynomial_orderings:
-            return next(s for s in self._.polynomial_orderings if s == par)
+        if par in self._.fusion_schemes:
+            return next(s for s in self._.fusion_schemes if s == par)
         elif par in self._.subschemes:
             return next(s for s in self._.subschemes if s == par)
         elif not isinstance(par, ASParameters):
@@ -663,10 +747,46 @@ class ASParameters(SageObject):
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part=part)
         if par._.n == self._.n:
-            self._.polynomial_orderings[par] = part
+            self._.fusion_schemes[par] = part
         else:
             self._.subschemes[par] = part
         return par
+
+    def all_fusions(self):
+        """
+        Return a dictionary of parameters for all fusion schemes.
+        """
+        out = {}
+        if self._has("p"):
+            fun = self.merge_subconstituents
+        elif self._has("q"):
+            fun = self.merge_eigenspaces
+        elif self._has("P"):
+            fun = self.merge_subconstituents
+        elif self._has("Q"):
+            fun = self.merge_eigenspaces
+        for parts in SetPartitions(range(1, self._.d+1)):
+            if len(parts) == self._.d:
+                continue
+            parts = tuple(tuple(sorted(p)) for p in parts)
+            try:
+                out[parts] = fun(*parts)
+            except IndexError:
+                pass
+        return out
+
+    def all_subconstituents(self, compute=False):
+        """
+        Return a dictionary of parameters for subconstituents
+        which are known to be association schemes.
+        """
+        out = {}
+        for i in range(self._.d+1):
+            try:
+                out[i] = self.subconstituent(i, compute=compute)
+            except IndexError:
+                pass
+        return out
 
     def check_feasible(self, checked=None, skip=None, derived=True, levels=3):
         """
@@ -728,6 +848,13 @@ class ASParameters(SageObject):
         """
         return self._.d
 
+    def complement(self):
+        """
+        Return the parameters of the complement of a strongly regular graph.
+        """
+        assert self._.d == 2, "the complement is only defined for two classes"
+        return self._.complement
+
     def dualEigenmatrix(self, expand=False, factor=False, simplify=False):
         """
         Compute and return the dual eigenmatrix of the association scheme.
@@ -787,13 +914,41 @@ class ASParameters(SageObject):
 
     def kTable(self, expand=False, factor=False, simplify=False):
         """
-        Compute and return the sizes of the subconstituents
+        Compute and return the sizes of the subconstituents.
         """
         self._compute_kTable(expand=expand, factor=factor,
                              simplify=simplify)
         self._.k = rewriteTuple(self._.k, expand=expand, factor=factor,
                                 simplify=simplify)
         return self._.k
+
+    def merge_eigenspaces(self, *parts):
+        """
+        Return a parameter set for a scheme with merged eigenspaces.
+        """
+        parts = [list(pt) for pt in parts]
+        if parts[0] != [0]:
+            parts.insert(0, [0])
+        if not self._has("q"):
+            self.kreinParameters()
+        par = ASParameters(q=self._merge_parts(parts, self._.q, "q"))
+        self.add_subscheme(par,
+                           "Fusion scheme for eigenspaces %s" % parts)
+        return par
+
+    def merge_subconstituents(self, *parts):
+        """
+        Return a parameter set for a scheme with merged subconstituents.
+        """
+        parts = [list(pt) for pt in parts]
+        if parts[0] != [0]:
+            parts.insert(0, [0])
+        if not self._has("p"):
+            self.pTable()
+        par = ASParameters(p=self._merge_parts(parts, self._.p, "p"))
+        self.add_subscheme(par,
+                           "Fusion scheme for subconstituents %s" % parts)
+        return par
 
     def mTable(self, expand=False, factor=False, simplify=False):
         """
@@ -882,6 +1037,7 @@ class ASParameters(SageObject):
         self._.triple_solution_generator = \
             {tuple(order.index(i) for i in t): g
              for t, g in self._.triple_solution_generator.items()}
+        self._.subconstituents = [self._.subconstituents[i] for i in order]
         if self._has("pPolynomial_ordering") and self._.pPolynomial_ordering:
             self._.pPolynomial_ordering = sorted(
                 [tuple(order.index(i) for i in o)
@@ -897,6 +1053,46 @@ class ASParameters(SageObject):
             self._.vars = tuple(vars) + tuple(x for x in self._.vars
                                               if x not in vars)
             self._.vars_ordered = True
+
+    def subconstituent(self, h, compute=False, return_rels=False):
+        """
+        Return parameters of the h-th subconstituent
+        if it is known to form an association scheme.
+
+        If compute is set to True,
+        then the relevant triple intersection numbers will be computed.
+        """
+        if not self._has("p"):
+            self.pTable()
+        name = self._subconstituent_name(h)
+        rels = None
+        assert checkPos(self._.p[0, h, h]), \
+            "%s consists of a single vertex" % name
+        if self._.subconstituents[h] is None:
+            rels = [i for i in range(self._.d+1)
+                    if checkPos(self._.p[h, h, i])]
+            d = len(rels)
+            if compute:
+                for i in rels:
+                    self.tripleEquations(h, h, i)
+            vars = set(self._.vars)
+            a = Array3D(d)
+            try:
+                for i in range(d):
+                    for j in range(d):
+                        for k in range(d):
+                            a[i, j, k] = next(x for x in
+                                self.triple_generator((h, h, i), (h, j, k))
+                                if vars.issuperset(variables(x)))
+            except StopIteration:
+                raise IndexError("%s is not known to be an association scheme"
+                                 % name)
+            self._.subconstituents[h] = self.add_subscheme(ASParameters(p=a),
+                                                           name)
+        if return_rels:
+            return (self._.subconstituents[h], rels)
+        else:
+            return self._.subconstituents[h]
 
     def subs(self, *exp, **kargs):
         """
@@ -1330,7 +1526,7 @@ class PolyASParameters(ASParameters):
         """
         self._init_storage()
         if isinstance(b, ASParameters):
-            ASParameters.__init__(self, b)
+            ASParameters.__init__(self, b, complement=False)
             if not isinstance(b, PolyASParameters) and \
                     (b._has("P") or b._has("Q")):
                 self._copy_cosineSequences(b)
@@ -1353,7 +1549,7 @@ class PolyASParameters(ASParameters):
                 "a values negative"
             self._.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)),
                                         ())))
-            ASParameters.__init__(self)
+            ASParameters.__init__(self, complement=False)
         self._.hash_parameters = self.parameterArray(factor=True, simplify=2)
         self._init_prefix()
 
@@ -1428,6 +1624,18 @@ class PolyASParameters(ASParameters):
             sym = self.SYMBOL
         return ASParameters._check_parameter(h, i, j, v, integral=integral,
                                              name=name, sym=sym)
+
+    def _complement(self, k, p):
+        """
+        Return the parameters of the complement of a strongly regular graph.
+        """
+        assert self._.d == 2, "the complement is only defined for two classes"
+        if checkPos(self._.b[0] - self._.c[2]):
+            return self._get_class()((k[2], p[2, 2, 1]),
+                                     (Integer(1), p[1, 2, 2]),
+                                     complement=self)
+        else:
+            return ASParameters._complement(self)
 
     def _compute_cosineSequences(self, expand=False, factor=False,
                                  simplify=False):
@@ -1611,6 +1819,14 @@ class PolyASParameters(ASParameters):
         Obtain the cosine sequences from an eigenmatrix.
         """
         self._.omega = P / diagonal_matrix(P[0])
+
+    def _derived(self, derived=True):
+        """
+        Generate parameters sets of derived association schemes.
+        """
+        self.partSchemes()
+        for par, part, reorder in ASParameters._derived(self, derived):
+            yield (par, part, reorder)
 
     def _format_parameterArray(self):
         """
@@ -1840,7 +2056,14 @@ class PolyASParameters(ASParameters):
         if conditions:
             return _solve(eqs, self._.vars)
         else:
-            return self._get_class()(b, c)
+            try:
+                pa = self._get_class()(b, c)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=part)
+            self.add_subscheme(pa,
+                               self.PART_SCHEME %
+                               (list(args) if len(args) > 1 else args[0]))
+            return pa
 
     def parameterArray(self, expand=False, factor=False, simplify=False):
         """
@@ -1859,12 +2082,8 @@ class PolyASParameters(ASParameters):
         out = {}
         for idx in subsets(range(1, self._.d + 1)):
             if len(idx) > 0 and len(idx) < self._.d and idx != [1]:
-                part = self.PART_SCHEME % (idx if len(idx) > 1 else idx[0])
                 try:
-                    ps = self.add_subscheme(self.merge(*idx), part)
-                    out[tuple(idx)] = ps
-                except (InfeasibleError, AssertionError) as ex:
-                    raise InfeasibleError(ex, part=part)
+                    out[tuple(idx)] = self.merge(*idx)
                 except IndexError:
                     pass
         return out

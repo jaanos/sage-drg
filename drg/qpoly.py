@@ -32,7 +32,7 @@ class QPolyParameters(PolyASParameters):
     PTR = pair_swap
     QTR = pair_keep
 
-    def __init__(self, b, c=None, order=None):
+    def __init__(self, b, c=None, order=None, complement=None):
         """
         Object constructor.
 
@@ -62,6 +62,16 @@ class QPolyParameters(PolyASParameters):
             self._.q = Array3D(self._.d + 1)
             self._compute_parameters(self._.q, self._.m)
         self._.bipartite = all(a == 0 for a in self._.a)
+        if self._.d == 2 and complement is not False:
+            if complement is None:
+                complement = self._complement()
+            self._.complement = self.add_subscheme(complement, "complement")
+
+    def _complement(self):
+        """
+        Return the parameters of the complement of a strongly regular graph.
+        """
+        return PolyASParameters._complement(self, self._.m, self._.q)
 
     def _compute_kreinParameters(self, expand=False, factor=False,
                                  simplify=False):
@@ -193,6 +203,22 @@ class QPolyParameters(PolyASParameters):
         Specify a new order for the relations.
         """
         self.reorderEigenvalues(*order)
+
+    def subconstituent(self, h, compute=False):
+        """
+        Return parameters of the h-th subconstituent
+        if it is known to form an association scheme.
+        If the resulting scheme is Q-polynomial,
+        the parameters are returned as such.
+
+        If compute is set to True,
+        then the relevant triple intersection numbers will be computed.
+        """
+        if self._.subconstituents[h] is None:
+            subc = PolyASParameters.subconstituent(self, h, compute=compute)
+            if subc is not None and subc.is_qPolynomial():
+                self._.subconstituents[h] = QPolyParameters(subc)
+        return self._.subconstituents[h]
 
     def subs(self, *exp, **kargs):
         """
