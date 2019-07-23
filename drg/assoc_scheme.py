@@ -67,7 +67,10 @@ class InfeasibleError(Exception):
         """
         Exception constructor.
         """
-        part = () if part is None else (part, )
+        if part is None:
+            part = ()
+        elif not isinstance(part, tuple):
+            part = (part, )
         if isinstance(reason, InfeasibleError):
             self.reason = reason.reason
             self.refs = reason.refs
@@ -401,7 +404,7 @@ class ASParameters(SageObject):
         if self._has("p"):
             k = tuple(self._.p[0, i, i] for i in range(self._.d + 1))
         else:
-            if self._has("P"):
+            if not self._has("P"):
                 self.eigenmatrix(expand=expand, factor=factor,
                                  simplify=simplify)
             k = tuple(integralize(x) for x in self._.P[0])
@@ -789,7 +792,7 @@ class ASParameters(SageObject):
         return out
 
     def check_feasible(self, checked=None, skip=None, derived=True, levels=3,
-                       queue=None):
+                       queue=None, part=()):
         """
         Check whether the parameter set is feasible.
         """
@@ -820,19 +823,19 @@ class ASParameters(SageObject):
         if queue is None:
             queue = []
             do_bfs = True
-        for par, part, reorder in self._derived(derived):
+        for par, pt, reorder in self._derived(derived):
             if par in checked:
                 continue
-            queue.append((par, part, skip if reorder else None))
+            queue.append((par, (pt, ) + part, skip if reorder else None))
         if do_bfs:
             i = 0
             while i < len(queue):
-                par, part, skip = queue[i]
+                par, pt, skip = queue[i]
                 try:
                     par.check_feasible(checked=checked, skip=skip,
-                                       levels=levels, queue=queue)
+                                       levels=levels, queue=queue, part=pt)
                 except (InfeasibleError, AssertionError) as ex:
-                    raise InfeasibleError(ex, part=part)
+                    raise InfeasibleError(ex, part=pt)
                 i += 1
 
     def check_handshake(self, metric=False, bipartite=False):
