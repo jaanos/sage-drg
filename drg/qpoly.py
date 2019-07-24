@@ -129,6 +129,14 @@ class QPolyParameters(PolyASParameters):
         for par, part, reorder in PolyASParameters._derived(self, derived):
             yield (par, part, reorder)
 
+    def _copy(self, p):
+        """
+        Copy fields to the given obejct.
+        """
+        PolyASParameters._copy(self, p)
+        if self._has("dismantled_schemes"):
+            p._.dismantled_schemes = self._.dismantled_schemes[:]
+
     def _copy_cosineSequences(self, p):
         """
         Obtain the cosine sequences from the dual eigenmatrix.
@@ -160,6 +168,16 @@ class QPolyParameters(PolyASParameters):
         scheme._.dismantled_schemes[:r] = self._.dismantled_schemes[:r]
         return scheme
 
+    @classmethod
+    def _dismantlement_name(cls, r):
+        """
+        Return a properly formatted name for the given dismantlement.
+        """
+        if r == 1:
+            return cls.ANTIPODAL
+        else:
+            return "%d-part dismantlement" % r
+
     @staticmethod
     def _get_class():
         """
@@ -188,6 +206,19 @@ class QPolyParameters(PolyASParameters):
                 p._check_parameters(p._.p, integral=self.DUAL_INTEGRAL,
                                     name=self.DUAL_PARAMETER,
                                     sym=self.DUAL_SYMBOL)
+            if self._has("dismantled_schemes"):
+                r = min(len(self._.dismantled_schemes),
+                        len(p._.dismantled_schemes))
+                for h, s in enumerate(self._.dismantled_schemes[:r]):
+                    if s is None:
+                        continue
+                    name = self._dismantlement_name(h)
+                    try:
+                        p._.dismantled_schemes[h] = p.add_subscheme(
+                            self._.dismantled_schemes[h].subs(*exp, seen=seen),
+                            name)
+                    except (InfeasibleError, AssertionError) as ex:
+                        raise InfeasibleError(ex, part=name)
         return p
 
     def all_dismantlements(self):
@@ -204,11 +235,13 @@ class QPolyParameters(PolyASParameters):
         of a Q-antipodal association scheme.
         """
         assert self._.antipodal, "scheme is not Q-antipodal"
+        assert r >= 1, "at least one part should be kept"
         if is_constant(r) and r < len(self._.dismantled_schemes):
             scheme = self._.dismantled_schemes[r]
             if scheme is None:
                 scheme = self.add_subscheme(self._dismantle(r),
-                                            "%d-part dismantlement" % r)
+                                            self._dismantlement_name(r))
+                self._.dismantled_schemes[r] = scheme
         else:
             scheme = self._dismantle(r)
         return scheme
