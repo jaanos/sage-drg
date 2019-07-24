@@ -1,9 +1,11 @@
+from sage.functions.other import floor
 from sage.matrix.constructor import Matrix
 from sage.rings.integer import Integer
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .assoc_scheme import ASParameters
 from .assoc_scheme import PolyASParameters
+from .util import is_constant
 from .util import pair_keep
 from .util import pair_swap
 from .util import subs
@@ -66,6 +68,11 @@ class QPolyParameters(PolyASParameters):
             self._compute_parameters(self._.q, self._.m)
         self._compute_imprimitivity()
         self._compute_complement(complement)
+        if self._.antipodal:
+            r = self._.r
+            if not is_constant(r):
+                r = 3
+            self._.dismantled_schemes = [None] * r
 
     def _complement(self):
         """
@@ -113,11 +120,45 @@ class QPolyParameters(PolyASParameters):
             self._.p = p
             self.check_handshake()
 
+    def _derived(self, derived=True):
+        """
+        Generate parameters sets of derived association schemes.
+        """
+        if self._.antipodal:
+            self.all_dismantlements()
+        for par, part, reorder in PolyASParameters._derived(self, derived):
+            yield (par, part, reorder)
+
     def _copy_cosineSequences(self, p):
         """
         Obtain the cosine sequences from the dual eigenmatrix.
         """
         PolyASParameters._copy_cosineSequences(self, p.dualEigenmatrix())
+
+    def _dismantle(self, r):
+        """
+        Return parameters for an r-part dismantlement
+        of a Q-antipodal association scheme.
+        """
+        if r == self._.r:
+            return self
+        elif r == 1:
+            return self.antipodalFraction()
+        if self._.d == 1:
+            scheme = QPolyParameters((r-1, ), (Integer(1), ))
+        elif self._.d == 2:
+            m = self._.m[1] * r / self._.r
+            scheme = QPolyParameters((m, r-1), (Integer(1), m))
+        else:
+            m = floor(self._.d / 2)
+            b, c = (list(t) for t in self.kreinArray())
+            c[self._.d - m - 1] *= self._.r / r
+            b[m] = (r-1) * c[self._.d - m - 1]
+            scheme = QPolyParameters(b, c)
+        r = min(len(scheme._.dismantled_schemes),
+                len(self._.dismantled_schemes))
+        scheme._.dismantled_schemes[:r] = self._.dismantled_schemes[:r]
+        return scheme
 
     @staticmethod
     def _get_class():
@@ -148,6 +189,29 @@ class QPolyParameters(PolyASParameters):
                                     name=self.DUAL_PARAMETER,
                                     sym=self.DUAL_SYMBOL)
         return p
+
+    def all_dismantlements(self):
+        """
+        Return a dictionary of parameters for all dismantled schemes.
+        """
+        assert self._.antipodal, "scheme is not Q-antipodal"
+        return {r: self.dismantle(r) for r
+                in range(2, len(self._.dismantled_schemes))}
+
+    def dismantle(self, r):
+        """
+        Return parameters for an r-part dismantlement
+        of a Q-antipodal association scheme.
+        """
+        assert self._.antipodal, "scheme is not Q-antipodal"
+        if is_constant(r) and r < len(self._.dismantled_schemes):
+            scheme = self._.dismantled_schemes[r]
+            if scheme is None:
+                scheme = self.add_subscheme(self._dismantle(r),
+                                            "%d-part dismantlement" % r)
+        else:
+            scheme = self._dismantle(r)
+        return scheme
 
     def eigenvalues(self, expand=False, factor=False, simplify=False):
         """
