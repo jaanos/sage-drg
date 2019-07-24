@@ -4,6 +4,7 @@ from sage.all import pi
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.combinat.set_partition import SetPartitions
+from sage.functions.other import floor
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import identity_matrix
@@ -149,6 +150,7 @@ class ASParameters(SageObject):
     """
     _ = None
     _checklist = check_ASParameters
+    METRIC = False
 
     def __init__(self, p=None, q=None, P=None, Q=None, complement=None):
         """
@@ -157,6 +159,7 @@ class ASParameters(SageObject):
         self._init_storage()
         if self._get_class() is ASParameters:
             self._init_prefix()
+            self._.bipartite = False
         assert (p, q, P, Q).count(None) >= 3, \
             "precisely one of p, q, P, Q must be given"
         if isinstance(p, ASParameters):
@@ -181,10 +184,7 @@ class ASParameters(SageObject):
         else:
             assert self._.d is not None, "insufficient data"
         self._.subconstituents = [None] * (self._.d + 1)
-        if self._.d == 2 and complement is not False:
-            if complement is None:
-                complement = self._complement()
-            self._.complement = self.add_subscheme(complement, "complement")
+        self._compute_complement(complement)
         self._init_vars()
 
     def __hash__(self):
@@ -317,6 +317,16 @@ class ASParameters(SageObject):
         elif self._has("Q"):
             kargs["Q"] = self._.Q[[0, 2, 1], [0, 2, 1]]
         return ASParameters(**kargs)
+
+    def _compute_complement(self, complement):
+        """
+        For a scheme with two classes,
+        determine its complement if not given.
+        """
+        if self._.d == 2 and complement is not False:
+            if complement is None:
+                complement = self._complement()
+            self._.complement = self.add_subscheme(complement, "complement")
 
     def _compute_dualEigenmatrix(self, expand=False, factor=False,
                                  simplify=False):
@@ -838,7 +848,7 @@ class ASParameters(SageObject):
                     raise InfeasibleError(ex, part=pt)
                 i += 1
 
-    def check_handshake(self, metric=False, bipartite=False):
+    def check_handshake(self):
         """
         Verify the handshake lemma for all relations in all subconstituents.
         """
@@ -846,8 +856,8 @@ class ASParameters(SageObject):
             self.kTable()
         if not self._has("p"):
             self.pTable()
-        d = [self._.d, 0 if metric else self._.d]
-        b = 2 if bipartite else 1
+        d = [self._.d, 0 if self.METRIC else self._.d]
+        b = 2 if self._.bipartite else 1
         for i in range(1, self._.d + 1):
             if not isinstance(self._.k[i], Integer) or self._.k[i] % 2 == 0:
                 continue
@@ -1747,6 +1757,48 @@ class PolyASParameters(ASParameters):
                                     factor=factor, simplify=simplify)
         return self._.theta
 
+    def _compute_imprimitivity(self):
+        """
+        Determine whether the scheme is imprimitive
+        and compute the corresponding derived schemes.
+        """
+        m = floor(self._.d / 2)
+        self._.antipodal = all(full_simplify(
+            self._.b[i] - self._.c[self._.d - i]) == 0
+            for i in range(self._.d) if i != m)
+        self._.bipartite = all(a == 0 for a in self._.a)
+        if self._.antipodal:
+            try:
+                self._.r = integralize(
+                    1 + self._.b[m] / self._.c[self._.d - m])
+            except TypeError:
+                raise InfeasibleError("covering index not integral")
+            if self._.d >= 2:
+                if self._.d == 2:
+                    b = [self._.b[0]/(self._.b[1]+1)]
+                    c = [Integer(1)]
+                else:
+                    b = self._.b[:m]
+                    c = list(self._.c[1:m+1])
+                    if self._.d % 2 == 0:
+                        c[-1] *= self._.r
+                scheme = self._get_class()(tuple(b), tuple(c))
+            else:
+                scheme = ASParameters(P=[[1]])
+            self._.antipodal_subscheme = self.add_subscheme(scheme,
+                                                            self.ANTIPODAL)
+        if self._.bipartite:
+            if self._.d >= 2:
+                b = tuple(self._.b[2*i]*self._.b[2*i+1]/self._.c[2]
+                          for i in range(m))
+                c = tuple(self._.c[2*i+1]*self._.c[2*i+2]/self._.c[2]
+                          for i in range(m))
+                scheme = self._get_class()(b, c)
+            else:
+                scheme = ASParameters(P=[[1]])
+            self._.bipartite_subscheme = self.add_subscheme(scheme,
+                                                            self.BIPARTITE)
+
     def _compute_parameters(self, p, k):
         """
         Compute the intersection numbers or Krein parameters
@@ -1830,6 +1882,14 @@ class PolyASParameters(ASParameters):
                 p._.omega = self._.omega.transpose()
             elif not p._has("P") and not p._has("Q"):
                 p._.P = self.eigenmatrix()
+        p._.antipodal = self._.antipodal
+        p._.bipartite = self._.bipartite
+        if self._has("r"):
+            p._.r = self._.r
+        if self._has("antipodal_subscheme"):
+            p._.antipodal_subscheme = self._.antipodal_subscheme
+        if self._has("bipartite_subscheme"):
+            p._.bipartite_subscheme = self._.bipartite_subscheme
 
     def _copy_cosineSequences(self, P):
         """
@@ -1943,6 +2003,14 @@ class PolyASParameters(ASParameters):
                            (self.OBJECT, self.ARRAY),
                            self._format_parameterArray_unicode())
 
+    def antipodalSubscheme(self):
+        """
+        Return the parameters of the antipodal quotient
+        or Q-antipodal fraction.
+        """
+        assert self._.antipodal, "scheme not %s-antipodal" % self.MATRIX
+        return self._.antipodal_subscheme
+
     def aTable(self, full=False, expand=False, factor=False, simplify=False):
         """
         Return the table of parameters ``a[1], a[2], ..., a[d]``,
@@ -1953,6 +2021,14 @@ class PolyASParameters(ASParameters):
         self._.a = rewriteTuple(self._.a, expand=expand, factor=factor,
                                 simplify=simplify)
         return tuple(self._.a) if full else self._.a[1:]
+
+    def bipartiteSubscheme(self):
+        """
+        Return the parameters of the bipartite half
+        or Q-antipodal quotient.
+        """
+        assert self._.bipartite, "scheme not %s-bipartite" % self.MATRIX
+        return self._.bipartite_subscheme
 
     def bTable(self, full=False, expand=False, factor=False, simplify=False):
         """
@@ -2006,6 +2082,19 @@ class PolyASParameters(ASParameters):
         Not implemented, to be overridden.
         """
         raise NotImplementedError
+
+    def is_antipodal(self):
+        """
+        Check whether the association scheme is antipodal,
+        and return the covering index if it is.
+        """
+        return self._.r if self._.antipodal else False
+
+    def is_bipartite(self):
+        """
+        Check whether the graph is bipartite.
+        """
+        return self._.bipartite
 
     def is_cyclic(self):
         """

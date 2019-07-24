@@ -15,13 +15,16 @@ class QPolyParameters(PolyASParameters):
     and checking their feasibility.
     """
 
+    ANTIPODAL = "Q-antipodal fraction"
     ARRAY = "Krein array"
+    BIPARTITE = "Q-bipartite quotient"
     DUAL_INTEGRAL = True
     DUAL_MATRIX = "P"
     DUAL_PARAMETER = "intersection number"
     DUAL_PARTS = "subconstituents"
     DUAL_SYMBOL = "p"
     MATRIX = "Q"
+    METRIC = False
     OBJECT = "Q-polynomial association scheme"
     OBJECT_LATEX = "$Q$-polynomial association scheme"
     PARAMETER = "Krein parameter"
@@ -61,11 +64,8 @@ class QPolyParameters(PolyASParameters):
             self._.m = tuple(self._init_multiplicities())
             self._.q = Array3D(self._.d + 1)
             self._compute_parameters(self._.q, self._.m)
-        self._.bipartite = all(a == 0 for a in self._.a)
-        if self._.d == 2 and complement is not False:
-            if complement is None:
-                complement = self._complement()
-            self._.complement = self.add_subscheme(complement, "complement")
+        self._compute_imprimitivity()
+        self._compute_complement(complement)
 
     def _complement(self):
         """
@@ -112,14 +112,6 @@ class QPolyParameters(PolyASParameters):
             self._compute_dualParameters(p, self._.m, self._.k, self.QTR)
             self._.p = p
             self.check_handshake()
-
-    def _copy(self, p):
-        """
-        Copy fields to the given obejct.
-        """
-        PolyASParameters._copy(self, p)
-        if isinstance(p, QPolyParameters):
-            p._.bipartite = self._.bipartite
 
     def _copy_cosineSequences(self, p):
         """
@@ -228,4 +220,6 @@ class QPolyParameters(PolyASParameters):
                                                  for l in self.kreinArray()]),
                           kargs.get("seen", {}))
 
+    antipodalFraction = PolyASParameters.antipodalSubscheme
+    bipartiteQuotient = PolyASParameters.bipartiteSubscheme
     kreinArray = PolyASParameters.parameterArray

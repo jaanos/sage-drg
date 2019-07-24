@@ -2,7 +2,6 @@
 from sage.combinat.q_analogues import q_int
 from sage.functions.log import log
 from sage.functions.other import ceil
-from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.matrix.constructor import Matrix
 from sage.rings.finite_rings.integer_mod_ring import Integers
@@ -47,7 +46,9 @@ class DRGParameters(PolyASParameters):
     and checking their feasibility.
     """
 
+    ANTIPODAL = "antipodal quotient"
     ARRAY = "intersection array"
+    BIPARTITE = "bipartite half"
     DUAL_INTEGRAL = False
     DUAL_MATRIX = "Q"
     DUAL_PARAMETER = "Krein parameter"
@@ -56,6 +57,7 @@ class DRGParameters(PolyASParameters):
     OBJECT = "distance-regular graph"
     OBJECT_LATEX = "distance-regular graph"
     MATRIX = "P"
+    METRIC = True
     PARAMETER = "intersection number"
     PART = "subconstituent"
     PARTS = "subconstituents"
@@ -120,43 +122,10 @@ class DRGParameters(PolyASParameters):
             self._.k = tuple(self._init_multiplicities())
             self._.p = Array3D(self._.d + 1)
             self._compute_parameters(self._.p, self._.k)
-        m = floor(self._.d / 2)
-        self._.antipodal = all(full_simplify(
-            self._.b[i] - self._.c[self._.d - i]) == 0
-            for i in range(self._.d) if i != m)
-        self._.bipartite = all(a == 0 for a in self._.a)
+        self._compute_imprimitivity()
         if not isinstance(b, ASParameters):
-            self.check_handshake(metric=True, bipartite=self._.bipartite)
-        if self._.antipodal:
-            try:
-                self._.r = integralize(
-                    1 + self._.b[m] / self._.c[self._.d - m])
-            except TypeError:
-                raise InfeasibleError("covering index not integral")
-            if self._.d == 2:
-                b = [self._.b[0]/(self._.b[1]+1)]
-                c = [Integer(1)]
-            elif self._.d >= 3:
-                m = floor(self._.d / 2)
-                b = self._.b[:m]
-                c = list(self._.c[1:m+1])
-                if self._.d % 2 == 0:
-                    c[-1] *= self._.r
-            if self._.d >= 2:
-                self._.quotient = self.add_subscheme(
-                    DRGParameters(tuple(b), tuple(c)), "antipodal quotient")
-        if self._.bipartite and self._.d >= 2:
-            m = floor(self._.d / 2)
-            b = tuple(self._.b[2*i]*self._.b[2*i+1]/self._.c[2]
-                      for i in range(m))
-            c = tuple(self._.c[2*i+1]*self._.c[2*i+2]/self._.c[2]
-                      for i in range(m))
-            self._.half = self.add_subscheme(DRGParameters(b, c),
-                                             "bipartite half")
-        if self._.d == 2 and complement is not False:
-            if complement is None:
-                complement = self._complement()
-            self._.complement = self.add_subscheme(complement, "complement")
+            self.check_handshake()
+        self._compute_complement(complement)
 
     def _check_intersectionArray(self):
         """
@@ -233,21 +202,6 @@ class DRGParameters(PolyASParameters):
         """
         pass
 
-    def _copy(self, p):
-        """
-        Copy fields to the given obejct.
-        """
-        PolyASParameters._copy(self, p)
-        if isinstance(p, DRGParameters):
-            p._.antipodal = self._.antipodal
-            p._.bipartite = self._.bipartite
-            if self._has("r"):
-                p._.r = self._.r
-            if self._has("quotient"):
-                p._.quotient = self._.quotient
-            if self._has("half"):
-                p._.half = self._.half
-
     def _copy_cosineSequences(self, p):
         """
         Obtain the cosine sequences from the eigenmatrix.
@@ -305,22 +259,6 @@ class DRGParameters(PolyASParameters):
                                     name=self.DUAL_PARAMETER,
                                     sym=self.DUAL_SYMBOL)
         return p
-
-    def antipodalQuotient(self):
-        """
-        Return the parameters of the antipodal quotient.
-        """
-        assert self._.antipodal, "graph not antipodal"
-        assert self._.d >= 2, "quotient of complete graph has diameter 0"
-        return self._.quotient
-
-    def bipartiteHalf(self):
-        """
-        Return the parameters of the bipartite half.
-        """
-        assert self._.bipartite, "graph not bipartite"
-        assert self._.d >= 2, "bipartite half of complete graph has diameter 0"
-        return self._.half
 
     def complementaryGraph(self):
         """
@@ -380,13 +318,6 @@ class DRGParameters(PolyASParameters):
                 return False
         return True
 
-    def is_antipodal(self):
-        """
-        Check whether the graph is antipodal,
-        and return the covering index if it is.
-        """
-        return self._.r if self._.antipodal else False
-
     def is_bilinearForms(self):
         """
         Check whether the graph can be a bilinear forms graph
@@ -405,12 +336,6 @@ class DRGParameters(PolyASParameters):
             if self.is_classicalWithParameters(q, q-1, beta):
                 return True
         return False
-
-    def is_bipartite(self):
-        """
-        Check whether the graph is bipartite.
-        """
-        return self._.bipartite
 
     def is_classical(self):
         """
@@ -1265,6 +1190,8 @@ class DRGParameters(PolyASParameters):
                                       "b[1]/(theta[d]+1) not integers "
                                       "or algebraic conjugates", ref)
 
+    antipodalQuotient = PolyASParameters.antipodalSubscheme
+    bipartiteHalf = PolyASParameters.bipartiteSubscheme
     diameter = PolyASParameters.classes
     distanceGraphs = PolyASParameters.partSchemes
     intersectionArray = PolyASParameters.parameterArray
