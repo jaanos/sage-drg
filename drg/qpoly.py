@@ -125,7 +125,7 @@ class QPolyParameters(PolyASParameters):
         """
         Generate parameters sets of derived association schemes.
         """
-        if self._.antipodal:
+        if self._.antipodal and self._.d >= 3:
             self.all_dismantlements()
         for par, part, reorder in PolyASParameters._derived(self, derived):
             yield (par, part, reorder)
