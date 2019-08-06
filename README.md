@@ -1,6 +1,6 @@
 # Distance-regular graph parameter checking in Sage
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1418410.svg)](https://doi.org/10.5281/zenodo.1418410)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1418409.svg)](https://doi.org/10.5281/zenodo.1418409)
 
 [![Launch in Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=index.ipynb)
 
@@ -47,7 +47,7 @@ If you use `sage-drg` in your research, please cite both the manuscript and the 
 
 * J. Vidali. Using symbolic computation to prove nonexistence of distance-regular graphs. *Electron. J. Combin.*, 25(4)#P4.21, 2018. [`http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21`](http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21).
 
-* J. Vidali. `jaanos/sage-drg`: `sage-drg` v0.8, 2018. [`https://github.com/jaanos/sage-drg/`](https://github.com/jaanos/sage-drg/), [`doi:10.5281/zenodo.1418410`](http://dx.doi.org/10.5281/zenodo.1418410).
+* J. Vidali. `jaanos/sage-drg`: `sage-drg` v0.9, 2019. [`https://github.com/jaanos/sage-drg/`](https://github.com/jaanos/sage-drg/), [`doi:10.5281/zenodo.1418409`](http://dx.doi.org/10.5281/zenodo.1418409).
 
 ```latex
 @article{v18a,
@@ -64,10 +64,10 @@ If you use `sage-drg` in your research, please cite both the manuscript and the 
 
 @software{v18b,
    AUTHOR = {Vidali, Jano\v{s}},
-    TITLE = {{\tt jaanos/sage-drg}: {\tt sage-drg} v0.8},
+    TITLE = {{\tt jaanos/sage-drg}: {\tt sage-drg} v0.9},
      NOTE = {\url{https://github.com/jaanos/sage-drg/},
-             \href{http://dx.doi.org/10.5281/zenodo.1418410}{\texttt{10.5281/zenodo.1418410}}},
-     YEAR = {2018},
+             \href{http://dx.doi.org/10.5281/zenodo.1418409}{\texttt{10.5281/zenodo.1418409}}},
+     YEAR = {2019},
 }
 ```
 

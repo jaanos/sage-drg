@@ -69,7 +69,7 @@ class PartitionGraph(Graph):
         V = b.values()
         Graph.__init__(self,
                        [V, lambda u, v: p.has_edges(h, u.i, u.j, v.i, v.j)],
-                       loops=False, name=p.format_parameterArray())
+                       loops=False, name=p._format_parameterArray())
         self._pos = {v: (v.i, Integer(0)) if v.j is None
                      else (v.j+v.i, v.j-v.i)
                      for v in V}

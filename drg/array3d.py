@@ -2,13 +2,18 @@ from copy import copy
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
+from sage.misc.latex import latex
+from sage.misc.latex import LatexExpr
+from sage.structure.sage_object import SageObject
 from sage.symbolic.ring import SR
+from sage.typeset.ascii_art import ascii_art
+from sage.typeset.unicode_art import unicode_art
 from .util import _factor
 from .util import full_simplify
 from .util import variables
 
 
-class Array3D:
+class Array3D(SageObject):
     """
     A three-dimensional array of expressions.
     """
@@ -85,6 +90,36 @@ class Array3D:
         """
         k1, k2, k3 = key
         self.A[k1][k2, k3] = value
+
+    def _ascii_art_(self):
+        """
+        ASCII art representation of the array.
+        """
+        l = len(repr(self.n - 1))
+        fmt = '%{}d: '.format(l)
+        art = [ascii_art(M) for M in self.A]
+        return ascii_art("\n".join((fmt % i) + "\n"*a.height()
+                                   for i, a in enumerate(art))) + \
+            ascii_art("\n".join(sum([a._matrix + [""] for a in art], [])))
+
+    def _latex_(self):
+        """
+        LaTeX representation of the array.
+        """
+        return LatexExpr(r"\begin{aligned}%s\end{aligned}" %
+                         "\n".join(r"%d: &\ %s \\" % (i, latex(M))
+                                   for i, M in enumerate(self.A)))
+
+    def _unicode_art_(self):
+        """
+        Unicode art representation of the array.
+        """
+        l = len(repr(self.n - 1))
+        fmt = '%{}d: '.format(l)
+        art = [unicode_art(M) for M in self.A]
+        return unicode_art("\n".join((fmt % i) + "\n"*a.height()
+                                     for i, a in enumerate(art))) + \
+            unicode_art("\n".join(sum([a._matrix + [""] for a in art], [])))
 
     def map(self, fun):
         """

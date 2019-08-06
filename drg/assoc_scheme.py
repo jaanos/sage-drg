@@ -3,22 +3,39 @@ from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
+from sage.combinat.set_partition import SetPartitions
+from sage.functions.other import floor
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.constructor import diagonal_matrix
 from sage.matrix.constructor import identity_matrix
+from sage.misc.latex import latex
+from sage.misc.latex import LatexExpr
+from sage.misc.misc import subsets
 from sage.rings.integer import Integer
+from sage.structure.sage_object import SageObject
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
+from sage.typeset.ascii_art import ascii_art
+from sage.typeset.symbols import ascii_left_curly_brace
+from sage.typeset.symbols import ascii_right_curly_brace
+from sage.typeset.symbols import unicode_left_curly_brace
+from sage.typeset.symbols import unicode_right_curly_brace
+from sage.typeset.unicode_art import unicode_art
 from .array3d import Array3D
 from .array3d import Array4D
 from .coefflist import CoefficientList
 from .find import find
+from .nonex import checkConditions
+from .nonex import families
+from .nonex import sporadic
+from .util import checklist
 from .util import checkNonneg
 from .util import checkPos
 from .util import _factor
 from .util import full_simplify
 from .util import integralize
+from .util import is_integral
 from .util import make_expressions
 from .util import nrows
 from .util import refresh
@@ -70,7 +87,10 @@ class InfeasibleError(Exception):
         """
         Exception constructor.
         """
-        part = () if part is None else (part, )
+        if part is None:
+            part = ()
+        elif not isinstance(part, tuple):
+            part = (part, )
         if isinstance(reason, InfeasibleError):
             self.reason = reason.reason
             self.refs = reason.refs
@@ -125,6 +145,8 @@ class Parameters:
         Object constructor.
         """
         self._parameters = p
+        self.fusion_schemes = {}
+        self.subschemes = {}
         self.triple = {}
         self.triple_solution = {}
         self.triple_solution_generator = {}
@@ -137,20 +159,27 @@ class Parameters:
         return "Parameter storage of <%s>" % repr(self._parameters)
 
 
-class ASParameters:
+check_ASParameters = []
+check = checklist(check_ASParameters)
+
+
+class ASParameters(SageObject):
     """
     A class for parameters of a general association scheme
     and checking their feasibility.
     """
     _ = None
+    _checklist = check_ASParameters
+    METRIC = False
 
-    def __init__(self, p=None, q=None, P=None, Q=None):
+    def __init__(self, p=None, q=None, P=None, Q=None, complement=None):
         """
         Object constructor.
         """
         self._init_storage()
         if self._get_class() is ASParameters:
             self._init_prefix()
+            self._.bipartite = False
         assert (p, q, P, Q).count(None) >= 3, \
             "precisely one of p, q, P, Q must be given"
         if isinstance(p, ASParameters):
@@ -174,7 +203,15 @@ class ASParameters:
             self._.Q = self._init_eigenmatrix(Q)
         else:
             assert self._.d is not None, "insufficient data"
+        self._.subconstituents = [None] * (self._.d + 1)
+        self._compute_complement(complement)
         self._init_vars()
+
+    def __hash__(self):
+        """
+        Return the hash value.
+        """
+        return hash(id(self))
 
     def __len__(self, expand=False, factor=False, simplify=False):
         """
@@ -233,6 +270,15 @@ class ASParameters:
             warn(Warning("the eigenmatrices do not multiply "
                          "into a multiple of the identity matrix"))
 
+    def _check_family(self):
+        """
+        Check whether the association scheme has parameters for which
+        nonexistence has been shown as a part of an infinite family.
+
+        Currently does nothing for general association schemes.
+        """
+        return
+
     @staticmethod
     def _check_parameter(h, i, j, v, integral=False, name=None, sym=None):
         """
@@ -275,6 +321,32 @@ class ASParameters:
         """
         return self._.p[u, h, i] != 0 and self._.p[v, h, j] != 0 and \
             self._.p[w, i, j] != 0
+
+    def _complement(self):
+        """
+        Return the parameters of the complement of a strongly regular graph.
+        """
+        assert self._.d == 2, "the complement is only defined for two classes"
+        kargs = {"complement": self}
+        if self._has("p"):
+            kargs["p"] = self._.p.reorder([0, 2, 1], inplace=False)
+        elif self._has("q"):
+            kargs["q"] = self._.q.reorder([0, 2, 1], inplace=False)
+        elif self._has("P"):
+            kargs["P"] = self._.P[[0, 2, 1], [0, 2, 1]]
+        elif self._has("Q"):
+            kargs["Q"] = self._.Q[[0, 2, 1], [0, 2, 1]]
+        return ASParameters(**kargs)
+
+    def _compute_complement(self, complement):
+        """
+        For a scheme with two classes,
+        determine its complement if not given.
+        """
+        if self._.d == 2 and complement is not False:
+            if complement is None:
+                complement = self._complement()
+            self._.complement = self.add_subscheme(complement, "complement")
 
     def _compute_dualEigenmatrix(self, expand=False, factor=False,
                                  simplify=False):
@@ -362,7 +434,7 @@ class ASParameters:
         if self._has("p"):
             k = tuple(self._.p[0, i, i] for i in range(self._.d + 1))
         else:
-            if self._has("P"):
+            if not self._has("P"):
                 self.eigenmatrix(expand=expand, factor=factor,
                                  simplify=simplify)
             k = tuple(integralize(x) for x in self._.P[0])
@@ -466,10 +538,28 @@ class ASParameters:
             p._.pPolynomial_ordering = self._.pPolynomial_ordering
         if self._has("qPolynomial_ordering"):
             p._.qPolynomial_ordering = self._.qPolynomial_ordering
+        if self._has("complement"):
+            p._.complement = self._.complement
+        p._.fusion_schemes.update(self._.fusion_schemes)
+        p._.subschemes.update(self._.subschemes)
+        p._.subconstituents = list(self._.subconstituents)
         p._.triple.update(self._.triple)
         p._.triple_solution.update(self._.triple_solution)
         p._.triple_solution_generator.update(self._.triple_solution_generator)
         p._.quadruple.update(self._.quadruple)
+
+    def _derived(self, derived=True):
+        """
+        Generate parameters sets of derived association schemes.
+        """
+        self.polynomialOrders()
+        self.all_subconstituents(compute=derived > 1)
+        if derived > 1:
+            self.all_fusions()
+        for pa, part in self._.fusion_schemes.items():
+            yield (pa, part, True)
+        for pa, part in self._.subschemes.items():
+            yield (pa, part, False)
 
     @staticmethod
     def _get_class():
@@ -477,6 +567,14 @@ class ASParameters:
         Return the principal class of the object.
         """
         return ASParameters
+
+    def _get_parameters(self):
+        """
+        Return the defining parameter set, if any.
+
+        Currently, this is not defined for general association schemes.
+        """
+        return None
 
     def _has(self, name):
         """
@@ -560,6 +658,42 @@ class ASParameters:
             order.append(j)
         return tuple(order)
 
+    @staticmethod
+    def _merge_parts(parts, p, sym=None):
+        """
+        Return a parameter set for a scheme
+        with merged subconstituents or eigenspaces.
+        """
+        d = len(parts)
+        concat = sum(parts, [])
+        assert parts[0] == [0], "identity not preserved"
+        assert all(len(pt) > 0 for pt in parts), "empty group specified"
+        assert len(concat) == len(set(concat)), "repeated part specified"
+        assert set(concat) == set(range(len(p))), "invalid part specified"
+        a = Array3D(d)
+        for h in range(d):
+            for i in range(d):
+                for j in range(d):
+                    a[h, i, j] = sum(p[parts[h][0], ii, jj]
+                                     for ii in parts[i] for jj in parts[j])
+                    if not all(a[h, i, j] == sum(p[hh, ii, jj]
+                                                 for ii in parts[i]
+                                                 for jj in parts[j])
+                               for hh in parts[h][1:]):
+                        raise IndexError(
+                            "inconsistent parameters for %s[%d, %d, %d]" %
+                            (sym, h, i, j))
+        return a
+
+    def _is_trivial(self):
+        """
+        Check whether the association scheme is trivial
+        for the purposes of feasibility checking.
+
+        Returns ``True`` if the scheme has at most one class.
+        """
+        return self._.d <= 1
+
     def _reorder(self, order):
         """
         Check and normalize a given order of relations or eigenspaces.
@@ -575,10 +709,28 @@ class ASParameters:
             "repeating or nonexisting indices"
         return tuple(order)
 
-    def _subs(self, exp, p):
+    @staticmethod
+    def _subconstituent_name(h):
+        """
+        Return a properly formatted ordinal for the given subconstituent.
+        """
+        if h == 1:
+            o = "1st"
+        elif h == 2:
+            o = "2nd"
+        elif h == 3:
+            o = "3rd"
+        else:
+            o = "%dth" % h
+        return "%s subconstituent" % o
+
+    def _subs(self, exp, p, seen):
         """
         Substitute the given subexpressions in the paramaters.
         """
+        if id(self) in seen:
+            return (seen[id(self)], False)
+        seen[id(self)] = p
         if self._has("p") and not p._has("p"):
             p._.p = self._.p.subs(*exp)
         if self._has("q") and not p._has("q"):
@@ -586,48 +738,140 @@ class ASParameters:
         if self._has("P") and not p._has("P"):
             p._.P = self._.P.subs(*exp)
         if self._has("Q") and not p._has("Q"):
-            p._.Q = self.Q._.subs(*exp)
+            p._.Q = self._.Q.subs(*exp)
         for k, v in self._.triple.items():
             p._.triple[k] = v.subs(*exp)
         for k, v in self._.quadruple.items():
             p._.quadruple[k] = v.subs(*exp)
+        for par, part in self._.subschemes.items():
+            try:
+                p.add_subscheme(par.subs(*exp, seen=seen), part)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=part)
+        for par, part in self._.fusion_schemes.items():
+            try:
+                p.add_subscheme(par.subs(*exp, seen=seen), part)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=part)
+        for h, s in enumerate(self._.subconstituents):
+            if s is None:
+                continue
+            name = self._subconstituent_name(h)
+            try:
+                p._.subconstituents[h] = p.add_subscheme(
+                    self._.subconstituents[h].subs(*exp, seen=seen), name)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=name)
+        if self._has("complement") and not p._has("complement"):
+            try:
+                p._.complement = self._.complement.subs(*exp, seen=seen)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part="complement")
+        return (p, True)
 
-    def check_absoluteBound(self, expand=False, factor=False,
-                            simplify=False):
+    def add_subscheme(self, par, part):
         """
-        Check whether the absolute bound is not exceeded.
+        Add a derived scheme into the list.
         """
-        if not self._has("m"):
-            self.multiplicities(expand=expand, factor=factor,
-                                simplify=simplify)
-        if not self._has("q"):
-            self.kreinParameters(expand=expand, factor=factor,
-                                 simplify=simplify)
-        ineqs = {}
-        for i in range(self._.d + 1):
-            ineq = self._.m[i]*(self._.m[i] + 1)/2 - \
-                sum(self._.m[h] for h in range(self._.d + 1)
-                    if self._.q[h, i, i] != 0)
-            if ineq < 0:
-                raise InfeasibleError("absolute bound exceeded "
-                                      "for (%d, %d)" % (i, i))
-            elif not (ineq >= 0):
-                ineqs[i, i] = rewriteExp(ineq, expand=expand,
-                                         factor=factor, simplify=simplify)
-            for j in range(i+1, self._.d + 1):
-                ineq = self._.m[i]*self._.m[j] - \
-                    sum(self._.m[h] for h in range(self._.d + 1)
-                        if self._.q[h, i, j] != 0)
-                if ineq < 0:
-                    raise InfeasibleError("absolute bound exceeded "
-                                          "for (%d, %d)" % (i, j))
-                elif not (ineq >= 0):
-                    ineqs[i, j] = rewriteExp(ineq, expand=expand,
-                                             factor=factor,
-                                             simplify=simplify)
-        return ineqs
+        if par in self._.fusion_schemes:
+            return next(s for s in self._.fusion_schemes if s == par)
+        elif par in self._.subschemes:
+            return next(s for s in self._.subschemes if s == par)
+        elif not isinstance(par, ASParameters):
+            try:
+                par = ASParameters(*par)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=part)
+        if par._.n == self._.n:
+            self._.fusion_schemes[par] = part
+        else:
+            self._.subschemes[par] = part
+        return par
 
-    def check_handshake(self, metric=False, bipartite=False):
+    def all_fusions(self):
+        """
+        Return a dictionary of parameters for all fusion schemes.
+        """
+        out = {}
+        if self._has("p"):
+            fun = self.merge_subconstituents
+        elif self._has("q"):
+            fun = self.merge_eigenspaces
+        elif self._has("P"):
+            fun = self.merge_subconstituents
+        elif self._has("Q"):
+            fun = self.merge_eigenspaces
+        for parts in SetPartitions(range(1, self._.d+1)):
+            if len(parts) == self._.d:
+                continue
+            parts = tuple(tuple(sorted(p)) for p in parts)
+            try:
+                out[parts] = fun(*parts)
+            except IndexError:
+                pass
+        return out
+
+    def all_subconstituents(self, compute=False):
+        """
+        Return a dictionary of parameters for subconstituents
+        which are known to be association schemes.
+        """
+        out = {}
+        for i in range(self._.d+1):
+            try:
+                out[i] = self.subconstituent(i, compute=compute)
+            except IndexError:
+                pass
+        return out
+
+    def check_feasible(self, checked=None, skip=None, derived=True, levels=3,
+                       queue=None, part=()):
+        """
+        Check whether the parameter set is feasible.
+        """
+        if self._is_trivial():
+            return
+        par = self._get_parameters()
+        if checked is None:
+            checked = set()
+        if par in checked:
+            return
+        if skip is None:
+            skip = set()
+        elif isinstance(skip, str):
+            skip = {skip}
+        else:
+            skip = set(skip)
+        for i, lvl in enumerate(self._checklist[:levels]):
+            for name, check in lvl:
+                if name not in skip:
+                    check(self)
+                    if i > 1:
+                        skip.add(name)
+        if not derived:
+            return
+        if par is not None:
+            checked.add(par)
+        do_bfs = False
+        if queue is None:
+            queue = []
+            do_bfs = True
+        for par, pt, reorder in self._derived(derived):
+            if par in checked:
+                continue
+            queue.append((par, (pt, ) + part, skip if reorder else None))
+        if do_bfs:
+            i = 0
+            while i < len(queue):
+                par, pt, skip = queue[i]
+                try:
+                    par.check_feasible(checked=checked, skip=skip,
+                                       levels=levels, queue=queue, part=pt)
+                except (InfeasibleError, AssertionError) as ex:
+                    raise InfeasibleError(ex, part=pt)
+                i += 1
+
+    def check_handshake(self):
         """
         Verify the handshake lemma for all relations in all subconstituents.
         """
@@ -635,8 +879,8 @@ class ASParameters:
             self.kTable()
         if not self._has("p"):
             self.pTable()
-        d = [self._.d, 0 if metric else self._.d]
-        b = 2 if bipartite else 1
+        d = [self._.d, 0 if self.METRIC else self._.d]
+        b = 2 if self._.bipartite else 1
         for i in range(1, self._.d + 1):
             if not isinstance(self._.k[i], Integer) or self._.k[i] % 2 == 0:
                 continue
@@ -648,127 +892,18 @@ class ASParameters:
                                           "for relation %d in subconstituent"
                                           " %d" % (j, i))
 
-    def check_quadruples(self, solver=None):
-        """
-        Check whether the existence of a forbidden quadruple of vertices
-        is implied by the triple intersection numbers.
-        """
-        if not self._has("p"):
-            self.pTable()
-        r = self._.triple_solution = {}
-        g = self._.triple_solution_generator = {}
-        zero = {}
-        done = {}
-        for u in range(self._.d + 1):
-            for v in range(u, self._.d + 1):
-                for w in range(v, self._.d + 1):
-                    if self._.p[u, v, w] == 0:
-                        continue
-                    S = self.tripleEquations(u, v, w)
-                    g[u, v, w] = find(
-                        make_expressions((S[h, i, j], 0,
-                                          min(self._.p[u, h, i],
-                                              self._.p[v, h, j],
-                                              self._.p[w, i, j]))
-                                         for h in range(self._.d + 1)
-                                         for i in range(self._.d + 1)
-                                         for j in range(self._.d + 1)),
-                        S.variables(), solver=solver)
-                    try:
-                        sol = sort_solution(next(g[u, v, w]))
-                    except StopIteration:
-                        raise InfeasibleError(
-                            "no solution found for a triple of vertices "
-                            "at distances (%d, %d, %d)" % (u, v, w))
-                    s = S.subs(sol)
-                    r[u, v, w] = {sol: s}
-                    zero[u, v, w] = {(h, i, j)
-                                     for h in range(self._.d + 1)
-                                     for i in range(self._.d + 1)
-                                     for j in range(self._.d + 1)
-                                     if s[h, i, j] == 0
-                                     and self._check_zero(h, i, j, u, v, w)}
-                    done[u, v, w] = set()
-        check = {t for t in g if len(zero[t]) > 0}
-        while len(check) > 0:
-            for t in list(check):
-                if t not in check:
-                    continue
-                check.discard(t)
-                u, v, w = t
-                for d in list(zero[t]):
-                    if d not in zero[t]:
-                        continue
-                    try:
-                        sol = sort_solution(
-                            next(g[t].send((True,
-                                            self._.triple[t][d] >= 1))))
-                        if sol not in r[t]:
-                            s = r[t][sol] = self._.triple[t].subs(sol)
-                            zero[t] -= {z for z in zero[t] if s[z] != 0}
-                    except (StopIteration, KeyError):
-                        h, i, j = d
-                        seen = {(t, d)}
-                        for lt, ld in {((u, h, i), (v, w, j)),
-                                       ((v, h, j), (u, w, i)),
-                                       ((w, i, j), (u, v, h))}:
-                            st = tuple(sorted(lt))
-                            if st not in zero:
-                                continue
-                            for tp, dp in zip(TPERMS, DPERMS):
-                                if tuple(lt[k] for k in tp) != st:
-                                    continue
-                                sd = tuple(ld[k] for k in dp)
-                                if (st, sd) in seen:
-                                    continue
-                                seen.add((st, sd))
-                                l = len(r[st])
-                                for sol, s in r[st].items():
-                                    if s[sd] != 0:
-                                        del r[st][sol]
-                                try:
-                                    g[st].send((False,
-                                                self._.triple[st][sd] == 0))
-                                    if len(r[st]) == 0:
-                                        sol = sort_solution(next(g[st]))
-                                        r[st][sol] = \
-                                            self._.triple[st].subs(sol)
-                                        l += 1
-                                except StopIteration:
-                                    del g[st]
-                                except KeyError:
-                                    pass
-                                if len(r[st]) == 0:
-                                    raise InfeasibleError(
-                                        "found forbidden quadruple "
-                                        "wxyz with d(w, x) = %d, "
-                                        "d(w, y) = %d, d(w, z) = %d, "
-                                        "d(x, y) = %d, d(x, z) = %d, "
-                                        "d(y, z) = %d" % (sd + st))
-                                if len(r[st]) < l:
-                                    zero[st] = {(sh, si, sj)
-                                                for sh in range(self._.d + 1)
-                                                for si in range(self._.d + 1)
-                                                for sj in range(self._.d + 1)
-                                                if
-                                                (sh, si, sj) not in done[st]
-                                                and self._check_zero(sh, si,
-                                                                     sj, *st)
-                                                and all(
-                                                    s[sh, si, sj] == 0
-                                                    for s in r[st].values())}
-                                    if len(zero[st]) == 0:
-                                        check.discard(st)
-                                    else:
-                                        check.add(st)
-                        zero[t].discard(d)
-                        done[t].add(d)
-
     def classes(self):
         """
         Return the number of classes of the association scheme.
         """
         return self._.d
+
+    def complement(self):
+        """
+        Return the parameters of the complement of a strongly regular graph.
+        """
+        assert self._.d == 2, "the complement is only defined for two classes"
+        return self._.complement
 
     def dualEigenmatrix(self, expand=False, factor=False, simplify=False):
         """
@@ -829,13 +964,41 @@ class ASParameters:
 
     def kTable(self, expand=False, factor=False, simplify=False):
         """
-        Compute and return the sizes of the subconstituents
+        Compute and return the sizes of the subconstituents.
         """
         self._compute_kTable(expand=expand, factor=factor,
                              simplify=simplify)
         self._.k = rewriteTuple(self._.k, expand=expand, factor=factor,
                                 simplify=simplify)
         return self._.k
+
+    def merge_eigenspaces(self, *parts):
+        """
+        Return a parameter set for a scheme with merged eigenspaces.
+        """
+        parts = [list(pt) for pt in parts]
+        if parts[0] != [0]:
+            parts.insert(0, [0])
+        if not self._has("q"):
+            self.kreinParameters()
+        par = ASParameters(q=self._merge_parts(parts, self._.q, "q"))
+        self.add_subscheme(par,
+                           "Fusion scheme for eigenspaces %s" % parts)
+        return par
+
+    def merge_subconstituents(self, *parts):
+        """
+        Return a parameter set for a scheme with merged subconstituents.
+        """
+        parts = [list(pt) for pt in parts]
+        if parts[0] != [0]:
+            parts.insert(0, [0])
+        if not self._has("p"):
+            self.pTable()
+        par = ASParameters(p=self._merge_parts(parts, self._.p, "p"))
+        self.add_subscheme(par,
+                           "Fusion scheme for subconstituents %s" % parts)
+        return par
 
     def mTable(self, expand=False, factor=False, simplify=False):
         """
@@ -846,6 +1009,25 @@ class ASParameters:
         self._.m = rewriteTuple(self._.m, expand=expand, factor=factor,
                                 simplify=simplify)
         return self._.m
+
+    def polynomialOrders(self):
+        """
+        Return a dictionary of all P- or Q-polynomial orderings.
+        """
+        from .drg import DRGParameters
+        from .qpoly import QPolyParameters
+        out = {}
+        if self.is_pPolynomial():
+            for order in self._.pPolynomial_ordering:
+                pa = self.add_subscheme(DRGParameters(self, order=order),
+                                        "P-polynomial ordering %s" % (order, ))
+                out["P", order] = pa
+        if self.is_qPolynomial():
+            for order in self._.qPolynomial_ordering:
+                pa = self.add_subscheme(QPolyParameters(self, order=order),
+                                        "Q-polynomial ordering %s" % (order, ))
+                out["Q", order] = pa
+        return out
 
     def pTable(self, expand=False, factor=False, simplify=False):
         """
@@ -1123,8 +1305,9 @@ class ASParameters:
             {tuple(order.index(i) for i in t): g
              for t, g in self._.triple_solution_generator.items()}
         self._.quadruple = {tuple(order.index(i) for i in t):
-                            s.reorder(order, inplace = False)
+                            s.reorder(order, inplace=False)
                             for t, s in self._.quadruple.items()}
+        self._.subconstituents = [self._.subconstituents[i] for i in order]
         if self._has("pPolynomial_ordering") and self._.pPolynomial_ordering:
             self._.pPolynomial_ordering = sorted(
                 [tuple(order.index(i) for i in o)
@@ -1141,7 +1324,48 @@ class ASParameters:
                                               if x not in vars)
             self._.vars_ordered = True
 
-    def subs(self, *exp):
+    def subconstituent(self, h, compute=False, return_rels=False):
+        """
+        Return parameters of the h-th subconstituent
+        if it is known to form an association scheme.
+
+        If compute is set to True,
+        then the relevant triple intersection numbers will be computed.
+        """
+        if not self._has("p"):
+            self.pTable()
+        name = self._subconstituent_name(h)
+        rels = None
+        assert checkPos(self._.p[0, h, h]), \
+            "%s consists of a single vertex" % name
+        if self._.subconstituents[h] is None:
+            rels = [i for i in range(self._.d+1)
+                    if checkPos(self._.p[h, h, i])]
+            d = len(rels)
+            if compute:
+                for i in rels:
+                    self.tripleEquations(h, h, i)
+            vars = set(self._.vars)
+            a = Array3D(d)
+            try:
+                for i in range(d):
+                    for j in range(d):
+                        for k in range(d):
+                            a[i, j, k] = next(
+                                x for x in
+                                self.triple_generator((h, h, i), (h, j, k))
+                                if vars.issuperset(variables(x)))
+            except StopIteration:
+                raise IndexError("%s is not known to be an association scheme"
+                                 % name)
+            self._.subconstituents[h] = self.add_subscheme(ASParameters(p=a),
+                                                           name)
+        if return_rels:
+            return (self._.subconstituents[h], rels)
+        else:
+            return self._.subconstituents[h]
+
+    def subs(self, *exp, **kargs):
         """
         Substitute the given subexpressions in the parameters.
         """
@@ -1154,8 +1378,7 @@ class ASParameters:
             par["P"] = self._.P.subs(*exp)
         elif self._has("Q"):
             par["Q"] = self._.Q.subs(*exp)
-        p = ASParameters(**par)
-        self._subs(exp, p)
+        p, new = self._subs(exp, ASParameters(**par), kargs.get("seen", {}))
         return p
 
     def triple_generator(self, t, d):
@@ -1373,6 +1596,179 @@ class ASParameters:
         """
         return self._.vars
 
+    @check(0)
+    def check_sporadic(self):
+        """
+        Check whether the association scheme has parameters
+        for which nonexistence has been shown sporadically.
+        """
+        par = self._get_parameters()
+        if par is None:
+            return
+        if par in sporadic:
+            raise InfeasibleError(refs=sporadic[par])
+
+    @check(0)
+    def check_family(self):
+        """
+        Check whether the association scheme has parameters for which
+        nonexistence has been shown as a part of an infinite family.
+        """
+        self._check_family()
+
+    @check(2)
+    def check_absoluteBound(self, expand=False, factor=False,
+                            simplify=False):
+        """
+        Check whether the absolute bound is not exceeded.
+        """
+        if not self._has("m"):
+            self.multiplicities(expand=expand, factor=factor,
+                                simplify=simplify)
+        if not self._has("q"):
+            self.kreinParameters(expand=expand, factor=factor,
+                                 simplify=simplify)
+        ineqs = {}
+        for i in range(self._.d + 1):
+            ineq = self._.m[i]*(self._.m[i] + 1)/2 - \
+                sum(self._.m[h] for h in range(self._.d + 1)
+                    if self._.q[h, i, i] != 0)
+            if ineq < 0:
+                raise InfeasibleError("absolute bound exceeded "
+                                      "for (%d, %d)" % (i, i))
+            elif not (ineq >= 0):
+                ineqs[i, i] = rewriteExp(ineq, expand=expand,
+                                         factor=factor, simplify=simplify)
+            for j in range(i+1, self._.d + 1):
+                ineq = self._.m[i]*self._.m[j] - \
+                    sum(self._.m[h] for h in range(self._.d + 1)
+                        if self._.q[h, i, j] != 0)
+                if ineq < 0:
+                    raise InfeasibleError("absolute bound exceeded "
+                                          "for (%d, %d)" % (i, j))
+                elif not (ineq >= 0):
+                    ineqs[i, j] = rewriteExp(ineq, expand=expand,
+                                             factor=factor,
+                                             simplify=simplify)
+        return ineqs
+
+    @check(3)
+    def check_quadruples(self, solver=None):
+        """
+        Check whether the existence of a forbidden quadruple of vertices
+        is implied by the triple intersection numbers.
+        """
+        if not self._has("p"):
+            self.pTable()
+        r = self._.triple_solution = {}
+        g = self._.triple_solution_generator = {}
+        zero = {}
+        done = {}
+        for u in range(self._.d + 1):
+            for v in range(u, self._.d + 1):
+                for w in range(v, self._.d + 1):
+                    if self._.p[u, v, w] == 0:
+                        continue
+                    S = self.tripleEquations(u, v, w)
+                    g[u, v, w] = find(
+                        make_expressions((S[h, i, j], 0,
+                                          min(self._.p[u, h, i],
+                                              self._.p[v, h, j],
+                                              self._.p[w, i, j]))
+                                         for h in range(self._.d + 1)
+                                         for i in range(self._.d + 1)
+                                         for j in range(self._.d + 1)),
+                        S.variables(), solver=solver)
+                    try:
+                        sol = sort_solution(next(g[u, v, w]))
+                    except StopIteration:
+                        raise InfeasibleError(
+                            "no solution found for a triple of vertices "
+                            "at distances (%d, %d, %d)" % (u, v, w))
+                    s = S.subs(sol)
+                    r[u, v, w] = {sol: s}
+                    zero[u, v, w] = {(h, i, j)
+                                     for h in range(self._.d + 1)
+                                     for i in range(self._.d + 1)
+                                     for j in range(self._.d + 1)
+                                     if s[h, i, j] == 0
+                                     and self._check_zero(h, i, j, u, v, w)}
+                    done[u, v, w] = set()
+        check = {t for t in g if len(zero[t]) > 0}
+        while len(check) > 0:
+            for t in list(check):
+                if t not in check:
+                    continue
+                check.discard(t)
+                u, v, w = t
+                for d in list(zero[t]):
+                    if d not in zero[t]:
+                        continue
+                    try:
+                        sol = sort_solution(
+                            next(g[t].send((True,
+                                            self._.triple[t][d] >= 1))))
+                        if sol not in r[t]:
+                            s = r[t][sol] = self._.triple[t].subs(sol)
+                            zero[t] -= {z for z in zero[t] if s[z] != 0}
+                    except (StopIteration, KeyError):
+                        h, i, j = d
+                        seen = {(t, d)}
+                        for lt, ld in {((u, h, i), (v, w, j)),
+                                       ((v, h, j), (u, w, i)),
+                                       ((w, i, j), (u, v, h))}:
+                            st = tuple(sorted(lt))
+                            if st not in zero:
+                                continue
+                            for tp, dp in zip(TPERMS, DPERMS):
+                                if tuple(lt[k] for k in tp) != st:
+                                    continue
+                                sd = tuple(ld[k] for k in dp)
+                                if (st, sd) in seen:
+                                    continue
+                                seen.add((st, sd))
+                                l = len(r[st])
+                                for sol, s in r[st].items():
+                                    if s[sd] != 0:
+                                        del r[st][sol]
+                                try:
+                                    g[st].send((False,
+                                                self._.triple[st][sd] == 0))
+                                    if len(r[st]) == 0:
+                                        sol = sort_solution(next(g[st]))
+                                        r[st][sol] = \
+                                            self._.triple[st].subs(sol)
+                                        l += 1
+                                except StopIteration:
+                                    del g[st]
+                                except KeyError:
+                                    pass
+                                if len(r[st]) == 0:
+                                    raise InfeasibleError(
+                                        "found forbidden quadruple "
+                                        "wxyz with d(w, x) = %d, "
+                                        "d(w, y) = %d, d(w, z) = %d, "
+                                        "d(x, y) = %d, d(x, z) = %d, "
+                                        "d(y, z) = %d" % (sd + st))
+                                if len(r[st]) < l:
+                                    zero[st] = {(sh, si, sj)
+                                                for sh in range(self._.d + 1)
+                                                for si in range(self._.d + 1)
+                                                for sj in range(self._.d + 1)
+                                                if
+                                                (sh, si, sj) not in done[st]
+                                                and self._check_zero(sh, si,
+                                                                     sj, *st)
+                                                and all(
+                                                    s[sh, si, sj] == 0
+                                                    for s in r[st].values())}
+                                    if len(zero[st]) == 0:
+                                        check.discard(st)
+                                    else:
+                                        check.add(st)
+                        zero[t].discard(d)
+                        done[t].add(d)
+
     intersectionNumbers = pTable
     kreinParameters = qTable
     multiplicities = mTable
@@ -1388,13 +1784,17 @@ class PolyASParameters(ASParameters):
     """
     ARRAY = None
     DUAL_INTEGRAL = None
+    DUAL_MATRIX = None
     DUAL_PARAMETER = None
     DUAL_PARTS = None
     DUAL_SYMBOL = None
+    MATRIX = None
     OBJECT = None
+    OBJECT_LATEX = None
     PARAMETER = None
     PART = None
     PARTS = None
+    PART_SCHEME = None
     PTR = None
     QTR = None
     SYMBOL = None
@@ -1407,7 +1807,7 @@ class PolyASParameters(ASParameters):
         """
         self._init_storage()
         if isinstance(b, ASParameters):
-            ASParameters.__init__(self, b)
+            ASParameters.__init__(self, b, complement=False)
             if not isinstance(b, PolyASParameters) and \
                     (b._has("P") or b._has("Q")):
                 self._copy_cosineSequences(b)
@@ -1430,7 +1830,7 @@ class PolyASParameters(ASParameters):
                 "a values negative"
             self._.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)),
                                         ())))
-            ASParameters.__init__(self)
+            ASParameters.__init__(self, complement=False)
         self._.hash_parameters = self.parameterArray(factor=True, simplify=2)
         self._init_prefix()
 
@@ -1455,7 +1855,31 @@ class PolyASParameters(ASParameters):
         String representation.
         """
         return "Parameters of a %s with %s %s" % \
-            (self.OBJECT, self.ARRAY, self.format_parameterArray())
+            (self.OBJECT, self.ARRAY, self._format_parameterArray())
+
+    def _ascii_art_(self):
+        """
+        ASCII art representation.
+        """
+        return ascii_art("Parameters of a %s with %s " %
+                         (self.OBJECT, self.ARRAY),
+                         self._format_parameterArray_ascii())
+
+    def _check_family(self):
+        """
+        Check whether the association scheme has parameter array for which
+        nonexistence has been shown as a part of an infinite family.
+        """
+        for (s, (b, c)), (cond, ref) in families.items():
+            if s != self.SYMBOL or len(b) != self._.d:
+                continue
+            vars = tuple(set(sum(map(variables, b + c), ())))
+            sols = _solve([SR(l) == r for l, r
+                           in zip(self._.b[:-1] + self._.c[1:], b + c)],
+                          vars)
+            if any(checkConditions(cond, sol) for sol in sols
+                   if is_integral(sol)):
+                raise InfeasibleError(refs=ref)
 
     def _check_multiplicity(self, k, i):
         """
@@ -1481,6 +1905,18 @@ class PolyASParameters(ASParameters):
             sym = self.SYMBOL
         return ASParameters._check_parameter(h, i, j, v, integral=integral,
                                              name=name, sym=sym)
+
+    def _complement(self, k, p):
+        """
+        Return the parameters of the complement of a strongly regular graph.
+        """
+        assert self._.d == 2, "the complement is only defined for two classes"
+        if checkPos(self._.b[0] - self._.c[2]):
+            return self._get_class()((k[2], p[2, 2, 1]),
+                                     (Integer(1), p[1, 2, 2]),
+                                     complement=self)
+        else:
+            return ASParameters._complement(self)
 
     def _compute_cosineSequences(self, expand=False, factor=False,
                                  simplify=False):
@@ -1575,6 +2011,48 @@ class PolyASParameters(ASParameters):
                                     factor=factor, simplify=simplify)
         return self._.theta
 
+    def _compute_imprimitivity(self):
+        """
+        Determine whether the scheme is imprimitive
+        and compute the corresponding derived schemes.
+        """
+        m = floor(self._.d / 2)
+        self._.antipodal = all(full_simplify(
+            self._.b[i] - self._.c[self._.d - i]) == 0
+            for i in range(self._.d) if i != m)
+        self._.bipartite = all(a == 0 for a in self._.a)
+        if self._.antipodal:
+            try:
+                self._.r = integralize(
+                    1 + self._.b[m] / self._.c[self._.d - m])
+            except TypeError:
+                raise InfeasibleError("covering index not integral")
+            if self._.d >= 2:
+                if self._.d == 2:
+                    b = [self._.b[0]/(self._.b[1]+1)]
+                    c = [Integer(1)]
+                else:
+                    b = self._.b[:m]
+                    c = list(self._.c[1:m+1])
+                    if self._.d % 2 == 0:
+                        c[-1] *= self._.r
+                scheme = self._get_class()(tuple(b), tuple(c))
+            else:
+                scheme = ASParameters(P=[[1]])
+            self._.antipodal_subscheme = self.add_subscheme(scheme,
+                                                            self.ANTIPODAL)
+        if self._.bipartite:
+            if self._.d >= 2:
+                b = tuple(self._.b[2*i]*self._.b[2*i+1]/self._.c[2]
+                          for i in range(m))
+                c = tuple(self._.c[2*i+1]*self._.c[2*i+2]/self._.c[2]
+                          for i in range(m))
+                scheme = self._get_class()(b, c)
+            else:
+                scheme = ASParameters(P=[[1]])
+            self._.bipartite_subscheme = self.add_subscheme(scheme,
+                                                            self.BIPARTITE)
+
     def _compute_parameters(self, p, k):
         """
         Compute the intersection numbers or Krein parameters
@@ -1658,12 +2136,75 @@ class PolyASParameters(ASParameters):
                 p._.omega = self._.omega.transpose()
             elif not p._has("P") and not p._has("Q"):
                 p._.P = self.eigenmatrix()
+        p._.antipodal = self._.antipodal
+        p._.bipartite = self._.bipartite
+        if self._has("r"):
+            p._.r = self._.r
+        if self._has("antipodal_subscheme"):
+            p._.antipodal_subscheme = self._.antipodal_subscheme
+        if self._has("bipartite_subscheme"):
+            p._.bipartite_subscheme = self._.bipartite_subscheme
 
     def _copy_cosineSequences(self, P):
         """
         Obtain the cosine sequences from an eigenmatrix.
         """
         self._.omega = P / diagonal_matrix(P[0])
+
+    def _derived(self, derived=True):
+        """
+        Generate parameters sets of derived association schemes.
+        """
+        self.partSchemes()
+        for par, part, reorder in ASParameters._derived(self, derived):
+            yield (par, part, reorder)
+
+    def _format_parameterArray(self):
+        """
+        Return a string representation of the intersection array.
+        """
+        return "{%s; %s}" % tuple(', '.join(str(x) for x in l)
+                                  for l in self.parameterArray())
+
+    def _format_parameterArray_ascii(self):
+        """
+        Return an ASCII art representation of the intersection array.
+        """
+        art = ascii_art(*sum(zip([ascii_art(x)
+                                  for l in self.parameterArray() for x in l],
+                                 ([", "] * (self.classes()-1) + ["; "]) * 2),
+                             ())[:-1])
+        return ascii_left_curly_brace.character_art(art.height()) + art \
+            + ascii_right_curly_brace.character_art(art.height())
+
+    def _format_parameterArray_latex(self):
+        """
+        Return a LaTeX representation of the intersection array.
+        """
+        return r"\left\{%s; %s\right\}" % tuple(', '.join(latex(x)
+                                                          for x in l) for l
+                                                in self.parameterArray())
+
+    def _format_parameterArray_unicode(self):
+        """
+        Return a Unicode art representation of the intersection array.
+        """
+        art = unicode_art(*sum(zip([unicode_art(x)
+                                    for l in self.parameterArray()
+                                    for x in l],
+                                   ([", "] * (self.classes()-1)
+                                    + ["; "]) * 2), ())[:-1])
+        return unicode_left_curly_brace.character_art(art.height()) + art \
+            + unicode_right_curly_brace.character_art(art.height())
+
+    def _get_parameters(self):
+        """
+        Return the defining parameter set, if any.
+
+        Returns the intersection or Krein array
+        together with an appropriate symbol.
+        """
+        return (self.SYMBOL, self.parameterArray())
 
     def _init_array(self, b, c):
         """
@@ -1688,15 +2229,41 @@ class PolyASParameters(ASParameters):
         self._.n = sum(k)
         return k
 
-    def _subs(self, exp, p):
+    def _latex_(self):
+        """
+        LaTeX representation.
+        """
+        return LatexExpr(r"\text{Parameters of a %s with %s } %s" %
+                         (self.OBJECT_LATEX, self.ARRAY,
+                          self._format_parameterArray_latex()))
+
+    def _subs(self, exp, p, seen):
         """
         Substitute the given subexpressions in the parameters.
         """
-        if self._has("theta"):
-            p._.theta = tuple(subs(th, *exp) for th in self._.theta)
-        if self._has("omega"):
-            p._.omega = self._.omega.subs(*exp)
-        ASParameters._subs(self, exp, p)
+        p, new = ASParameters._subs(self, exp, p, seen)
+        if new:
+            if self._has("theta"):
+                p._.theta = tuple(subs(th, *exp) for th in self._.theta)
+            if self._has("omega"):
+                p._.omega = self._.omega.subs(*exp)
+        return (p, new)
+
+    def _unicode_art_(self):
+        """
+        Unicode art representation.
+        """
+        return unicode_art("Parameters of a %s with %s " %
+                           (self.OBJECT, self.ARRAY),
+                           self._format_parameterArray_unicode())
+
+    def antipodalSubscheme(self):
+        """
+        Return the parameters of the antipodal quotient
+        or Q-antipodal fraction.
+        """
+        assert self._.antipodal, "scheme not %s-antipodal" % self.MATRIX
+        return self._.antipodal_subscheme
 
     def aTable(self, full=False, expand=False, factor=False, simplify=False):
         """
@@ -1708,6 +2275,14 @@ class PolyASParameters(ASParameters):
         self._.a = rewriteTuple(self._.a, expand=expand, factor=factor,
                                 simplify=simplify)
         return tuple(self._.a) if full else self._.a[1:]
+
+    def bipartiteSubscheme(self):
+        """
+        Return the parameters of the bipartite half
+        or Q-antipodal quotient.
+        """
+        assert self._.bipartite, "scheme not %s-bipartite" % self.MATRIX
+        return self._.bipartite_subscheme
 
     def bTable(self, full=False, expand=False, factor=False, simplify=False):
         """
@@ -1762,12 +2337,18 @@ class PolyASParameters(ASParameters):
         """
         raise NotImplementedError
 
-    def format_parameterArray(self):
+    def is_antipodal(self):
         """
-        Return a string representation of the intersection array.
+        Check whether the association scheme is antipodal,
+        and return the covering index if it is.
         """
-        return "{%s; %s}" % tuple(', '.join(str(x) for x in l)
-                                  for l in self.parameterArray())
+        return self._.r if self._.antipodal else False
+
+    def is_bipartite(self):
+        """
+        Check whether the graph is bipartite.
+        """
+        return self._.bipartite
 
     def is_cyclic(self):
         """
@@ -1791,6 +2372,59 @@ class PolyASParameters(ASParameters):
                 return True
         return False
 
+    def merge(self, k, p, *args, **kargs):
+        """
+        Return parameters of a polynomial scheme obtained
+        by merging specified subconstituents or eigenspaces.
+        """
+        adj = set(args)
+        conditions = kargs.get("conditions", False)
+        assert all(i >= 1 and i <= self._.d for i in adj), \
+            "indices out of bounds"
+        if conditions:
+            eqs = []
+        else:
+            b = [sum(k[j] for j in adj)]
+            c = [1]
+        cur = adj
+        idx = set(range(1, self._.d+1)).difference(adj)
+        while len(idx) > 0:
+            nxt = {i for i in idx if any(checkPos(p[h, i, j])
+                                         for h in cur for j in adj)}
+            if len(nxt) == 0:
+                break
+            bi = {sum(p[h, i, j] for i in nxt for j in adj) for h in cur}
+            ci = {sum(p[h, i, j] for i in cur for j in adj) for h in nxt}
+            if conditions:
+                ib = iter(bi)
+                ic = iter(ci)
+                b0 = SR(next(ib))
+                c0 = SR(next(ic))
+                for bb in ib:
+                    eqs.append(b0 == bb)
+                for cc in ic:
+                    eqs.append(c0 == cc)
+            else:
+                if len(bi) > 1 or len(ci) > 1:
+                    raise IndexError("merging %s %s does not yield "
+                                     "a %s-polynomial scheme" %
+                                     (self.PARTS, sorted(adj), self.MATRIX))
+                b.append(next(iter(bi)))
+                c.append(next(iter(ci)))
+            cur = nxt
+            idx.difference_update(nxt)
+        if conditions:
+            return _solve(eqs, self._.vars)
+        else:
+            try:
+                pa = self._get_class()(b, c)
+            except (InfeasibleError, AssertionError) as ex:
+                raise InfeasibleError(ex, part=part)
+            self.add_subscheme(pa,
+                               self.PART_SCHEME %
+                               (list(args) if len(args) > 1 else args[0]))
+            return pa
+
     def parameterArray(self, expand=False, factor=False, simplify=False):
         """
         Return the intersection or Krein array of the association scheme
@@ -1798,6 +2432,21 @@ class PolyASParameters(ASParameters):
         """
         return (self.bTable(expand=expand, factor=factor, simplify=simplify),
                 self.cTable(expand=expand, factor=factor, simplify=simplify))
+
+    def partSchemes(self):
+        """
+        Return a dictionary of all parameter sets
+        obtained by taking all subsets of {1, ..., d}
+        as relations or eigenspaces.
+        """
+        out = {}
+        for idx in subsets(range(1, self._.d + 1)):
+            if len(idx) > 0 and len(idx) < self._.d and idx != [1]:
+                try:
+                    out[tuple(idx)] = self.merge(*idx)
+                except IndexError:
+                    pass
+        return out
 
     def reorderEigenvalues(self, *order):
         """

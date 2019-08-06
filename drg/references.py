@@ -342,6 +342,15 @@ refs = {
         "url": "http://dx.doi.org/10.1016/0024-3795(95)00152-H",
         "year": 1995
     },
+    "GSV18": {
+        "type": "unpublished",
+        "authors": [("Gavrilyuk", ("Alexander", "L.")),
+                    ("Suda", ("Sho", )), ("Vidali", (u"Janoš", ))],
+        "title": "On tight $4$-designs in Hamming association schemes ",
+        "note": "manuscript",
+        "url": "https://arxiv.org/abs/1809.07553",
+        "year": 2018
+    },
     "Haemers93": {
         "type": "incollection",
         "authors": [("Haemers", ("Willem", "H."))],
