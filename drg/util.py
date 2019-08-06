@@ -110,6 +110,13 @@ def _factor(exp):
     return exp
 
 
+def frac(a, b):
+    """
+    Return the fraction a/b.
+    """
+    return Integer(a)/Integer(b)
+
+
 def full_simplify(exp):
     """
     Fully simplify an expression.
