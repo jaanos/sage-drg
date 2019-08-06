@@ -187,7 +187,7 @@ class Array3D(SageObject):
     substitute = subs
 
 
-class Array4D:
+class Array4D(SageObject):
     """
     A four-dimensional array of expressions.
     """
@@ -268,6 +268,38 @@ class Array4D:
         """
         k1, k2, k3, k4 = key
         self.A[k1][k2, k3, k4] = value
+
+    def _ascii_art_(self):
+        """
+        ASCII art representation of the array.
+        """
+        l = len(repr(self.n - 1))
+        fmt = '%{}d'.format(l)
+        art = [("(%s, %s): " % (fmt % i, fmt % j), ascii_art(M))
+               for i, A in enumerate(self.A) for j, M in enumerate(A)]
+        return ascii_art("\n".join(i + "\n"*a.height() for i, a in art)) + \
+            ascii_art("\n".join(sum([a._matrix + [""] for i, a in art], [])))
+
+    def _latex_(self):
+        """
+        LaTeX representation of the array.
+        """
+        return LatexExpr(r"\begin{aligned}%s\end{aligned}" %
+                         "\n".join(r"(%d, %d): &\ %s \\" % (i, j, latex(M))
+                                   for i, A in enumerate(self.A)
+                                   for j, M in enumerate(A)))
+
+    def _unicode_art_(self):
+        """
+        Unicode art representation of the array.
+        """
+        l = len(repr(self.n - 1))
+        fmt = '%{}d'.format(l)
+        art = [("(%s, %s): " % (fmt % i, fmt % j), unicode_art(M))
+               for i, A in enumerate(self.A) for j, M in enumerate(A)]
+        return unicode_art("\n".join(i + "\n"*a.height() for i, a in art)) + \
+            unicode_art("\n".join(sum([a._matrix + [""] for i, a in art],
+                                      [])))
 
     def map(self, fun):
         """
