@@ -461,6 +461,14 @@ refs = {
         "url": "https://arxiv.org/abs/1809.10029",
         "year": 2018
     },
+    "Kodalen19": {
+        "type": "phdthesis",
+        "authors": [("Kodalen", ("Brian", "G."))],
+        "title": "Cometric association schemes",
+        "school": "Worcester Polytechnic Institute",
+        "url": "https://arxiv.org/abs/1905.06959",
+        "year": 2019
+    },
     "Koolen92": {
         "type": "article",
         "authors": [("Koolen", ("Jacobus", "H."))],

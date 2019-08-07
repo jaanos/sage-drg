@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from sage.functions.other import floor
 from sage.matrix.constructor import Matrix
 from sage.rings.integer import Integer
@@ -185,6 +186,18 @@ class QPolyParameters(PolyASParameters):
         Return the principal class of the object.
         """
         return QPolyParameters
+
+    def _init_schoenberg(self):
+        u"""
+        Initialize parameters for the computation of the limit
+        up to which Schönberg's theorem is tested.
+
+        The case of Q-bipartite schemes is treated specially.
+        """
+        if self._.bipartite:
+            return (self._.d - 1, 4 / self._.n)
+        else:
+            return PolyASParameters._init_schoenberg(self)
 
     def _is_trivial(self):
         """

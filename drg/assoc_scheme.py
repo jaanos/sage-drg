@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
 from copy import copy
 from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.combinat.set_partition import SetPartitions
+from sage.functions.orthogonal_polys import gegenbauer
 from sage.functions.other import floor
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
@@ -621,6 +623,13 @@ class ASParameters(SageObject):
         """
         self._.prefix = "v%x" % (hash(self) % Integer(2)**32)
 
+    def _init_schoenberg(self):
+        u"""
+        Initialize parameters for the computation of the limit
+        up to which Schönberg's theorem is tested.
+        """
+        return (self._.d, 1 / self._.n)
+
     def _init_storage(self):
         """
         Initialize parameter storage object.
@@ -658,6 +667,15 @@ class ASParameters(SageObject):
             order.append(j)
         return tuple(order)
 
+    def _is_trivial(self):
+        """
+        Check whether the association scheme is trivial
+        for the purposes of feasibility checking.
+
+        Returns ``True`` if the scheme has at most one class.
+        """
+        return self._.d <= 1
+
     @staticmethod
     def _merge_parts(parts, p, sym=None):
         """
@@ -684,15 +702,6 @@ class ASParameters(SageObject):
                             "inconsistent parameters for %s[%d, %d, %d]" %
                             (sym, h, i, j))
         return a
-
-    def _is_trivial(self):
-        """
-        Check whether the association scheme is trivial
-        for the purposes of feasibility checking.
-
-        Returns ``True`` if the scheme has at most one class.
-        """
-        return self._.d <= 1
 
     def _reorder(self, order):
         """
@@ -1450,8 +1459,8 @@ class ASParameters(SageObject):
         out = []
         r = range(self._.d+1)
         s = [[[Integer(1) if (h, i, j) in [(v, w, 0), (u, 0, w), (0, u, v)]
-               else symbol("%s_%d_%d_%d_%d_%d_%d" %
-                           (self._.prefix, u, v, w, h, i, j))
+               else SR.symbol("%s_%d_%d_%d_%d_%d_%d" %
+                              (self._.prefix, u, v, w, h, i, j))
                for j in r] for i in r] for h in r]
         for i in r:
             for j in r:
@@ -1651,6 +1660,54 @@ class ASParameters(SageObject):
                                              factor=factor,
                                              simplify=simplify)
         return ineqs
+
+    @check(2)
+    def check_schoenberg(self, expand=False, factor=False, simplify=False):
+        u"""
+        Check whether Schönberg's theorem holds.
+        """
+        if len(self._.vars) > 0:
+            return
+        if not self._has("P"):
+            self.eigenmatrix(expand=expand, factor=factor, simplify=simplify)
+        if not self._has("Q"):
+            self.dualEigenmatrix(expand=expand, factor=factor,
+                                 simplify=simplify)
+        if not self._has("q"):
+            self.kreinParameters(expand=expand, factor=factor,
+                                 simplify=simplify)
+        from .qpoly import QPolyParameters
+        if not isinstance(self, QPolyParameters) and self.is_qPolynomial():
+            order = next(iter(self._.qPolynomial_ordering))
+            try:
+                QPolyParameters(self, order=order).check_schoenberg()
+            except InfeasibleError as ex:
+                raise InfeasibleError(ex, part="Q-polynomial ordering %s" %
+                                      (order, ))
+            return
+        rr = range(self._.d + 1)
+        t = SR.symbol("__t")
+        d, n = self._init_schoenberg()
+        for i in rr:
+            if self._.Q[0, i] <= 2:
+                continue
+            L = Matrix(SR, [[self._.q[h, i, j] for j in rr] for h in rr]) \
+                / self._.Q[0, i]
+            lm = [(q / self._.Q[0, i])**2 for q, in self._.Q[:, i]]
+            l = 0
+            G = [1] * d
+            PP = [self._.P[0, j+1] * (1 + lm[j+1]) for j in range(d)]
+            while sum(g*pp for g, pp in zip(G, PP)) > n:
+                M = sum(integralize(2**l * c) * L**integralize(e) for c, e in
+                        gegenbauer(l, self._.Q[0, i]/2 - 1, t).coefficients(t))
+                if any(m < 0 for m, in M[:, 0]):
+                    raise InfeasibleError("Gegenbauer polynomial %d on L*[%d]"
+                                          " not nonnegative" % (l, i),
+                                          ("Kodalen19", "Corollary 3.8."))
+                l += 1
+                mu = l / (l + self._.Q[0, i] - 2)
+                for j in range(d):
+                    G[j] *= lm[j+1] if lm[j+1] * (1 + mu)**2 >= 4*mu else mu
 
     @check(3)
     def check_quadruples(self, solver=None):
