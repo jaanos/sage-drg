@@ -346,10 +346,19 @@ refs = {
         "type": "unpublished",
         "authors": [("Gavrilyuk", ("Alexander", "L.")),
                     ("Suda", ("Sho", )), ("Vidali", (u"Janoš", ))],
-        "title": "On tight $4$-designs in Hamming association schemes ",
+        "title": "On tight $4$-designs in Hamming association schemes",
         "note": "manuscript",
         "url": "https://arxiv.org/abs/1809.07553",
         "year": 2018
+    },
+    "GVW19": {
+        "type": "unpublished",
+        "authors": [("Gavrilyuk", ("Alexander", "L.")),
+                    ("Vidali", (u"Janoš", )), ("Williford", ("Jason", "S."))],
+        "title": "On few-class $Q$-polynomial association schemes: "
+                 "feasible parameters and nonexistence results",
+        "note": "manuscript",
+        "year": 2019
     },
     "Haemers93": {
         "type": "incollection",
