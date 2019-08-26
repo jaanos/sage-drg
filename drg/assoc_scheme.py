@@ -1691,19 +1691,26 @@ class ASParameters(SageObject):
         for i in rr:
             if self._.Q[0, i] <= 2:
                 continue
-            L = Matrix(SR, [[self._.q[h, i, j] for j in rr] for h in rr]) \
-                / self._.Q[0, i]
             lm = [(q / self._.Q[0, i])**2 for q, in self._.Q[:, i]]
+            if 1 in lm[1:d+1]:
+                continue
+            L = [identity_matrix(SR, self._.d + 1),
+                 Matrix(SR, [[self._.q[h, i, j] for j in rr] for h in rr])
+                 / self._.Q[0, i]]
             l = 0
             G = [1] * d
             PP = [self._.P[0, j+1] * (1 + lm[j+1]) for j in range(d)]
             while sum(g*pp for g, pp in zip(G, PP)) > n:
-                M = sum(integralize(2**l * c) * L**integralize(e) for c, e in
-                        gegenbauer(l, self._.Q[0, i]/2 - 1, t).coefficients(t))
-                if any(m < 0 for m, in M[:, 0]):
-                    raise InfeasibleError("Gegenbauer polynomial %d on L*[%d]"
-                                          " not nonnegative" % (l, i),
-                                          ("Kodalen19", "Corollary 3.8."))
+                if l >= 2:
+                    L.append(L[1] * L[-1])
+                    M = sum(integralize(2**l * c) * L[e] for c, e in
+                            gegenbauer(l, self._.Q[0, i]/2 - 1, t)
+                            .coefficients(t))
+                    if any(m < 0 for m, in M[:, 0]):
+                        raise InfeasibleError("Gegenbauer polynomial %d "
+                                              "on L*[%d] not nonnegative"
+                                              % (l, i),
+                                              ("Kodalen19", "Corollary 3.8."))
                 l += 1
                 mu = l / (l + self._.Q[0, i] - 2)
                 for j in range(d):
