@@ -358,6 +358,7 @@ refs = {
         "title": "On few-class $Q$-polynomial association schemes: "
                  "feasible parameters and nonexistence results",
         "note": "manuscript",
+        "url": "https://arxiv.org/abs/1908.10081",
         "year": 2019
     },
     "Haemers93": {
