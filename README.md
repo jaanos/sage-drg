@@ -43,11 +43,24 @@ Also includes a [conference presentation](jupyter/2019-07-04-fpsac/).
 
 ## Citing
 
-If you use `sage-drg` in your research, please cite both the manuscript and the repository:
+If you use `sage-drg` in your research, please cite both the paper and the software:
 
 * J. Vidali. Using symbolic computation to prove nonexistence of distance-regular graphs. *Electron. J. Combin.*, 25(4)#P4.21, 2018. [`http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21`](http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21).
 
 * J. Vidali. `jaanos/sage-drg`: `sage-drg` v0.9, 2019. [`https://github.com/jaanos/sage-drg/`](https://github.com/jaanos/sage-drg/), [`doi:10.5281/zenodo.1418409`](http://dx.doi.org/10.5281/zenodo.1418409).
+
+You may also want to cite other documents containing descriptions of features that were added since the above paper was written:
+
+* J. Vidali. Computing distance-regular graph and association scheme parameters in SageMath with `sage-drg`. *Sém. Lothar. Combin.* 82B#105, 2019. [`http://fpsac2019.fmf.uni-lj.si/resources/Proceedings/207.pdf`](http://fpsac2019.fmf.uni-lj.si/resources/Proceedings/207.pdf)
+    + support for general and *Q*-polynomial association schemes
+
+* A. L. Gavrilyuk, J. Vidali, J. S. Williford. On few-class *Q*-polynomial association schemes: feasible parameters and nonexistence results, 2019. [`arXiv:1908.10081`](http://arxiv.org/abs/1908.10081).
+    + triple intersection number solution finder and forbidden quadruples check
+    + support for quadruple intersection numbers
+
+### BibTeX
+
+The above citations are given here in BibTeX format.
 
 ```latex
 @article{v18a,
@@ -69,7 +82,26 @@ If you use `sage-drg` in your research, please cite both the manuscript and the 
              \href{http://dx.doi.org/10.5281/zenodo.1418409}{\texttt{10.5281/zenodo.1418409}}},
      YEAR = {2019},
 }
+
+@article{v19,
+    AUTHOR = {Vidali, Jano\v{s}},
+     TITLE = {Computing distance-regular graph and association scheme parameters in SageMath with {\tt sage-drg}},
+   JOURNAL = {Sém. Lothar. Combin.},
+  FJOURNAL = {Séminaire Lotharingien de Combinatoire},
+    VOLUME = {82B},
+     PAGES = {#105},
+      NOTE = {\url{http://fpsac2019.fmf.uni-lj.si/resources/Proceedings/207.pdf}},
+      YEAR = {2019},
+}
+
+@article{gvw19,
+    AUTHOR = {Gavrilyuk, Alexander L. and Vidali, Jano\v{s} and Williford, Jason S.},
+     TITLE = {On few-class $Q$-polynomial association schemes: feasible parameters and nonexistence results},
+      NOTE = {\href{http://arxiv.org/abs/1908.10081}{\texttt{arXiv:1908.10081}}},
+      YEAR = {2019},
+}
 ```
+### Other uses
 
 Additionally, `sage-drg` has been used in the following research:
 
