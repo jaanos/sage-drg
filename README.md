@@ -5,7 +5,7 @@
 [![Launch in Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=index.ipynb)
 
 A Sage package for checking the feasibility of distance-regular graph parameter sets.
-A more detailed description, along with some results, is available in a [manuscript](https://arxiv.org/abs/1803.10797) currently available on arXiv.
+A more detailed description, along with some results, is available in a [paper](http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21) published in the [Electronic Journal of Combinatorics](http://www.combinatorics.org/).
 
 
 ## Contents
