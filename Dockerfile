@@ -8,4 +8,3 @@ COPY --chown=sage:sage . ${HOME}
 RUN sage -pip install RISE
 RUN sage -jupyter nbextension install rise --py --sys-prefix
 RUN sage -jupyter nbextension enable rise --py --sys-prefix
-RUN cp jupyter/rise-patch/main.js sage/local/share/jupyter/nbextensions/rise/main.js
