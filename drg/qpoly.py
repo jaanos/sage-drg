@@ -2,15 +2,22 @@
 from sage.functions.other import floor
 from sage.matrix.constructor import Matrix
 from sage.rings.integer import Integer
+from sage.rings.rational_field import Q as QQ
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .assoc_scheme import ASParameters
+from .assoc_scheme import InfeasibleError
 from .assoc_scheme import PolyASParameters
+from .util import checklist
+from .util import checkNonneg
 from .util import is_constant
 from .util import pair_keep
 from .util import pair_swap
 from .util import subs
+
+check_QPolyParameters = []
+check = checklist(check_QPolyParameters, PolyASParameters._checklist)
 
 
 class QPolyParameters(PolyASParameters):
@@ -330,6 +337,40 @@ class QPolyParameters(PolyASParameters):
         return self._subs(exp, QPolyParameters(*[[subs(x, *exp) for x in l]
                                                  for l in self.kreinArray()]),
                           kargs.get("seen", {}))
+
+    @check(1)
+    def check_splittingField(self):
+        """
+        Verify that the splitting field of a Q-polynomial scheme
+        with principal multiplicity more than 2
+        is at most a degree 2 extension of the field of rational numbers.
+        """
+        if checkNonneg(2 - self._.m[1]):
+            return
+        if self._has("Q"):
+            M = self._.Q
+        elif self._has("P"):
+            M = self._.P
+        else:
+            M = self.dualEigenmatrix()
+        t = None
+        for r in M[1:, 1:]:
+            for v in r:
+                if len(SR(v).variables()) > 0:
+                    continue
+                mp = v.minpoly()
+                if mp.degree() == 1:
+                    continue
+                elif mp.degree() == 2:
+                    if t is None:
+                        t = QQ.extension(mp, 'a')['t'].gen()
+                        continue
+                    elif not mp(t).is_irreducible():
+                        continue
+                raise InfeasibleError("splitting field of Q-polynomial scheme"
+                                      " with m[1] > 2 is more than degree 2"
+                                      " extension of rationals",
+                                      ["CerzoSuzuki09", "MartinWilliford09"])
 
     antipodalFraction = PolyASParameters.antipodalSubscheme
     bipartiteQuotient = PolyASParameters.bipartiteSubscheme

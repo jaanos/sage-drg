@@ -156,6 +156,19 @@ refs = {
         "url": "https://ir.cwi.nl/pub/1817/1817A.pdf",
         "year": 1984
     },
+    "CerzoSuzuki09": {
+        "type": "article",
+        "authors": [("Cerzo", ("Diana", "R.")), ("Suzuki", ("Hiroshi", ))],
+        "title": "Non-existence of imprimitive $Q$-polynomial schemes "
+                 "of exceptional type with $d = 4$",
+        "journal": "European J. Combin.",
+        "fjournal": "European Journal of Combinatorics",
+        "volume": 30,
+        "number": 3,
+        "pages": (674, 681),
+        "url": "https://doi.org/10.1016/j.ejc.2008.07.014",
+        "year": 2009
+    },
     "Coolsaet95": {
         "type": "article",
         "authors": [("Coolsaet", ("Kris", ))],
@@ -554,6 +567,20 @@ refs = {
         "pages": (348, 350),
         "url": "https://doi.org/10.1134/S1064562417040123",
         "year": 2017
+    },
+    "MartinWilliford09": {
+        "type": "article",
+        "authors": [("Martin", ("William", "J.")),
+                    ("Williford", ("Jason", "S."))],
+        "title": "There are finitely many $Q$-polynomial association schemes "
+                 "with given first multiplicity at least three",
+        "journal": "European J. Combin.",
+        "fjournal": "European Journal of Combinatorics",
+        "volume": 30,
+        "number": 3,
+        "pages": (698, 704),
+        "url": "https://doi.org/10.1016/j.ejc.2008.07.009",
+        "year": 2009
     },
     "Metsch95": {
         "type": "article",
