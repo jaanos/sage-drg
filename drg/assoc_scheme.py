@@ -37,6 +37,7 @@ from .util import checkPos
 from .util import _factor
 from .util import full_simplify
 from .util import integralize
+from .util import is_divisible
 from .util import is_integral
 from .util import make_expressions
 from .util import nrows
@@ -192,6 +193,7 @@ class ASParameters(SageObject):
             self._compute_kTable()
             self._check_consistency(self._.p, self._.k,
                                     name=PARAMETER, sym=SYMBOL)
+            self.check_handshake()
         elif q is not None:
             self._.q = self._init_parameters(q, integral=False,
                                              name=DUAL_PARAMETER,
@@ -890,16 +892,23 @@ class ASParameters(SageObject):
             self.pTable()
         d = [self._.d, 0 if self.METRIC else self._.d]
         b = 2 if self._.bipartite else 1
+        odd = not is_divisible(self._.n, 2)
+        ndiv3 = not is_divisible(self._.n, 3)
         for i in range(1, self._.d + 1):
-            if not isinstance(self._.k[i], Integer) or self._.k[i] % 2 == 0:
-                continue
             d[1] += 2
-            for j in range(b, min(d) + 1, b):
-                if isinstance(self._.p[i, i, j], Integer) and \
-                        self._.p[i, i, j] % 2 == 1:
+            if not is_divisible(self._.k[i], 2):
+                if odd:
                     raise InfeasibleError("handshake lemma not satisfied "
-                                          "for relation %d in subconstituent"
-                                          " %d" % (j, i))
+                                          "for relation %d" % i)
+                for j in range(b, min(d) + 1, b):
+                    if not is_divisible(self._.p[i, i, j], 2):
+                        raise InfeasibleError("handshake lemma not satisfied"
+                                              " for relation %d in"
+                                              " subconstituent %d" % (j, i))
+            if ndiv3 and not is_divisible(self._.k[i], 3) \
+                    and not is_divisible(self._.p[i, i, i], 3):
+                raise InfeasibleError("handshake lemma not satisfied "
+                                      "for triangles in relation %d" % i)
 
     def classes(self):
         """

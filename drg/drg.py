@@ -803,13 +803,6 @@ class DRGParameters(PolyASParameters):
                         self._.k[self._.d] > self._.a[self._.d] + 1:
                     raise InfeasibleError("last subconstituent too small",
                                           ("BCN", "Prop. 5.6.3."))
-            if isinstance(self._.n, Integer) and \
-                    isinstance(self._.k[1], Integer) \
-                    and ((self._.n % 2 == 1 and self._.k[1] % 2 == 1) or
-                         (isinstance(self._.a[1], Integer) and
-                          self._.n % 3 != 0 and self._.a[1] % 3 != 0 and
-                          self._.k[1] % 3 != 0)):
-                raise InfeasibleError("handshake lemma not satisfied")
             c2one = self._.c[2] == 1
             case3 = self._.b[self._.d-1] == 1 and \
                 self._.a[self._.d] == self._.a[1] + 1

@@ -210,6 +210,19 @@ def is_integral(sol):
         return False
 
 
+def is_divisible(x, n):
+    """
+    Determine whether an expression could be divisible by an integer.
+    """
+    try:
+        x = integralize(x)
+        n = integralize(n)
+        return not isinstance(x, Integer) or not isinstance(n, Integer) \
+            or x % n == 0
+    except TypeError:
+        return True
+
+
 def is_squareSum(x):
     """
     Determine whether an integer is a sum of two squares.
