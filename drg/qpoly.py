@@ -7,8 +7,8 @@ from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .assoc_scheme import ASParameters
-from .assoc_scheme import InfeasibleError
 from .assoc_scheme import PolyASParameters
+from .aux import InfeasibleError
 from .util import checklist
 from .util import checkNonneg
 from .util import is_constant
