@@ -52,18 +52,21 @@ class DRGParameters(PolyASParameters):
     DUAL_INTEGRAL = False
     DUAL_MATRIX = "Q"
     DUAL_PARAMETER = "Krein parameter"
-    DUAL_PARTS = "multiplicities"
+    DUAL_PARTS = "eigenspaces"
+    DUAL_SIZES = "multiplicities"
     DUAL_SYMBOL = "q"
-    OBJECT = "distance-regular graph"
-    OBJECT_LATEX = "distance-regular graph"
     MATRIX = "P"
     METRIC = True
+    OBJECT = "distance-regular graph"
+    OBJECT_LATEX = "distance-regular graph"
     PARAMETER = "intersection number"
-    PART = "subconstituent"
-    PARTS = "subconstituents"
+    PART = "relation"
+    PARTS = "relations"
     PART_SCHEME = "distance-%s graph"
     PTR = pair_keep
     QTR = pair_swap
+    SIZE = "valency"
+    SIZES = "valencies"
     SYMBOL = "p"
 
     _checklist = check_DRGParameters
@@ -176,7 +179,7 @@ class DRGParameters(PolyASParameters):
 
     def _compute_kTable(self, expand=False, factor=False, simplify=False):
         """
-        Compute the sizes of the subconstituents.
+        Compute the valencies of the relations.
 
         Does nothing, as they are already computed
         for distance-regular graphs.
@@ -503,7 +506,7 @@ class DRGParameters(PolyASParameters):
     def merge(self, *args, **kargs):
         """
         Return parameters of a graph obtained
-        by merging specified subconstituents.
+        by merging specified relations.
         """
         return PolyASParameters.merge(self, self._.k, self._.p,
                                       *args, **kargs)
@@ -796,12 +799,12 @@ class DRGParameters(PolyASParameters):
                             > self._.k[self._.d])):
                         raise TypeError
                 except TypeError:
-                    raise InfeasibleError("last subconstituent too small",
+                    raise InfeasibleError("valency of last relation too small",
                                           ("BCN", "Prop. 5.6.1."))
                 if self._.d >= 3 and self._.k[1] == \
                         self._.k[self._.d] * (self._.k[self._.d] - 1) and \
                         self._.k[self._.d] > self._.a[self._.d] + 1:
-                    raise InfeasibleError("last subconstituent too small",
+                    raise InfeasibleError("valency of last relation too small",
                                           ("BCN", "Prop. 5.6.3."))
             c2one = self._.c[2] == 1
             case3 = self._.b[self._.d-1] == 1 and \
@@ -832,7 +835,7 @@ class DRGParameters(PolyASParameters):
                     try:
                         integralize(self._.k[self._.d] / (self._.a[1]+2))
                     except TypeError:
-                        raise InfeasibleError("last subconstituent a union "
+                        raise InfeasibleError("last relation a union "
                                               "of cliques, a[1]+2 does not "
                                               "divide k[d]",
                                               ("BCN", "Prop. 4.3.2.(iii)"))

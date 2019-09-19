@@ -32,7 +32,8 @@ class QPolyParameters(PolyASParameters):
     DUAL_INTEGRAL = True
     DUAL_MATRIX = "P"
     DUAL_PARAMETER = "intersection number"
-    DUAL_PARTS = "subconstituents"
+    DUAL_PARTS = "relations"
+    DUAL_SIZES = "valencies"
     DUAL_SYMBOL = "p"
     MATRIX = "Q"
     METRIC = False
@@ -40,11 +41,13 @@ class QPolyParameters(PolyASParameters):
     OBJECT_LATEX = "$Q$-polynomial association scheme"
     PARAMETER = "Krein parameter"
     PART = "eigenspace"
-    PARTS = "multiplicities"
+    PARTS = "eigenspaces"
     PART_SCHEME = "eigenspace-%s scheme"
-    SYMBOL = "q"
     PTR = pair_swap
     QTR = pair_keep
+    SIZE = "multiplicity"
+    SIZES = "multiplicities"
+    SYMBOL = "q"
 
     def __init__(self, b, c=None, order=None, complement=None):
         """
@@ -101,7 +104,7 @@ class QPolyParameters(PolyASParameters):
 
     def _compute_kTable(self, expand=False, factor=False, simplify=False):
         """
-        Compute the sizes of the subconstituents.
+        Compute the valencies of the relations.
         """
         if not self._has("k"):
             self._.k = self._compute_sizes(self._.m, expand=expand,

@@ -73,11 +73,11 @@ QDPERMS = [[0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3],
            [3, 1, 2, 0], [3, 2, 0, 1], [3, 2, 1, 0]]
 
 DUAL_PARAMETER = "Krein parameter"
-DUAL_PARTS = "multiplicities"
+DUAL_PARTS = "eigenspaces"
 DUAL_SYMBOL = "q"
 OBJECT = "association scheme"
 PARAMETER = "intersection number"
-PARTS = "subconstituents"
+PARTS = "relations"
 SYMBOL = "p"
 
 
@@ -431,7 +431,7 @@ class ASParameters(SageObject):
 
     def _compute_kTable(self, expand=False, factor=False, simplify=False):
         """
-        Compute the sizes of the subconstituents.
+        Compute the valencies of the relations.
         """
         if self._has("k"):
             return
@@ -443,7 +443,7 @@ class ASParameters(SageObject):
                                  simplify=simplify)
             k = tuple(integralize(x) for x in self._.P[0])
         assert k[0] == 1, \
-            "the size of the first subconstituent is not 1"
+            "the valency of the first relation is not 1"
         self._.k = k
 
     def _compute_multiplicities(self, expand=False, factor=False,
@@ -682,7 +682,7 @@ class ASParameters(SageObject):
     def _merge_parts(parts, p, sym=None):
         """
         Return a parameter set for a scheme
-        with merged subconstituents or eigenspaces.
+        with merged relations or eigenspaces.
         """
         d = len(parts)
         concat = sum(parts, [])
@@ -982,7 +982,7 @@ class ASParameters(SageObject):
 
     def kTable(self, expand=False, factor=False, simplify=False):
         """
-        Compute and return the sizes of the subconstituents.
+        Compute and return the valencies of the relations.
         """
         self._compute_kTable(expand=expand, factor=factor,
                              simplify=simplify)
@@ -1004,9 +1004,9 @@ class ASParameters(SageObject):
                            "Fusion scheme for eigenspaces %s" % parts)
         return par
 
-    def merge_subconstituents(self, *parts):
+    def merge_relations(self, *parts):
         """
-        Return a parameter set for a scheme with merged subconstituents.
+        Return a parameter set for a scheme with merged relations.
         """
         parts = [list(pt) for pt in parts]
         if parts[0] != [0]:
@@ -1015,7 +1015,7 @@ class ASParameters(SageObject):
             self.pTable()
         par = ASParameters(p=self._merge_parts(parts, self._.p, "p"))
         self.add_subscheme(par,
-                           "Fusion scheme for subconstituents %s" % parts)
+                           "Fusion scheme for relations %s" % parts)
         return par
 
     def mTable(self, expand=False, factor=False, simplify=False):
@@ -1344,7 +1344,7 @@ class ASParameters(SageObject):
 
     def subconstituent(self, h, compute=False, return_rels=False):
         """
-        Return parameters of the h-th subconstituent
+        Return parameters of the ``h``-th subconstituent
         if it is known to form an association scheme.
 
         If compute is set to True,
@@ -1844,6 +1844,7 @@ class ASParameters(SageObject):
 
     intersectionNumbers = pTable
     kreinParameters = qTable
+    merge_subconstituents = merge_relations
     multiplicities = mTable
     order = __len__
     valencies = kTable
@@ -1855,11 +1856,14 @@ class PolyASParameters(ASParameters):
     A class for parameters of a polynomial association scheme
     and checking their feasibility.
     """
+    ANTIPODAL = None
     ARRAY = None
+    BIPARTITE = None
     DUAL_INTEGRAL = None
     DUAL_MATRIX = None
     DUAL_PARAMETER = None
     DUAL_PARTS = None
+    DUAL_SIZES = None
     DUAL_SYMBOL = None
     MATRIX = None
     OBJECT = None
@@ -1870,6 +1874,8 @@ class PolyASParameters(ASParameters):
     PART_SCHEME = None
     PTR = None
     QTR = None
+    SIZE = None
+    SIZES = None
     SYMBOL = None
 
     def __init__(self, b, c=None, order=None):
@@ -1956,12 +1962,13 @@ class PolyASParameters(ASParameters):
 
     def _check_multiplicity(self, k, i):
         """
-        Check the valency of the i-th subconstituent or eigenspace.
+        Check the valency or multiplicity
+        of the ``i``-th relation or eigenspace.
         """
         for j in range(self._.d + 1):
             if self._.a[i] >= k[i]:
-                raise InfeasibleError("valency of %s %d too large" %
-                                      (self.PART, i))
+                raise InfeasibleError("%s of %s %d too large" %
+                                      (self.SIZE, self.PART, i))
 
     def _check_parameter(self, h, i, j, v, integral=False,
                          name=None, sym=None):
@@ -2174,7 +2181,7 @@ class PolyASParameters(ASParameters):
                        simplify=False):
         """
         Compute multiplicities of the eigenspaces
-        or sizes of the subconstituents.
+        or valencies of the relations.
         """
         if not self._has("omega"):
             self.cosineSequences(expand=expand, factor=factor,
@@ -2191,7 +2198,7 @@ class PolyASParameters(ASParameters):
                                            for s, om in zip(k, omg)))))
                           for omg in self._.omega)
             except TypeError:
-                raise InfeasibleError("%s not integral" % self.DUAL_PARTS)
+                raise InfeasibleError("%s not integral" % self.DUAL_SIZES)
         return m
 
     def _copy(self, p):
@@ -2288,7 +2295,7 @@ class PolyASParameters(ASParameters):
 
     def _init_multiplicities(self):
         """
-        Compute the sizes of subconstituents
+        Compute the valencies of relations
         or multiplicities of the eigenvalues
         from the intersection or Krein array.
         """
@@ -2298,7 +2305,7 @@ class PolyASParameters(ASParameters):
                 k.append(integralize(k[-1]*self._.b[i-1]/self._.c[i]))
                 self._check_multiplicity(k, i)
         except TypeError:
-            raise InfeasibleError("%s not integral" % self.PARTS)
+            raise InfeasibleError("%s not integral" % self.SIZES)
         self._.n = sum(k)
         return k
 
@@ -2383,7 +2390,7 @@ class PolyASParameters(ASParameters):
                         factor=False, simplify=False):
         """
         Compute and return the cosine sequences
-        for each subconstituent and eigenspace.
+        for each relation and eigenspace.
         """
         self._compute_cosineSequences(expand=expand, factor=factor,
                                       simplify=simplify)
@@ -2448,7 +2455,7 @@ class PolyASParameters(ASParameters):
     def merge(self, k, p, *args, **kargs):
         """
         Return parameters of a polynomial scheme obtained
-        by merging specified subconstituents or eigenspaces.
+        by merging specified relations or eigenspaces.
         """
         adj = set(args)
         conditions = kargs.get("conditions", False)
