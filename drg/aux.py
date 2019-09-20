@@ -53,12 +53,12 @@ class InfeasibleError(Exception):
             return "%s, %s" % (pap, thm)
 
 
-class Parameters:
+class Parameters(object):
     """
     An auxiliary class for storing the computed parameters.
     """
+
     d = None
-    vars = None
 
     def __init__(self, p):
         """

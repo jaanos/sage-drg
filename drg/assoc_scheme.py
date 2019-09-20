@@ -33,6 +33,7 @@ from .find import find
 from .nonex import checkConditions
 from .nonex import families
 from .nonex import sporadic
+from .view import Param
 from .util import checklist
 from .util import checkNonneg
 from .util import checkPos
@@ -91,6 +92,7 @@ class ASParameters(SageObject):
     A class for parameters of a general association scheme
     and checking their feasibility.
     """
+
     _ = None
     _checklist = check_ASParameters
     METRIC = False
@@ -504,7 +506,7 @@ class ASParameters(SageObject):
         """
         Check whether the given parameter is available.
         """
-        return name in self._.__dict__
+        return hasattr(self._, name)
 
     def _init_eigenmatrix(self, P):
         """
@@ -1534,6 +1536,62 @@ class ASParameters(SageObject):
         """
         return self._.vars
 
+    @Param
+    def d(self):
+        """
+        Access function for the number of classes of the scheme.
+        """
+        pass
+
+    @Param
+    def k(self):
+        """
+        Access function for the table of valencies of the scheme.
+        """
+        self.kTable()
+
+    @Param
+    def m(self):
+        """
+        Access function for the table of multiplicities of the scheme.
+        """
+        self.mTable()
+
+    @Param
+    def n(self):
+        """
+        Access function for the number of vertices of the scheme.
+        """
+        pass
+
+    @Param
+    def p(self):
+        """
+        Access function for the table of intersection numbers of the scheme.
+        """
+        self.pTable()
+
+    @Param
+    def P(self):
+        """
+        Access function for the eigenmatrix of the scheme.
+        """
+        self.eigenmatrix()
+
+    @Param
+    def q(self):
+        """
+        Access function for the table of Krein parameters of the scheme.
+        """
+        self.qTable()
+
+    @Param
+    def Q(self):
+        """
+        Access function for the dual eigenmatrix of the scheme.
+        """
+        self.dualEigenmatrix()
+
     @check(0)
     def check_sporadic(self):
         """
@@ -1776,6 +1834,7 @@ class PolyASParameters(ASParameters):
     A class for parameters of a polynomial association scheme
     and checking their feasibility.
     """
+
     ANTIPODAL = None
     ARRAY = None
     BIPARTITE = None
@@ -2484,5 +2543,47 @@ class PolyASParameters(ASParameters):
             del self._.theta
         if self._has("fsd"):
             del self._.fsd
+
+    @Param
+    def a(self):
+        """
+        Access function for the table of ``a`` parameters of the scheme.
+        """
+        pass
+
+    @Param
+    def b(self):
+        """
+        Access function for the table of ``b`` parameters of the scheme.
+        """
+        pass
+
+    @Param
+    def c(self):
+        """
+        Access function for the table of ``c`` parameters of the scheme.
+        """
+        pass
+
+    @Param
+    def omega(self):
+        """
+        Access function for the table of cosine sequences of the scheme.
+        """
+        self.cosineSequences()
+
+    @Param
+    def r(self):
+        """
+        Access function for the covering index of the scheme.
+        """
+        assert self._.antipodal, "scheme is not antipodal"
+
+    @Param
+    def theta(self):
+        """
+        Access function for the table of eigenvalues of the scheme.
+        """
+        self.eigenvalues()
 
     substitute = subs
