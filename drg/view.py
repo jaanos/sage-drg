@@ -45,7 +45,7 @@ getattribute = SageObject.__getattribute__
 setattribute = SageObject.__setattr__
 getitem = attr(operator.getitem)
 
-RICH_REPR = ('_ascii_art_', '_unicode_art_', '_latex_')
+OVERRIDE = ('_ascii_art_', '_unicode_art_', '_latex_', '_fetch')
 
 
 class View(SageObject):
@@ -61,11 +61,20 @@ class View(SageObject):
         """
         raise NotImplementedError("View can not be instantiated directly")
 
+    def __hash__(self):
+        """
+        Return the hash value.
+
+        Not implemented, as wrapped object might change.
+        """
+        raise TypeError("view is not hashable - "
+                        "use the _fetch() method to access the object")
+
     def __getattribute__(self, name):
         """
         Get a named attribute from an object.
         """
-        if name in RICH_REPR:
+        if name in OVERRIDE:
             return getattribute(self, name)
         try:
             val = getattribute(self, 'fetch')()
@@ -187,6 +196,13 @@ class View(SageObject):
         """
         return val.__ror__(other)
 
+    @attr
+    def _fetch(val):
+        """
+        Return unwrapped value.
+        """
+        return val
+
     def ascii_art_nonex(self):
         """
         ASCII art representation in case of nonexistent parameter.
@@ -236,7 +252,6 @@ class View(SageObject):
     __gt__ = attr(operator.gt)
     __ge__ = attr(operator.ge)
     __cmp__ = attr(cmp)
-    __hash__ = attr(hash)
     __nonzero__ = attr(bool)
     __unicode__ = attr(unicode)
     __setattr__ = attr(setattr)
