@@ -71,7 +71,7 @@ class View(SageObject):
             val = getattribute(self, 'fetch')()
         except getattribute(self, 'exception') as ex:
             if name == '__class__':
-                return None
+                return type(self)
             raise ex
         return getattr(val, name)
 
@@ -263,19 +263,19 @@ class View(SageObject):
     __or__ = attr(operator.or_)
     __div__ = attr(operator.div)
     __truediv__ = attr(operator.truediv)
-    __add__ = attr(operator.iadd)
-    __sub__ = attr(operator.isub)
-    __mul__ = attr(operator.imul)
-    __div__ = attr(operator.idiv)
-    __truediv__ = attr(operator.itruediv)
-    __floordiv__ = attr(operator.ifloordiv)
-    __mod__ = attr(operator.imod)
-    __pow__ = attr(operator.ipow)
-    __lshift__ = attr(operator.ilshift)
-    __rshift__ = attr(operator.irshift)
-    __and__ = attr(operator.iand)
-    __xor__ = attr(operator.ixor)
-    __or__ = attr(operator.ior)
+    __iadd__ = attr(operator.iadd)
+    __isub__ = attr(operator.isub)
+    __imul__ = attr(operator.imul)
+    __idiv__ = attr(operator.idiv)
+    __itruediv__ = attr(operator.itruediv)
+    __ifloordiv__ = attr(operator.ifloordiv)
+    __imod__ = attr(operator.imod)
+    __ipow__ = attr(operator.ipow)
+    __ilshift__ = attr(operator.ilshift)
+    __irshift__ = attr(operator.irshift)
+    __iand__ = attr(operator.iand)
+    __ixor__ = attr(operator.ixor)
+    __ior__ = attr(operator.ior)
     __neg__ = attr(operator.neg)
     __pos__ = attr(operator.pos)
     __abs__ = attr(abs)
@@ -314,7 +314,7 @@ class AttrView(View):
         """
         pars = getattribute(self, 'pars')
         fun = getattribute(self, 'fun')
-        return LatexExpr("attribute", fun.__name__, pars)
+        return ("attribute", fun.__name__, pars)
 
 
 class KeyView(View):
