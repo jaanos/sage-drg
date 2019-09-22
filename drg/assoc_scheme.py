@@ -2544,6 +2544,62 @@ class PolyASParameters(ASParameters):
         if self._has("fsd"):
             del self._.fsd
 
+    def terwilligerPolynomial(self, var='x', i=2, p_order=None, q_order=None):
+        """
+        Return the Terwilliger polynomial of a P- and Q-polynomial scheme.
+        """
+        assert self._.d >= 3, "diameter must be at least 3"
+        assert 2 <= i <= self._.d - 1, "i must be between 2 and d-1"
+        if not self._has("pPolynomial_ordering"):
+            assert self.is_pPolynomial(), "scheme is not P-polynomial"
+        if not self._has("qPolynomial_ordering"):
+            assert self.is_qPolynomial(), "scheme is not Q-polynomial"
+        if p_order is None:
+            p_order = self._.pPolynomial_ordering[0]
+        else:
+            p_order = self._reorder(p_order)
+            assert p_order in self._.pPolynomial_ordering, \
+                "specified order is not P-polynomial"
+        if q_order is None:
+            q_order = self._.qPolynomial_ordering[0]
+        else:
+            q_order = self._reorder(q_order)
+            assert q_order in self._.qPolynomial_ordering, \
+                "specified order is not Q-polynomial"
+        if not self._has("p"):
+            self.pTable()
+        if not self._has("Q"):
+            self.dualEigenmatrix()
+        x = SR.symbol(var) if isinstance(var, basestring) else var
+        ths = zip(*self._.Q[p_order, q_order[1]])[0] + (Integer(0), )
+        o = p_order[1]
+        z = zip(p_order[:-1], p_order[1:])
+        a = self._.p[o, o, o]
+        b = [self._.p[j, o, jj] for j, jj in z] + [Integer(0)]
+        c = [Integer(0)] + [self._.p[jj, o, j] for j, jj in z]
+        kk = (ths[1] - ths[2]) / (ths[0] - ths[2])
+        kp = kk * (ths[0] + ths[1] - ths[i-1] - ths[i]) / (ths[i-1] - ths[i])
+        km = kk * (ths[0] + ths[1] - ths[i] - ths[i+1]) / (ths[i] - ths[i+1])
+        t1p = (ths[1] - ths[i-1]) / (ths[i-1] - ths[i])
+        t1m = (ths[1] - ths[i]) / (ths[i] - ths[i+1])
+        tk = b[2] / b[1] * (ths[2] - ths[3]) / (ths[1] - ths[2])
+        tt = (ths[0] - ths[2]) / (ths[0] - ths[1])
+        t2p = b[i] / b[1] * (ths[i] - ths[i+1]) / (ths[i-1] - ths[i]) \
+            - kp * tk + t1p * tt
+        t2m = b[i+1] / b[1] * (ths[i+1] - ths[i+2]) / (ths[i] - ths[i+1]) \
+            - km * tk + t1m * tt
+        p1p = kp * (a - c[2]) + b[1] * (t1p - t2p)
+        p0p = kp * (b[0] - c[2]) - b[1] * t2p
+        s = b[i] + c[i+1] - b[0] - 1
+        p1m = -s - km * (a - c[2]) - b[1] * (t1m - t2m)
+        p0m = -s - km * (b[0] - c[2]) + b[1] * (t2m + 1)
+        ii = p_order[i]
+        bc = b[i] * c[i]
+        T = (self._.p[0, ii, ii] / (b[0] * b[1]))**2 * bc * \
+            ((-kp * x**2 + p1p * x + p0p) * (km * x**2 + p1m * x + p0m)
+             - bc * (x + 1)**2)
+        return T.expand()
+
     @Param
     def a(self):
         """
