@@ -32,7 +32,7 @@ refs = {
         "publisher": "Springer-Verlag",
         "address": "Berlin",
         "year": 1989,
-        "url": "http://dx.doi.org/10.1007/978-3-642-74341-2",
+        "url": "https://doi.org/10.1007/978-3-642-74341-2",
         "pages": ("xviii", 495)
     },
     "BCN94": {
@@ -70,7 +70,7 @@ refs = {
         "volume": 10,
         "number": 5,
         "pages": (413, 418),
-        "url": "http://dx.doi.org/10.1016/S0195-6698(89)80014-9",
+        "url": "https://doi.org/10.1016/S0195-6698(89)80014-9",
         "year": 1989
     },
     "BSW16": {
@@ -98,7 +98,7 @@ refs = {
         "volume": 103,
         "number": 4,
         "pages": (521, 531),
-        "url": "http://dx.doi.org/10.1016/j.jctb.2013.05.005",
+        "url": "https://doi.org/10.1016/j.jctb.2013.05.005",
         "year": 2013
     },
     "BMPRV18": {
@@ -114,7 +114,7 @@ refs = {
         "address": "Cham",
         "volume": (1, 2),
         "pages": (131, 134),
-        "url": "http://dx.doi.org/10.1007/978-3-319-72456-0_7",
+        "url": "https://doi.org/10.1007/978-3-319-72456-0_7",
         "year": 2018
     },
     "BPR17": {
@@ -127,7 +127,7 @@ refs = {
         "fjournal": "Linear Algebra and its Applications",
         "volume": 527,
         "pages": (53, 72),
-        "url": "http://dx.doi.org/10.1016/j.laa.2017.03.033",
+        "url": "https://doi.org/10.1016/j.laa.2017.03.033",
         "year": 2017
     },
     "BrouwerNeumaier81": {
@@ -179,7 +179,7 @@ refs = {
         "volume": 15,
         "number": 4,
         "pages": (481, 487),
-        "url": "http://dx.doi.org/10.1007/BF01192521",
+        "url": "https://doi.org/10.1007/BF01192521",
         "year": 1995
     },
     "Coolsaet05": {
@@ -192,7 +192,7 @@ refs = {
         "volume": 26,
         "number": 5,
         "pages": (709, 716),
-        "url": "http://dx.doi.org/10.1016/j.ejc.2004.04.005",
+        "url": "https://doi.org/10.1016/j.ejc.2004.04.005",
         "year": 2005
     },
     u"CoolsaetJurišić08": {
@@ -205,7 +205,7 @@ refs = {
         "volume": 115,
         "number": 6,
         "pages": (1086, 1095),
-        "url": "http://dx.doi.org/10.1016/j.jcta.2007.12.001",
+        "url": "https://doi.org/10.1016/j.jcta.2007.12.001",
         "year": 2008
     },
     "CJK08": {
@@ -219,7 +219,7 @@ refs = {
         "volume": 29,
         "number": 5,
         "pages": (1186, 1199),
-        "url": "http://dx.doi.org/10.1016/j.ejc.2007.06.010",
+        "url": "https://doi.org/10.1016/j.ejc.2007.06.010",
         "year": 2008
     },
     "DeBruynVanhove15": {
@@ -231,7 +231,7 @@ refs = {
         "volume": 35,
         "number": 2,
         "pages": (181, 208),
-        "url": "http://dx.doi.org/10.1007/s00493-014-3039-x",
+        "url": "https://doi.org/10.1007/s00493-014-3039-x",
         "year": 2015
     },
     "Degraer07": {
@@ -252,7 +252,7 @@ refs = {
         "volume": 2,
         "number": 1,
         "pages": (49, 56),
-        "url": "http://dx.doi.org/10.1023/A:1022476614402",
+        "url": "https://doi.org/10.1023/A:1022476614402",
         "year": 1993
     },
     "Fon-Der-Flaass93b": {
@@ -265,7 +265,7 @@ refs = {
         "volume": 14,
         "number": 5,
         "pages": (409, 412),
-        "url": "http://dx.doi.org/10.1006/eujc.1993.1045",
+        "url": "https://doi.org/10.1006/eujc.1993.1045",
         "year": 1993
     },
     "Gavrilyuk11": {
@@ -279,7 +279,7 @@ refs = {
         "volume": 84,
         "number": 1,
         "pages": (444, 446),
-        "url": "http://dx.doi.org/10.1134/S1064562411040028",
+        "url": "https://doi.org/10.1134/S1064562411040028",
         "year": 2011
     },
     "GavrilyukKoolen18": {
@@ -315,7 +315,7 @@ refs = {
         "volume": 65,
         "number": (1, 2),
         "pages": (49, 54),
-        "url": "http://dx.doi.org/10.1007/s10623-012-9695-1",
+        "url": "https://doi.org/10.1007/s10623-012-9695-1",
         "year": 2012
     },
     "GavrilyukMakhnev13": {
@@ -341,7 +341,7 @@ refs = {
         "volume": 56,
         "number": 2,
         "pages": (205, 238),
-        "url": "http://dx.doi.org/10.1016/0095-8956(92)90019-T",
+        "url": "https://doi.org/10.1016/0095-8956(92)90019-T",
         "year": 1992
     },
     "GodsilKoolen95": {
@@ -354,7 +354,7 @@ refs = {
         "fjournal": "Linear Algebra and its Applications",
         "volume": (226, 228),
         "pages": (273, 275),
-        "url": "http://dx.doi.org/10.1016/0024-3795(95)00152-H",
+        "url": "https://doi.org/10.1016/0024-3795(95)00152-H",
         "year": 1995
     },
     "GSV18": {
@@ -385,7 +385,7 @@ refs = {
         "publisher": "Cambridge Univ. Press",
         "address": "Cambridge",
         "pages": (175, 176),
-        "url": "http://dx.doi.org/10.1017/CBO9780511526336.018",
+        "url": "https://doi.org/10.1017/CBO9780511526336.018",
         "year": 1993
     },
     "HPW15": {
@@ -413,7 +413,7 @@ refs = {
         "volume": 11,
         "number": 4,
         "pages": (373, 379),
-        "url": "http://dx.doi.org/10.1016/S0195-6698(13)80139-4",
+        "url": "https://doi.org/10.1016/S0195-6698(13)80139-4",
         "year": 1990
     },
     u"JurišićKoolen00": {
@@ -450,7 +450,7 @@ refs = {
         "volume": 65,
         "number": (1, 2),
         "pages": (29, 47),
-        "url": "http://dx.doi.org/10.1007/s10623-012-9651-0",
+        "url": "https://doi.org/10.1007/s10623-012-9651-0",
         "year": 2012
     },
     u"JurišićVidali17": {
@@ -460,7 +460,7 @@ refs = {
         "journal": "J. Algebraic Combin.",
         "fjournal": "Journal of Algebraic Combinatorics",
         "note": "to be published",
-        "url": "http://dx.doi.org/10.1007/s10801-017-0765-3",
+        "url": "https://doi.org/10.1007/s10801-017-0765-3",
         "year": 2017
     },
     "JKT00": {
@@ -473,7 +473,7 @@ refs = {
         "volume": 12,
         "number": 2,
         "pages": (163, 197),
-        "url": "http://dx.doi.org/10.1023/A:1026544111089",
+        "url": "https://doi.org/10.1023/A:1026544111089",
         "year": 2000
     },
     "KIPR18": {
@@ -503,7 +503,7 @@ refs = {
         "volume": 13,
         "number": 1,
         "pages": (63, 64),
-        "url": "http://dx.doi.org/10.1016/0195-6698(92)90068-B",
+        "url": "https://doi.org/10.1016/0195-6698(92)90068-B",
         "year": 1992
     },
     "KoolenPark10": {
@@ -515,7 +515,7 @@ refs = {
         "volume": 31,
         "number": 8,
         "pages": (2064, 2073),
-        "url": "http://dx.doi.org/10.1016/j.ejc.2010.05.012",
+        "url": "https://doi.org/10.1016/j.ejc.2010.05.012",
         "year": 2010
     },
     "Lambeck93": {
@@ -527,7 +527,7 @@ refs = {
         "volume": 14,
         "number": 1,
         "pages": (53, 54),
-        "url": "http://dx.doi.org/10.1006/eujc.1993.1008",
+        "url": "https://doi.org/10.1006/eujc.1993.1008",
         "year": 1993
     },
     "LTS89": {
@@ -540,7 +540,7 @@ refs = {
         "volume": 41,
         "number": 6,
         "pages": (1117, 1123),
-        "url": "http://dx.doi.org/10.4153/CJM-1989-049-4",
+        "url": "https://doi.org/10.4153/CJM-1989-049-4",
         "year": 1989
     },
     "Makhnev02": {
@@ -553,7 +553,7 @@ refs = {
         "volume": 54,
         "number": 7,
         "pages": (941, 949),
-        "url": "http://dx.doi.org/10.1023/A:1022066425998",
+        "url": "https://doi.org/10.1023/A:1022066425998",
         "year": 2002
     },
     "Makhnev17": {
@@ -591,7 +591,7 @@ refs = {
         "volume": 16,
         "number": 6,
         "pages": (639, 644),
-        "url": "http://dx.doi.org/10.1016/0195-6698(95)90045-4",
+        "url": "https://doi.org/10.1016/0195-6698(95)90045-4",
         "year": 1995
     },
     "Metsch99": {
@@ -603,7 +603,7 @@ refs = {
         "volume": 20,
         "number": 4,
         "pages": (293, 306),
-        "url": "http://dx.doi.org/10.1006/eujc.1998.0280",
+        "url": "https://doi.org/10.1006/eujc.1998.0280",
         "year": 1999
     },
     "PanWeng09": {
@@ -628,7 +628,7 @@ refs = {
         "publisher": "European Mathematical Society (EMS)",
         "address": u"Zürich",
         "year": 2009,
-        "url": "http://dx.doi.org/10.4171/066",
+        "url": "https://doi.org/10.4171/066",
         "pages": ("xii", 287)
     },
     "Soicher17": {
@@ -642,7 +642,7 @@ refs = {
         "volume": 84,
         "number": (1, 2),
         "pages": (101, 108),
-        "url": "http://dx.doi.org/10.1007/s10623-016-0223-6",
+        "url": "https://doi.org/10.1007/s10623-016-0223-6",
         "year": 2017
     },
     "SumalrojWorawannotai16": {
@@ -670,7 +670,7 @@ refs = {
         "volume": 33,
         "number": 6,
         "pages": (1246, 1252),
-        "url": "http://dx.doi.org/10.1016/j.ejc.2012.02.005",
+        "url": "https://doi.org/10.1016/j.ejc.2012.02.005",
         "year": 2012
     },
     "Vidali18": {
@@ -696,7 +696,7 @@ refs = {
         "volume": 76,
         "number": 1,
         "pages": (93, 116),
-        "url": "http://dx.doi.org/10.1006/jctb.1998.1892",
+        "url": "https://doi.org/10.1006/jctb.1998.1892",
         "year": 1999
     },
     "WilbrinkBrouwer83": {
