@@ -7,7 +7,10 @@ from sage.functions.other import ceil
 from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.rings.integer import Integer
+from sage.rings.number_field.number_field import NumberField
+from sage.rings.polynomial.polynomial_element import Polynomial
 from sage.rings.real_mpfr import create_RealNumber
+from sage.sets.real_set import RealSet
 from sage.structure.element import Matrix as MatrixClass
 from sage.structure.factorization_integer import IntegerFactorization
 from sage.symbolic.expression import Expression
@@ -18,6 +21,16 @@ pair_keep = staticmethod(lambda i, j: (i, j))
 pair_swap = staticmethod(lambda i, j: (j, i))
 
 CHECK_LEVELS = 4
+
+INTERVAL = {(True, True): RealSet.closed,
+            (True, False): RealSet.closed_open,
+            (True, None): lambda l, u: RealSet.unbounded_above_closed(l),
+            (False, True): RealSet.open_closed,
+            (False, False): RealSet.open,
+            (False, None): lambda l, u: RealSet.unbounded_above_open(l),
+            (None, True): lambda l, u: RealSet.unbounded_below_closed(u),
+            (None, False): lambda l, u: RealSet.unbounded_below_open(u),
+            (None, None): lambda l, u: RealSet().complement()}
 
 
 def checklist(checks, inherit=None):
@@ -101,6 +114,13 @@ def checkPrimePower(exp):
         return False
 
 
+def eigenvalue_interval(l, u):
+    """
+    Return an appropriate interval for eigenvalues between ``l'' and ``u''.
+    """
+    return INTERVAL[is_algebraic_integer(l), is_algebraic_integer(u)](l, u)
+
+
 def _factor(exp):
     """
     Factor an expression.
@@ -135,7 +155,7 @@ def hard_ceiling(exp, val=None):
     try:
         exp = exp.n()
         if exp.is_integer():
-            exp += 1
+            exp = Integer(exp + 1)
         else:
             exp = exp.ceiling()
     except AttributeError:
@@ -154,7 +174,7 @@ def hard_floor(exp, val=None):
     try:
         exp = exp.n()
         if exp.is_integer():
-            exp -= 1
+            exp = Integer(exp - 1)
         else:
             exp = exp.floor()
     except AttributeError:
@@ -190,6 +210,17 @@ def integralize(exp):
         pass
     raise TypeError("attempt to coerce non-integer to Integer")
 
+
+def is_algebraic_integer(x):
+    """
+    Determine whether a number is an algebraic integer,
+    or whether the given minimal polynomial defines one.
+    """
+    if x is None:
+        return None
+    if not isinstance(x, Polynomial):
+        x = SR(x).minpoly()
+    return NumberField(x, names=('a', )).gen().is_integral()
 
 def is_constant(x):
     """

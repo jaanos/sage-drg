@@ -748,6 +748,9 @@ class ASParameters(SageObject):
         """
         Return a dictionary of parameters for subconstituents
         which are known to be association schemes.
+
+        If ``compute`` is set to ``True``,
+        then the relevant triple intersection numbers will be computed.
         """
         out = {}
         for i in range(self._.d+1):
@@ -1269,7 +1272,7 @@ class ASParameters(SageObject):
         Return parameters of the ``h``-th subconstituent
         if it is known to form an association scheme.
 
-        If compute is set to True,
+        If ``compute`` is set to ``True``,
         then the relevant triple intersection numbers will be computed.
         """
         if not self._has("p"):

@@ -324,7 +324,7 @@ class QPolyParameters(PolyASParameters):
         If the resulting scheme is Q-polynomial,
         the parameters are returned as such.
 
-        If compute is set to True,
+        If ``compute`` is set to ``True``,
         then the relevant triple intersection numbers will be computed.
         """
         if self._.subconstituents[h] is None:

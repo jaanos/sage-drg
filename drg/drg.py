@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+import operator
 from sage.combinat.q_analogues import q_int
+from sage.functions.generalized import sgn
 from sage.functions.log import log
 from sage.functions.other import ceil
 from sage.functions.other import sqrt
 from sage.matrix.constructor import Matrix
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
-from sage.rings.number_field.number_field import NumberField
+from sage.sets.real_set import RealSet
 from sage.symbolic.expression import Expression
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
@@ -23,10 +25,12 @@ from .util import checklist
 from .util import checkNonneg
 from .util import checkPos
 from .util import checkPrimePower
+from .util import eigenvalue_interval
 from .util import full_simplify
 from .util import hard_ceiling
 from .util import hard_floor
 from .util import integralize
+from .util import is_algebraic_integer
 from .util import is_constant
 from .util import is_squareSum
 from .util import pair_keep
@@ -185,6 +189,20 @@ class DRGParameters(PolyASParameters):
         for distance-regular graphs.
         """
         pass
+
+    def _compute_localEigenvalues(self):
+        """
+        Return the largest and smallest nontrivial eigenvalues
+        together with their indices
+        and the bounds for the nontrivial eigenvalues of the local graph.
+        """
+        th1, i = max((th, h) for h, th in enumerate(self._.theta)
+                     if th != self._.k[1])
+        thd, j = min((th, h) for h, th in enumerate(self._.theta)
+                     if th != self._.k[1])
+        bm = -1 - self._.b[1]/(th1+1)
+        bp = -1 - self._.b[1]/(thd+1)
+        return (th1, i, thd, j, bm, bp)
 
     def _compute_multiplicities(self, expand=False, factor=False,
                                 simplify=False):
@@ -493,12 +511,79 @@ class DRGParameters(PolyASParameters):
                 return True
         return False
 
+    def localEigenvalue_range(self, compute=False):
+        """
+        Return the range of possible eigenvalues of a local graph.
+
+        If ``compute`` is set to ``True``,
+        then the relevant triple intersection numbers will be computed.
+        """
+        if not self._has("theta"):
+            self.eigenvalues()
+        assert all(is_constant(th) for th in self._.theta), \
+            "eigenvalues not constant"
+        a = self._.a[1]
+        if a == 0:
+            return RealSet([0, 0])
+        elif a == 1:
+            return RealSet([-1, -1]) + RealSet([1, 1])
+        try:
+            loc = self.localGraph(compute=compute)
+            if isinstance(loc, DRGParameters):
+                return sum((RealSet([th, th]) for th in loc.eigenvalues()),
+                           RealSet())
+        except IndexError:
+            pass
+        _, _, _, _, bm, bp = self._compute_localEigenvalues()
+        interval = eigenvalue_interval(bm, bp)
+        if self.is_qPolynomial():
+            x = SR.symbol("__x")
+            s = None
+            for q_order in self._.qPolynomial_ordering:
+                for i in range(2, self._.d):
+                    p = self.terwilligerPolynomial(x, i=i, q_order=q_order)
+                    sign = sgn(p.coefficient(x**4))
+                    if s is None:
+                        s = sign
+                    elif s == sign:
+                        continue
+                    tint = RealSet()
+                    for sol in _solve(p >= 0, x):
+                        l = u = None
+                        for eq in sol:
+                            op = eq.operator()
+                            if op is operator.eq:
+                                l = u = eq.rhs()
+                            elif op is operator.ge:
+                                l = eq.rhs()
+                            elif op is operator.le:
+                                u = eq.rhs()
+                        tint += eigenvalue_interval(l, u)
+                    interval &= tint
+                    if s != sign:
+                        break
+        interval += RealSet([a, a])
+        ll = uu = None
+        for ii in interval:
+            l, u = ii.lower(), ii.upper()
+            if l == u:
+                continue
+            if ll is None:
+                ll, uu = l, u
+            else:
+                ll, uu = min(ll, l), max(uu, u)
+        if ll is not None:
+            m = hard_ceiling(ll)
+            if m == hard_floor(uu):
+                interval -= RealSet((m-1, m)) + RealSet((m, m+1))
+        return interval
+
     def localGraph(self, compute=False):
         """
         Return parameters of the local graph
         if it is known to be distance-regular.
 
-        If compute is set to True,
+        If ``compute`` is set to ``True``,
         then the relevant triple intersection numbers will be computed.
         """
         return self.subconstituent(1, compute=compute)
@@ -556,7 +641,7 @@ class DRGParameters(PolyASParameters):
         If the resulting scheme is P-polynomial,
         the parameters are returned as such.
 
-        If compute is set to True,
+        If ``compute`` is set to ``True``,
         then the relevant triple intersection numbers will be computed.
         """
         if h == 1:
@@ -1098,12 +1183,7 @@ class DRGParameters(PolyASParameters):
         if self._.d >= 3 and not self.match(((5, 2, 1), (1, 2, 5))) and \
                 all(is_constant(th) for th in self._.theta
                     if th != self._.k[1]):
-            th1, i = max((th, h) for h, th in enumerate(self._.theta)
-                         if th != self._.k[1])
-            thd, j = min((th, h) for h, th in enumerate(self._.theta)
-                         if th != self._.k[1])
-            bm = -1 - self._.b[1]/(th1+1)
-            bp = -1 - self._.b[1]/(thd+1)
+            th1, i, thd, j, bm, bp = self._compute_localEigenvalues()
             if (bm > -2 and self._.c[2] != 1) or \
                     (bp < 1 and self._.a[1] != 0):
                 raise InfeasibleError("local eigenvalues "
@@ -1176,10 +1256,9 @@ class DRGParameters(PolyASParameters):
             if len(r) == 0:
                 return
             p = next(iter(r)).minpoly()
-            a = NumberField(p, names=('a', )).gen()
             if len(r) == 1 or p.degree() != 2 or \
                     len({t.minpoly() for t in r}) == 2 or \
-                    not a.is_integral():
+                    not is_algebraic_integer(p):
                 m, k = min((self._.m[h], h) for h in s)
                 reason, ref = d[k]
                 raise InfeasibleError(reason + ", b[1]/(theta[1]+1) and "
