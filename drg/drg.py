@@ -40,6 +40,14 @@ from .util import subs
 from .util import symbol
 from .util import variables
 
+PENTAGON = ((2, 1), (1, 1))
+PETERSEN = ((3, 2), (1, 1))
+TRIANGULAR7_COMPL = ((10, 6), (1, 6))
+ICOSAHEDRON = ((5, 2, 1), (1, 2, 5))
+DORO5 = ((10, 6, 4), (1, 2, 5))
+GOSSET = ((27, 10, 1), (1, 10, 27))
+CONWAY_SMITH = ((10, 6, 4, 1), (1, 2, 6, 10))
+
 check_DRGParameters = []
 check = checklist(check_DRGParameters, PolyASParameters._checklist)
 
@@ -490,8 +498,7 @@ class DRGParameters(PolyASParameters):
         """
         Check whether the graph can be locally Petersen.
         """
-        return self.match(((10, 6), (1, 6)), ((10, 6, 4), (1, 2, 5)),
-                          ((10, 6, 4, 1), (1, 2, 6, 10)))
+        return self.match(TRIANGULAR7_COMPL, DORO5, CONWAY_SMITH)
 
     def is_weng_feasible(self):
         """
@@ -1130,8 +1137,7 @@ class DRGParameters(PolyASParameters):
                                       ("KoolenPark10", "Thm. 3."))
             elif v == 0:
                 if small and not self.is_locallyPetersen() and \
-                        not self.match(((2, 1), (1, 1)), ((3, 2), (1, 1)),
-                                       ((5, 2, 1), (1, 2, 5))):
+                        not self.match(PENTAGON, PETERSEN, ICOSAHEDRON):
                     raise InfeasibleError("too small for a "
                                           "Terwilliger graph",
                                           ("BCN", "Cor. 1.16.6."))
@@ -1166,7 +1172,7 @@ class DRGParameters(PolyASParameters):
                          self.is_locallyPetersen() or
                          self.is_johnson() or
                          self.is_halfCube() or
-                         self.match(((27, 10, 1), (1, 10, 27)))):
+                         self.match(GOSSET)):
                 raise InfeasibleError("theta[1] = b[1]-1, "
                                       "not in characterization",
                                       ("BCN", "Thm. 4.4.11."))
@@ -1180,7 +1186,7 @@ class DRGParameters(PolyASParameters):
         """
         if not self._has("m"):
             self.multiplicities()
-        if self._.d >= 3 and not self.match(((5, 2, 1), (1, 2, 5))) and \
+        if self._.d >= 3 and not self.match(ICOSAHEDRON) and \
                 all(is_constant(th) for th in self._.theta
                     if th != self._.k[1]):
             th1, i, thd, j, bm, bp = self._compute_localEigenvalues()
