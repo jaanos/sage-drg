@@ -16,6 +16,7 @@ from .array3d import Array3D
 from .assoc_scheme import ASParameters
 from .assoc_scheme import PolyASParameters
 from .aux import InfeasibleError
+from .find import find
 from .nonex import checkConditions
 from .nonex import classicalFamilies
 from .nonex import families
@@ -518,7 +519,8 @@ class DRGParameters(PolyASParameters):
                 return True
         return False
 
-    def localEigenvalue_range(self, compute=False):
+    def localEigenvalue_range(self, compute=False, b=None,
+                              return_refs=False):
         """
         Return the range of possible eigenvalues of a local graph.
 
@@ -529,21 +531,29 @@ class DRGParameters(PolyASParameters):
             self.eigenvalues()
         assert all(is_constant(th) for th in self._.theta), \
             "eigenvalues not constant"
+        refs = []
+        out = lambda ii: (ii, refs) if return_refs else ii
         a = self._.a[1]
         if a == 0:
-            return RealSet([0, 0])
+            return out(RealSet([0, 0]))
         elif a == 1:
-            return RealSet([-1, -1]) + RealSet([1, 1])
+            return out(RealSet([-1, -1]) + RealSet([1, 1]))
+        check_local = b is None
         try:
-            loc = self.localGraph(compute=compute)
+            loc = self.localGraph(compute=compute, check_local=check_local)
             if isinstance(loc, DRGParameters):
-                return sum((RealSet([th, th]) for th in loc.eigenvalues()),
-                           RealSet())
+                interval = sum((RealSet([th, th]) for th in loc.eigenvalues()
+                                if th != a), RealSet())
+            else:
+                raise IndexError
         except IndexError:
-            pass
-        _, _, _, _, bm, bp = self._compute_localEigenvalues()
-        interval = eigenvalue_interval(bm, bp)
-        if self.is_qPolynomial():
+            if check_local:
+                _, _, _, _, bm, bp = self._compute_localEigenvalues()
+            else:
+                bm, bp = b
+            interval = eigenvalue_interval(bm, bp) & RealSet([-a, a])
+        orig = interval
+        if self._.d >= 3 and self.is_qPolynomial():
             x = SR.symbol("__x")
             s = None
             for q_order in self._.qPolynomial_ordering:
@@ -569,12 +579,24 @@ class DRGParameters(PolyASParameters):
                     interval &= tint
                     if s != sign:
                         break
+            if interval != orig:
+                refs.append(("GavrilyukKoolen16", "Thm. 4.2."))
         interval += RealSet([a, a])
         ll = uu = None
         for ii in interval:
             l, u = ii.lower(), ii.upper()
+            if ii.lower_closed():
+                roots = [r for r, _ in SR(l).minpoly().roots(SR)]
+                if not all(r in interval for r in roots):
+                    interval -= sum((RealSet([r, r]) for r in roots
+                                     if r.is_real()), RealSet())
             if l == u:
                 continue
+            if ii.upper_closed():
+                roots = [r for r, _ in SR(u).minpoly().roots(SR)]
+                if not all(r in interval for r in roots):
+                    interval -= sum((RealSet([r, r]) for r in roots
+                                     if r.is_real()), RealSet())
             if ll is None:
                 ll, uu = l, u
             else:
@@ -583,9 +605,10 @@ class DRGParameters(PolyASParameters):
             m = hard_ceiling(ll)
             if m == hard_floor(uu):
                 interval -= RealSet((m-1, m)) + RealSet((m, m+1))
-        return interval
+                refs.append(("GavrilyukKoolen19", "cf. Clm. 4.3."))
+        return out(interval)
 
-    def localGraph(self, compute=False):
+    def localGraph(self, compute=False, check_local=True):
         """
         Return parameters of the local graph
         if it is known to be distance-regular.
@@ -593,7 +616,8 @@ class DRGParameters(PolyASParameters):
         If ``compute`` is set to ``True``,
         then the relevant triple intersection numbers will be computed.
         """
-        return self.subconstituent(1, compute=compute)
+        return self.subconstituent(1, compute=compute,
+                                   check_local=check_local)
 
     def merge(self, *args, **kargs):
         """
@@ -641,7 +665,7 @@ class DRGParameters(PolyASParameters):
         for h in range(self._.d + 1):
             self.distancePartition(h).show(**options)
 
-    def subconstituent(self, h, compute=False):
+    def subconstituent(self, h, compute=False, check_local=True):
         """
         Return parameters of the h-th subconstituent
         if it is known to form an association scheme.
@@ -654,8 +678,8 @@ class DRGParameters(PolyASParameters):
         if h == 1:
             if self._.subconstituents[h] is None:
                 self.check_2graph()
-            if self._.subconstituents[h] is None:
-                self.check_localEigenvalues()
+            if self._.subconstituents[h] is None and check_local:
+                self.check_localEigenvalues(check_range=False)
         if self._.subconstituents[h] is None:
             subc, rels = PolyASParameters.subconstituent(self, h,
                                                          compute=compute,
@@ -1178,11 +1202,14 @@ class DRGParameters(PolyASParameters):
                                       ("BCN", "Thm. 4.4.11."))
 
     @check(1)
-    def check_localEigenvalues(self):
+    def check_localEigenvalues(self, compute=False, check_range=True):
         """
         For a graph of diameter at least 3,
         check whether the eigenvalues of the local graph
         are in the allowed range.
+
+        If ``compute`` is set to ``True``,
+        then the relevant triple intersection numbers will be computed.
         """
         if not self._has("m"):
             self.multiplicities()
@@ -1259,17 +1286,89 @@ class DRGParameters(PolyASParameters):
                     integralize(t)
                 except TypeError:
                     r.append(t)
-            if len(r) == 0:
+            if len(r) != 0:
+                p = next(iter(r)).minpoly()
+                if len(r) == 1 or p.degree() != 2 or \
+                        len({t.minpoly() for t in r}) == 2 or \
+                        not is_algebraic_integer(p):
+                    m, k = min((self._.m[h], h) for h in s)
+                    reason, ref = d[k]
+                    raise InfeasibleError(reason + ", b[1]/(theta[1]+1) and "
+                                          "b[1]/(theta[d]+1) not integers "
+                                          "or algebraic conjugates", ref)
+            if not check_range:
                 return
-            p = next(iter(r)).minpoly()
-            if len(r) == 1 or p.degree() != 2 or \
-                    len({t.minpoly() for t in r}) == 2 or \
-                    not is_algebraic_integer(p):
-                m, k = min((self._.m[h], h) for h in s)
-                reason, ref = d[k]
-                raise InfeasibleError(reason + ", b[1]/(theta[1]+1) and "
-                                      "b[1]/(theta[d]+1) not integers "
-                                      "or algebraic conjugates", ref)
+            rng, refs = self.localEigenvalue_range(compute=compute,
+                                                   b=(bm, bp),
+                                                   return_refs=True)
+            c = rng.cardinality()
+            if rng.sup() <= bp or self._.subconstituents[1] is not None or \
+                    not isinstance(c, Integer):
+                return
+            if c == 2 and -1 not in rng:
+                raise InfeasibleError("local graph has single nontrivial "
+                                      "eigenvalue distinct from -1", refs)
+            ths = {SR.symbol("__m%d" % i): ii.lower()
+                   for i, ii in enumerate(rng) if ii.lower() != self._.a[1]}
+            exps = {m: (0, self._.k[1] - 1) for m in ths}
+            conds = [sum(m for m in ths) == self._.k[1] - 1,
+                     sum(a*m for m, a in ths.items()) == -self._.a[1],
+                     sum(a**2 * m for m, a in ths.items())
+                        == (self._.k[1] - self._.a[1]) * self._.a[1]]
+            lvl = 0
+            reason = None
+            ref = None
+            for sol in find(exps, ths.keys(), conds):
+                sp = {ths[eq.lhs()]: eq.rhs()
+                      for eq in sol if eq.rhs() != 0}
+                lsp = len(sp)
+                if lsp <= 3:
+                    q = max(p ** (e+1 if p == 2 else e)
+                            for p, e in Integer(self._.k[1]).factor())
+                    thi = {th: th**2 * m for th, m in sp.items()}
+                    thi[self._.a[1]] = self._.a[1]**2
+                    for i in range(3, q+1):
+                        for th in thi:
+                            thi[th] *= th
+                        tr = sum(thi.values())
+                        if Integer(tr) % \
+                                Integer(self._.k[1] * (1 + i%2)) != 0:
+                            if lvl < 1:
+                                lvl = 1
+                                reason = "local graph has nonintegral " \
+                                    "number of closed %d-walks " \
+                                    "through a vertex" % i
+                                ref = "vanDam95"
+                            break
+                        if i == 4:
+                            xi = Integer(tr / self._.k[1] -
+                                         self._.a[1] * (2*self._.a[1] - 1))
+                            if xi % 2 != 0:
+                                if lvl < 2:
+                                    lvl = 2
+                                    reason = "local graph has nonintegral " \
+                                        "number of quadrangles " \
+                                        "through a vertex"
+                                    ref = "vanDam95"
+                                break
+                            if lsp == 2 and xi % Integer(self._.a[1]) != 0:
+                                if lvl < 3:
+                                    lvl = 3
+                                    reason = "local graph has nonintegral " \
+                                        "number of quadrangles " \
+                                        "through an edge"
+                                    ref = ("vanDam95", "Lem. 3.1.")
+                                break
+                    else:
+                        return
+                else:
+                    return
+            if reason is None:
+                reason = "no solution for the multiplicities " \
+                    "of the eigenvalues of the local graph"
+            else:
+                refs.append(ref)
+            raise InfeasibleError(reason, refs)
 
     antipodalQuotient = PolyASParameters.antipodalSubscheme
     bipartiteHalf = PolyASParameters.bipartiteSubscheme

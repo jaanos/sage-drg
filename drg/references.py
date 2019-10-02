@@ -222,6 +222,17 @@ refs = {
         "url": "https://doi.org/10.1016/j.ejc.2007.06.010",
         "year": 2008
     },
+    "vanDam95": {
+        "type": "article",
+        "authors": [("van Dam", ("Edwin", "R."))],
+        "title": "Regular graphs with four eigenvalues",
+        "journal": "Linear Algebra Appl.",
+        "fjournal": "Linear Algebra and its Applications",
+        "volume": (226, 228),
+        "pages": (139, 162),
+        "url": "https://doi.org/10.1016/0024-3795(94)00346-F",
+        "year": 1995
+    },
     "DeBruynVanhove15": {
         "type": "article",
         "authors": [("De Bruyn", ("Bart", )), ("Vanhove", (u"Frédéric", ))],
@@ -282,6 +293,20 @@ refs = {
         "url": "https://doi.org/10.1134/S1064562411040028",
         "year": 2011
     },
+    "GavrilyukKoolen16": {
+        "type": "article",
+        "authors": [("Gavrilyuk", ("Alexander", "L.")),
+                    ("Koolen", ("Jack", "H."))],
+        "title": "The Terwilliger polynomial of a $Q$-polynomial "
+                 "distance-regular graph and its application "
+                 "to pseudo-partition graphs",
+        "journal": "Linear Algebra Appl.",
+        "fjournal": "Linear Algebra and its Applications",
+        "volume": 466,
+        "pages": (117, 140),
+        "url": "https://doi.org/10.1016/j.laa.2014.09.048",
+        "year": 2016
+    },
     "GavrilyukKoolen18": {
         "type": "unpublished",
         "authors": [("Gavrilyuk", ("Alexander", "L.")),
@@ -290,6 +315,20 @@ refs = {
         "note": "manuscript",
         "url": "https://arxiv.org/abs/1806.02652",
         "year": 2018
+    },
+    "GavrilyukKoolen19": {
+        "type": "article",
+        "authors": [("Gavrilyuk", ("Alexander", "L.")),
+                    ("Koolen", ("Jack", "H."))],
+        "title": "A characterization of the graphs of bilinear "
+                r"$(d \times d)$-forms over $\mathbb{F}_2$",
+        "journal": "Combinatorica",
+        "fjournal": "Combinatorica",
+        "volume": 39,
+        "number": 2,
+        "pages": (289, 321),
+        "url": "https://doi.org/10.1007/s00493-017-3573-4",
+        "year": 2019
     },
     "GavrilyukMakhnev05": {
         "type": "article",
