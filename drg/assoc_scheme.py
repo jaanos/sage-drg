@@ -2137,7 +2137,7 @@ class PolyASParameters(ASParameters):
                             + (self._.a[h] - self._.a[i-1]) * p[h, i-1, j]
                         ) / self._.c[i])))
                 p[self._.d, i, j] = self._check_parameter(
-                    h, i, j,
+                    self._.d, i, j,
                     _simplify(_expand((
                         self._.c[self._.d] * p[self._.d-1, i-1, j]
                         - self._.b[i-2] * p[self._.d, i-2, j]
