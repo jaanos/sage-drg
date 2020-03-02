@@ -34,7 +34,7 @@ def checklist(checks, inherit=None):
 
     def check(level):
         def decorator(fun):
-            name = re.match(r'^check_(.*)', fun.func_name)
+            name = re.match(r'^check_(.*)', fun.__name__)
             if name is None:
                 raise ValueError(
                     "a checking function should begin with check_")
