@@ -379,7 +379,7 @@ class ASParameters(SageObject):
         for i in range(1, self._.d + 1):
             S = sorted(([k, m, V.subspace_with_basis(b)]
                         for k, b, m in B[i].eigenvectors_right()),
-                       key=lambda (k, v, b): CoefficientList(k, self._.vars),
+                       key=lambda kvb: CoefficientList(kvb[0], self._.vars),
                        reverse=True)
             j = 0
             while j < len(R):
