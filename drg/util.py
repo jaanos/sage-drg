@@ -1,5 +1,6 @@
 import operator
 import re
+import six
 from sage.arith.misc import factor as factorize
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
@@ -342,6 +343,17 @@ def symbol(a=None):
     if isinstance(a, Expression):
         return a
     return SR.symbol(a)
+
+
+def utf8(msg):
+    """
+    UTF-8 encode the string.
+
+    Provided for Python 2/3 compatibility.
+    """
+    if six.PY2 and isinstance(msg, unicode):
+        msg = msg.encode("utf-8")
+    return msg
 
 
 def variables(exp):

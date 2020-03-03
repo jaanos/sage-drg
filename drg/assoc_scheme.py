@@ -47,6 +47,7 @@ from .util import rewriteTuple
 from .util import sort_solution
 from .util import subs
 from .util import symbol
+from .util import utf8
 from .util import variables
 
 TPERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2],
@@ -118,10 +119,7 @@ class InfeasibleError(Exception):
         if len(self.refs) > 0:
             msg.append("nonexistence by %s" %
                        "; ".join(self.formatRef(ref) for ref in self.refs))
-        msg = ": ".join(msg)
-        if isinstance(msg, unicode):
-            msg = msg.encode("utf-8")
-        self.args = (msg, )
+        self.args = (utf8(": ".join(msg)), )
 
     @staticmethod
     def formatRef(ref):
