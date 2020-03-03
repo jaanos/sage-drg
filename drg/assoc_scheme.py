@@ -2058,7 +2058,7 @@ class PolyASParameters(ASParameters):
                                      for i in range(self._.d + 1))
             else:
                 B = Matrix(SR, [M[1] for M in p])
-                self._.theta = B.eigenvalues()
+                self._.theta = list(B.eigenvalues())
                 try:
                     self._.theta.sort(
                         key=lambda x: CoefficientList(x, self._.vars),
