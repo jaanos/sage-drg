@@ -247,7 +247,7 @@ def matrixMap(fun, M):
     Replace each value in matrix ``M`` by its image under ``fun``.
     """
     for i in range(M.nrows()):
-        M[i] = map(fun, M[i])
+        M[i] = tuple(map(fun, M[i]))
 
 
 def nrows(M):
