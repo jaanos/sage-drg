@@ -1790,9 +1790,12 @@ class ASParameters(SageObject):
                                     continue
                                 seen.add((st, sd))
                                 l = len(r[st])
+                                delete = set()
                                 for sol, s in r[st].items():
                                     if s[sd] != 0:
-                                        del r[st][sol]
+                                        delete.add(sol)
+                                for sol in delete:
+                                    del r[st][sol]
                                 try:
                                     g[st].send((False,
                                                 self._.triple[st][sd] == 0))
