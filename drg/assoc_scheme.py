@@ -953,8 +953,8 @@ class ASParameters(SageObject):
         if not self._has("p"):
             self.pTable()
         if not self._has("pPolynomial_ordering"):
-            pPoly = filter(None, (self._is_polynomial(self._.p, i)
-                                  for i in range(1, self._.d+1)))
+            pPoly = tuple(filter(None, (self._is_polynomial(self._.p, i)
+                                        for i in range(1, self._.d+1))))
             self._.pPolynomial_ordering = False if len(pPoly) == 0 else pPoly
         return self._.pPolynomial_ordering
 
@@ -966,8 +966,8 @@ class ASParameters(SageObject):
         if not self._has("q"):
             self.kreinParameters()
         if not self._has("qPolynomial_ordering"):
-            qPoly = filter(None, (self._is_polynomial(self._.q, i)
-                                  for i in range(1, self._.d+1)))
+            qPoly = tuple(filter(None, (self._is_polynomial(self._.q, i)
+                                        for i in range(1, self._.d+1))))
             self._.qPolynomial_ordering = False if len(qPoly) == 0 else qPoly
         return self._.qPolynomial_ordering
 
