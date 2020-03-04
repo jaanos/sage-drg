@@ -1,5 +1,4 @@
 import operator
-from types import InstanceType
 from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
 from sage.structure.sage_object import SageObject
@@ -23,10 +22,7 @@ def attr(fun, nonex=None):
                 return nonex(self)
             raise ex
         return fun(val, *args, **kargs)
-    if isinstance(fun, InstanceType):
-        decorated.__name__ = fun.__class__.__name__
-    else:
-        decorated.__name__ = fun.__name__
+    decorated.__name__ = getattr(fun, "__name__", fun.__class__.__name__)
     decorated.__doc__ = fun.__doc__
     decorated.__module__ = fun.__module__
     return decorated
