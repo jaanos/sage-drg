@@ -223,11 +223,11 @@ class DRGParameters(PolyASParameters):
         Initialize the intersection array while checking for integrality.
         """
         try:
-            self._.c = tuple([Integer(0)] + map(integralize, c))
+            self._.c = (Integer(0), ) + tuple(map(integralize, c))
         except TypeError:
             raise InfeasibleError("c sequence not integral")
         try:
-            self._.b = tuple(map(integralize, b) + [Integer(0)])
+            self._.b = tuple(map(integralize, b)) + (Integer(0), )
         except TypeError:
             raise InfeasibleError("b sequence not integral")
 

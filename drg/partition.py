@@ -62,7 +62,7 @@ class PartitionGraph(Graph):
         d = dict(sum([[((i, j), x) for j, x in enumerate(r) if x != 0]
                       for i, r in enumerate(p._.p[h])],  []))
         if h == 0:
-            pos = lambda (i, j): (i, )
+            pos = lambda t: t[:1]
         else:
             pos = lambda t: t
         b = {k: Bubble(v, *pos(k)) for k, v in d.items()}

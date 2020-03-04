@@ -1,5 +1,6 @@
 import operator
 import re
+import six
 from sage.arith.misc import factor as factorize
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
@@ -34,7 +35,7 @@ def checklist(checks, inherit=None):
 
     def check(level):
         def decorator(fun):
-            name = re.match(r'^check_(.*)', fun.func_name)
+            name = re.match(r'^check_(.*)', fun.__name__)
             if name is None:
                 raise ValueError(
                     "a checking function should begin with check_")
@@ -259,7 +260,7 @@ def matrixMap(fun, M):
     Replace each value in matrix ``M`` by its image under ``fun``.
     """
     for i in range(M.nrows()):
-        M[i] = map(fun, M[i])
+        M[i] = tuple(map(fun, M[i]))
 
 
 def nrows(M):
@@ -355,6 +356,17 @@ def symbol(a=None):
     if isinstance(a, Expression):
         return a
     return SR.symbol(a)
+
+
+def utf8(msg):
+    """
+    UTF-8 encode the string.
+
+    Provided for Python 2/3 compatibility.
+    """
+    if six.PY2 and isinstance(msg, unicode):
+        msg = msg.encode("utf-8")
+    return msg
 
 
 def variables(exp):
