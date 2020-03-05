@@ -1,5 +1,6 @@
 from .util import utf8
 
+
 class InfeasibleError(Exception):
     """
     Infeasibility of a parameter set.

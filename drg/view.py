@@ -322,6 +322,7 @@ class View(SageObject):
         __floor__ = attr(math.floor)
         __ceil__ = attr(math.ceil)
 
+
 class AttrView(View):
     """
     Class for views of parameters as attributes of ``aux.Parameters``.
@@ -386,8 +387,8 @@ class Param(object):
         Getter method.
         """
         assert instance is not None, "parameter cannot be fetched from class"
-        fetch(instance, self.fun)
-        return AttrView(instance, self.fun)
+        value = fetch(instance, self.fun)
+        return AttrView(instance, self.fun) if drg.USE_VIEWS else value
 
     def __set__(self, instance, value):
         """
