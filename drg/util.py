@@ -223,6 +223,7 @@ def is_algebraic_integer(x):
         x = SR(x).minpoly()
     return NumberField(x, names=('a', )).gen().is_integral()
 
+
 def is_constant(x):
     """
     Determine whether an expression is constant.

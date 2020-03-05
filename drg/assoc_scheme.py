@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import six
 from copy import copy
 from warnings import warn
 from sage.all import pi
@@ -2576,10 +2577,11 @@ class PolyASParameters(ASParameters):
             self.pTable()
         if not self._has("Q"):
             self.dualEigenmatrix()
-        x = SR.symbol(var) if isinstance(var, basestring) else var
-        ths = zip(*self._.Q[p_order, q_order[1]])[0] + (Integer(0), )
+        x = SR.symbol(var) if isinstance(var, six.string_types) else var
+        ths = next(iter(zip(*self._.Q[p_order, q_order[1]]))) \
+            + (Integer(0), )
         o = p_order[1]
-        z = zip(p_order[:-1], p_order[1:])
+        z = tuple(zip(p_order[:-1], p_order[1:]))
         a = self._.p[o, o, o]
         b = [self._.p[j, o, jj] for j, jj in z] + [Integer(0)]
         c = [Integer(0)] + [self._.p[jj, o, j] for j, jj in z]

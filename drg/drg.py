@@ -1314,7 +1314,7 @@ class DRGParameters(PolyASParameters):
             conds = [sum(m for m in ths) == self._.k[1] - 1,
                      sum(a*m for m, a in ths.items()) == -self._.a[1],
                      sum(a**2 * m for m, a in ths.items())
-                        == (self._.k[1] - self._.a[1]) * self._.a[1]]
+                     == (self._.k[1] - self._.a[1]) * self._.a[1]]
             lvl = 0
             reason = None
             ref = None
@@ -1332,7 +1332,7 @@ class DRGParameters(PolyASParameters):
                             thi[th] *= th
                         tr = sum(thi.values())
                         if Integer(tr) % \
-                                Integer(self._.k[1] * (1 + i%2)) != 0:
+                                Integer(self._.k[1] * (1 + i % 2)) != 0:
                             if lvl < 1:
                                 lvl = 1
                                 reason = "local graph has nonintegral " \
