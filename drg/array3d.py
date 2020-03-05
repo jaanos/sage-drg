@@ -127,7 +127,7 @@ class Array3D(SageObject):
         """
         for M in self.A:
             for i in range(self.n):
-                M[i] = map(fun, M[i])
+                M[i] = tuple(map(fun, M[i]))
 
     def permute(self, p):
         """

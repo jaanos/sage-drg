@@ -1,3 +1,4 @@
+import six
 from sage.misc.functional import numerical_approx
 from sage.rings.complex_number import ComplexNumber
 from sage.rings.integer import Integer
@@ -63,8 +64,8 @@ class CoefficientList:
         if other is None:
             keys = set()
         else:
-            keys = set(other.val.iterkeys())
-        for k in sorted(keys.union(self.val.iterkeys()), reverse=True):
+            keys = set(six.iterkeys(other.val))
+        for k in sorted(keys.union(six.iterkeys(self.val)), reverse=True):
             if k not in keys:
                 c = self.val[k].__cmp__(None)
             elif k not in self.val:

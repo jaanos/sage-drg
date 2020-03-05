@@ -1,5 +1,6 @@
+import math
 import operator
-from types import InstanceType
+import six
 from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
 from sage.structure.sage_object import SageObject
@@ -23,10 +24,7 @@ def attr(fun, nonex=None):
                 return nonex(self)
             raise ex
         return fun(val, *args, **kargs)
-    if isinstance(fun, InstanceType):
-        decorated.__name__ = fun.__class__.__name__
-    else:
-        decorated.__name__ = fun.__name__
+    decorated.__name__ = getattr(fun, "__name__", fun.__class__.__name__)
     decorated.__doc__ = fun.__doc__
     decorated.__module__ = fun.__module__
     return decorated
@@ -251,9 +249,7 @@ class View(SageObject):
     __ne__ = attr(operator.ne)
     __gt__ = attr(operator.gt)
     __ge__ = attr(operator.ge)
-    __cmp__ = attr(cmp)
     __nonzero__ = attr(bool)
-    __unicode__ = attr(unicode)
     __setattr__ = attr(setattr)
     __delattr__ = attr(delattr)
     __instancecheck__ = attr(isinstance)
@@ -276,12 +272,10 @@ class View(SageObject):
     __and__ = attr(operator.and_)
     __xor__ = attr(operator.xor)
     __or__ = attr(operator.or_)
-    __div__ = attr(operator.div)
     __truediv__ = attr(operator.truediv)
     __iadd__ = attr(operator.iadd)
     __isub__ = attr(operator.isub)
     __imul__ = attr(operator.imul)
-    __idiv__ = attr(operator.idiv)
     __itruediv__ = attr(operator.itruediv)
     __ifloordiv__ = attr(operator.ifloordiv)
     __imod__ = attr(operator.imod)
@@ -297,15 +291,36 @@ class View(SageObject):
     __invert__ = attr(operator.invert)
     __complex__ = attr(complex)
     __int__ = attr(int)
-    __long__ = attr(long)
     __float__ = attr(float)
     __oct__ = attr(oct)
     __hex__ = attr(hex)
     __index__ = attr(operator.index)
-    __coerce__ = attr(coerce)
     _ascii_art_ = attr(ascii_art, ascii_art_nonex)
     _latex_ = attr(latex, latex_nonex)
     _unicode_art_ = attr(unicode_art, unicode_art_nonex)
+
+    if six.PY2:
+        __cmp__ = attr(cmp)
+        __unicode__ = attr(unicode)
+        __div__ = attr(operator.div)
+        __idiv__ = attr(operator.idiv)
+        __long__ = attr(long)
+        __coerce__ = attr(coerce)
+
+    if six.PY3:
+        @attr
+        def __rmatmul__(val, other):
+            """
+            ``other @ val``
+            """
+            return val.__rmatmul__(other)
+
+        __matmul__ = attr(operator.matmul)
+        __imatmul__ = attr(operator.imatmul)
+        __round__ = attr(round)
+        __trunc__ = attr(math.trunc)
+        __floor__ = attr(math.floor)
+        __ceil__ = attr(math.ceil)
 
 
 class AttrView(View):
@@ -372,8 +387,8 @@ class Param(object):
         Getter method.
         """
         assert instance is not None, "parameter cannot be fetched from class"
-        fetch(instance, self.fun)
-        return AttrView(instance, self.fun)
+        value = fetch(instance, self.fun)
+        return AttrView(instance, self.fun) if drg.USE_VIEWS else value
 
     def __set__(self, instance, value):
         """

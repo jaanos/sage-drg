@@ -62,6 +62,7 @@ def find(expressions, vars, conditions=None, solver=None):
 
     else:
         x = None
+    delete = set()
     for i, (e, (l, u)) in enumerate(expressions.items()):
         if is_constant(e):
             try:
@@ -70,13 +71,15 @@ def find(expressions, vars, conditions=None, solver=None):
                 return
             if e < l or e > u:
                 return
-            del expressions[e]
+            delete.add(e)
             continue
         elif x is None:
             return
         lp.add_constraint(w[i] == makeLPExpression(e))
         lp.set_min(w[i], l)
         lp.set_max(w[i], u)
+    for e in delete:
+        del expressions[e]
     if x is None:
         yield ()
         return

@@ -1,3 +1,6 @@
+from .util import utf8
+
+
 class InfeasibleError(Exception):
     """
     Infeasibility of a parameter set.
@@ -36,10 +39,7 @@ class InfeasibleError(Exception):
         if len(self.refs) > 0:
             msg.append("nonexistence by %s" %
                        "; ".join(self.formatRef(ref) for ref in self.refs))
-        msg = ": ".join(msg)
-        if isinstance(msg, unicode):
-            msg = msg.encode("utf-8")
-        self.args = (msg, )
+        self.args = (utf8(": ".join(msg)), )
 
     @staticmethod
     def formatRef(ref):
