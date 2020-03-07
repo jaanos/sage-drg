@@ -396,14 +396,15 @@ refs = {
         "url": "https://doi.org/10.1016/0024-3795(95)00152-H",
         "year": 1995
     },
-    "GSV18": {
-        "type": "unpublished",
+    "GSV20": {
+        "type": "article",
         "authors": [("Gavrilyuk", ("Alexander", "L.")),
                     ("Suda", ("Sho", )), ("Vidali", (u"Janoš", ))],
         "title": "On tight $4$-designs in Hamming association schemes",
-        "note": "manuscript",
-        "url": "https://arxiv.org/abs/1809.07553",
-        "year": 2018
+        "journal": "Combinatorica",
+        "fjournal": "Combinatorica",
+        "url": "https://doi.org/10.1007/s00493-019-4115-z",
+        "year": 2020
     },
     "GVW19": {
         "type": "unpublished",
@@ -515,15 +516,18 @@ refs = {
         "url": "https://doi.org/10.1023/A:1026544111089",
         "year": 2000
     },
-    "KIPR18": {
-        "type": "unpublished",
+    "KIPR19": {
+        "type": "article",
         "authors": [("Koolen", ("Jack", "H.")), ("Iqbal", ("Quaid", )),
                     ("Park", ("Jongyook", )), ("Ur Rehman", ("Masood", ))],
         "title": "There does not exist a distance-regular graph "
                  r"with intersection array $\{80, 54, 12; 1, 6, 60\}$",
-        "note": "manuscript",
-        "url": "https://arxiv.org/abs/1809.10029",
-        "year": 2018
+        "journal": " Graphs Combin.",
+        "fjournal": " Graphs and Combinatorics",
+        "volume": 35,
+        "pages": (1597, 1608)
+        "url": "https://doi.org/10.1007/s00373-019-02095-2",
+        "year": 2019
     },
     "Kodalen19": {
         "type": "phdthesis",

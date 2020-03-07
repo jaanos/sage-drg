@@ -133,7 +133,7 @@ def _factor(exp):
 
 def frac(a, b):
     """
-    Return the fraction a/b.
+    Return the fraction ``a/b``.
     """
     return Integer(a)/Integer(b)
 

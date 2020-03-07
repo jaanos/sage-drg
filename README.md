@@ -47,11 +47,11 @@ If you use `sage-drg` in your research, please cite both the paper and the softw
 
 * J. Vidali. Using symbolic computation to prove nonexistence of distance-regular graphs. *Electron. J. Combin.*, 25(4)#P4.21, 2018. [`http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21`](http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21).
 
-* J. Vidali. `jaanos/sage-drg`: `sage-drg` v0.9, 2019. [`https://github.com/jaanos/sage-drg/`](https://github.com/jaanos/sage-drg/), [`doi:10.5281/zenodo.1418409`](http://dx.doi.org/10.5281/zenodo.1418409).
+* J. Vidali. `jaanos/sage-drg`: `sage-drg` v0.9, 2019. [`https://github.com/jaanos/sage-drg/`](https://github.com/jaanos/sage-drg/), [`doi:10.5281/zenodo.1418409`](https://doi.org/10.5281/zenodo.1418409).
 
 You may also want to cite other documents containing descriptions of features that were added since the above paper was written:
 
-* J. Vidali. Computing distance-regular graph and association scheme parameters in SageMath with `sage-drg`. *Sém. Lothar. Combin.* 82B#105, 2019. [`http://fpsac2019.fmf.uni-lj.si/resources/Proceedings/207.pdf`](http://fpsac2019.fmf.uni-lj.si/resources/Proceedings/207.pdf)
+* J. Vidali. Computing distance-regular graph and association scheme parameters in SageMath with `sage-drg`. *Sém. Lothar. Combin.* 82B#105, 2019. [`https://www.mat.univie.ac.at/~slc/wpapers/FPSAC2019/105.pdf`](https://www.mat.univie.ac.at/~slc/wpapers/FPSAC2019/105.pdf)
     + support for general and *Q*-polynomial association schemes
 
 * A. L. Gavrilyuk, J. Vidali, J. S. Williford. On few-class *Q*-polynomial association schemes: feasible parameters and nonexistence results, 2019. [`arXiv:1908.10081`](http://arxiv.org/abs/1908.10081).
@@ -63,7 +63,7 @@ You may also want to cite other documents containing descriptions of features th
 The above citations are given here in BibTeX format.
 
 ```latex
-@article{v18a,
+@article{v18,
     AUTHOR = {Vidali, Jano\v{s}},
      TITLE = {Using symbolic computation to prove nonexistence of distance-regular graphs},
    JOURNAL = {Electron. J. Combin.},
@@ -75,22 +75,22 @@ The above citations are given here in BibTeX format.
       YEAR = {2018},
 }
 
-@software{v18b,
+@software{v19a,
    AUTHOR = {Vidali, Jano\v{s}},
     TITLE = {{\tt jaanos/sage-drg}: {\tt sage-drg} v0.9},
      NOTE = {\url{https://github.com/jaanos/sage-drg/},
-             \href{http://dx.doi.org/10.5281/zenodo.1418409}{\texttt{10.5281/zenodo.1418409}}},
+             \href{https://doi.org/10.5281/zenodo.1418409}{\texttt{doi:10.5281/zenodo.1418409}}},
      YEAR = {2019},
 }
 
-@article{v19,
+@article{v19b,
     AUTHOR = {Vidali, Jano\v{s}},
      TITLE = {Computing distance-regular graph and association scheme parameters in SageMath with {\tt sage-drg}},
    JOURNAL = {S\'{e}m. Lothar. Combin.},
   FJOURNAL = {S\'{e}minaire Lotharingien de Combinatoire},
     VOLUME = {82B},
      PAGES = {#105},
-      NOTE = {\url{http://fpsac2019.fmf.uni-lj.si/resources/Proceedings/207.pdf}},
+      NOTE = {\url{https://www.mat.univie.ac.at/~slc/wpapers/FPSAC2019/105.pdf}},
       YEAR = {2019},
 }
 
@@ -105,6 +105,6 @@ The above citations are given here in BibTeX format.
 
 Additionally, `sage-drg` has been used in the following research:
 
-* A. Gavrilyuk, S. Suda and J. Vidali. On tight 4-designs in Hamming association schemes, 2018. [`arXiv:1809.07553`](http://arxiv.org/abs/1809.07553).
+* A. Gavrilyuk, S. Suda and J. Vidali. On tight 4-designs in Hamming association schemes, *Combinatorica*, 2020. [`doi:10.1007/s00493-019-4115-z`](https://doi.org/10.1007/s00493-019-4115-z).
 
 If you would like your research to be listed here, feel free to open an issue or pull request.
