@@ -386,6 +386,7 @@ class Param(object):
         """
         Getter method.
         """
+        import drg
         assert instance is not None, "parameter cannot be fetched from class"
         value = fetch(instance, self.fun)
         return AttrView(instance, self.fun) if drg.USE_VIEWS else value
