@@ -386,10 +386,10 @@ class Param(object):
         """
         Getter method.
         """
-        import drg
+        from . import USE_VIEWS
         assert instance is not None, "parameter cannot be fetched from class"
         value = fetch(instance, self.fun)
-        return AttrView(instance, self.fun) if drg.USE_VIEWS else value
+        return AttrView(instance, self.fun) if USE_VIEWS else value
 
     def __set__(self, instance, value):
         """
