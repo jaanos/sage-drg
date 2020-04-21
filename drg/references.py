@@ -285,6 +285,18 @@ Article("BPR17",
         year=2017
 )
 
+Article("BrouwerKoolen99",
+        author=[("Brouwer", ("Andries", "E.")), ("Koolen", ("Jack", "H."))],
+        title="The distance-regular graphs of valency four",
+        journal="J. Algebraic Combin.",
+        fjournal="Journal of Algebraic Combinatorics",
+        volume=10,
+        number=1,
+        pages=(5, 24),
+        url="https://doi.org/10.1023/A:1018693118268",
+        year=1999
+)
+
 Book("BrouwerNeumaier81",
      author=[("Brouwer", ("Andries", "E.")), ("Neumaier", ("Arnold", ))],
      title="Strongly regular graphs where mu equals two and lambda is large",
