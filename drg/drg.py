@@ -636,9 +636,14 @@ class DRGParameters(PolyASParameters):
                     t = floor((k-1)/2)
                     if k % 2 == 1 and m + 2*cos(2*t*pi/k) < ll:
                         break
-                    roots = [m + 2*cos(2*j*pi/k) for j in range(1, t+1)
-                             if GCD(j, k) == 1]
-                    if all(r in interval for r in roots):
+                    roots = []
+                    for j in range(1, t+1):
+                        if GCD(j, k) == 1:
+                            r = m + 2*cos(2*j*pi/k)
+                            if r not in interval:
+                                break
+                            roots.append(r)
+                    else:
                         keep += sum((RealSet([r, r]) for r in roots),
                                     RealSet())
                     k += 1
