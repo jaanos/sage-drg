@@ -1,3 +1,4 @@
+from .references import refs as references
 from .util import utf8
 
 
@@ -28,8 +29,9 @@ class InfeasibleError(Exception):
                 refs = []
             elif not isinstance(refs, list):
                 refs = [refs]
-            self.refs = [ref if isinstance(ref, tuple) else (ref, None)
-                         for ref in refs]
+            refs = [ref if isinstance(ref, tuple) else (ref, None)
+                    for ref in refs]
+            self.refs = [(references[pap], thm) for pap, thm in refs]
             self.part = part
         msg = []
         if len(self.part) > 0:
@@ -48,9 +50,9 @@ class InfeasibleError(Exception):
         """
         pap, thm = ref
         if thm is None:
-            return pap
+            return pap.name
         else:
-            return "%s, %s" % (pap, thm)
+            return "%s, %s" % (pap.name, thm)
 
 
 class Parameters(object):
