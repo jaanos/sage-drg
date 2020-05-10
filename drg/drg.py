@@ -1054,9 +1054,10 @@ class DRGParameters(PolyASParameters):
             if self._.r % 2 == 0:
                 ok = is_squareSum(self._.b[0])
             elif self._.b[0] % 2 == 0:
-                ok = Integers(self._.r)(self._.b[0]).is_square() and \
-                    Integers(self._.b[0])(self._.r if self._.r % 4 == 1
-                                          else -self._.r).is_square()
+                r = Integer(self._.r if self._.r % 4 == 1 else -self._.r)
+                ok = Integer(self._.b[0]).is_square() or r.is_square() or \
+                    (Integers(self._.r)(self._.b[0]).is_square() and
+                     Integers(self._.b[0])(r).is_square())
             if not ok:
                 raise InfeasibleError("no corresponding 2-design",
                                       ("BCN", "Prop. 1.10.5."))
