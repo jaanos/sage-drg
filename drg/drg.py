@@ -544,18 +544,22 @@ class DRGParameters(PolyASParameters):
         assert all(is_constant(th) for th in self._.theta), \
             "eigenvalues not constant"
         check_local = b is None
+        if check_local:
+            _, _, _, _, bm, bp = self._compute_localEigenvalues()
+        else:
+            bm, bp = b
         try:
             loc = self.localGraph(compute=compute, check_local=check_local)
             if isinstance(loc, DRGParameters):
                 interval = sum((RealSet([th, th]) for th in loc.eigenvalues()
                                 if th != a), RealSet())
+                if interval.inf() < bm or interval.sup() > bp:
+                    raise InfeasibleError("local eigenvalues "
+                                          "not in allowed range",
+                                          ("BCN", "Thm. 4.4.3."))
             else:
                 raise IndexError
         except IndexError:
-            if check_local:
-                _, _, _, _, bm, bp = self._compute_localEigenvalues()
-            else:
-                bm, bp = b
             interval = eigenvalue_interval(bm, bp) & RealSet([-a, a])
         orig = interval
         ll = -Infinity
