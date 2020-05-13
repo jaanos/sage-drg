@@ -1161,7 +1161,7 @@ class DRGParameters(PolyASParameters):
                 else:
                     return None
 
-            d = {h: checkMul(h) for h in range(1, self._.d)}
+            d = {h: checkMul(h) for h in range(1, self._.d+1)}
             s = {h for h, v in d.items() if v is not None}
             if not s.issubset([i, j]):
                 m, k = min((self._.m[h], h) for h in s if h not in [i, j])
