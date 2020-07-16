@@ -105,6 +105,6 @@ The above citations are given here in BibTeX format.
 
 Additionally, `sage-drg` has been used in the following research:
 
-* A. Gavrilyuk, S. Suda and J. Vidali. On tight 4-designs in Hamming association schemes, *Combinatorica*, 2020. [`doi:10.1007/s00493-019-4115-z`](https://doi.org/10.1007/s00493-019-4115-z).
+* A. Gavrilyuk, S. Suda and J. Vidali. On tight 4-designs in Hamming association schemes, *Combinatorica*, 40(3):345-362, 2020. [`doi:10.1007/s00493-019-4115-z`](https://doi.org/10.1007/s00493-019-4115-z).
 
 If you would like your research to be listed here, feel free to open an issue or pull request.
