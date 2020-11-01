@@ -1362,7 +1362,7 @@ class ASParameters(SageObject):
         If ``params`` is a dictionary mapping strings to triples,
         the keys will be used as variables mapped to triple intersection
         numbers for corresponding triples.
-        If ``solve`` is False,
+        If ``solve`` is ``False``,
         only a list of equations and a set of variables is returned,
         without solving the equations.
         """
@@ -1533,6 +1533,25 @@ class ASParameters(SageObject):
         if save:
             self._.triple[u, v, w] = S
         return S
+
+    def tripleSolution_generator(self, u, v, w, S=None, solver=None):
+        """
+        Return a generator of solutions for triples of vertices
+        in relations ``u``, ``v``, ``w``.
+
+        If ``S`` is ``None``,
+        then the appropriate general solution is computed.
+        """
+        if S is None:
+            S = self.tripleEquations(u, v, w)
+        return find(make_expressions((S[h, i, j], 0,
+                                        min(self._.p[u, h, i],
+                                            self._.p[v, h, j],
+                                            self._.p[w, i, j]))
+                                        for h in range(self._.d + 1)
+                                        for i in range(self._.d + 1)
+                                        for j in range(self._.d + 1)),
+                    S.variables(), solver=solver)
 
     def variables(self):
         """
@@ -1725,15 +1744,8 @@ class ASParameters(SageObject):
                     if self._.p[u, v, w] == 0:
                         continue
                     S = self.tripleEquations(u, v, w)
-                    g[u, v, w] = find(
-                        make_expressions((S[h, i, j], 0,
-                                          min(self._.p[u, h, i],
-                                              self._.p[v, h, j],
-                                              self._.p[w, i, j]))
-                                         for h in range(self._.d + 1)
-                                         for i in range(self._.d + 1)
-                                         for j in range(self._.d + 1)),
-                        S.variables(), solver=solver)
+                    g[u, v, w] = self.tripleSolution_generator(u, v, w, S=S,
+                                                               solver=solver)
                     try:
                         sol = sort_solution(next(g[u, v, w]))
                     except StopIteration:
