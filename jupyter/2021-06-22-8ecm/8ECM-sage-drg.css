@@ -1,0 +1,28 @@
+.rendered_html {
+    font-size: 0.8em;
+}
+
+em {
+    color: blue !important;
+    font-style: normal !important;
+}
+
+strong {
+    color: red !important;
+    font-weight: normal !important;
+}
+
+del {
+    color: green !important;
+    text-decoration: none;
+}
+
+aside.notes {
+    display: none;
+}
+
+@media print {
+  a[href]:after {
+    content: "" !important;
+  }
+}
