@@ -27,6 +27,7 @@
 
 * [![2019-07-04-fpsac/FPSAC-sage-drg.ipynb](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=jupyter/2019-07-04-fpsac/FPSAC-sage-drg.ipynb) [`2019-07-04-fpsac`](2019-07-04-fpsac/) - *Computing distance-regular graph and association scheme parameters in SageMath with `sage-drg`* software presentation at FPSAC 2019, Ljubljana, Slovenia
 * [![2021-06-14-agtsem/AGTSem-sage-drg.ipynb](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=jupyter/2021-06-14-agtsem/AGTSem-sage-drg.ipynb) [`2021-06-14-agtsem`](2021-06-14-agtsem/) - *Computing distance-regular graph and association scheme parameters in SageMath with `sage-drg`* talk at the Algebraic Graph Theory Seminar, University of Waterloo, Ontario, Canada
+* [![2021-06-22-8ecm/8ECM-sage-drg.ipynb](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=jupyter/2021-06-22-8ecm/8ECM-sage-drg.ipynb) [`2021-06-22-8ecm`](2021-06-22-8ecm/) - *Computing distance-regular graph and association scheme parameters in SageMath with `sage-drg`* talk at the 8th European Congress of Mathematics, Graphs and Groups, Geometries and GAP - G2G2 minisymposium
 
 **Note**: notebooks containing LaTeX output and may not render correctly on GitHub.
 You can use the [Jupyter Notebook Viewer](https://nbviewer.jupyter.org/github/jaanos/sage-drg/tree/master/jupyter/) to render the notebooks correctly.
