@@ -94,11 +94,13 @@ The above citations are given here in BibTeX format.
       YEAR = {2019},
 }
 
-@article{gvw19,
+@article{gvw21,
     AUTHOR = {Gavrilyuk, Alexander L. and Vidali, Jano\v{s} and Williford, Jason S.},
      TITLE = {On few-class $Q$-polynomial association schemes: feasible parameters and nonexistence results},
-      NOTE = {\href{http://arxiv.org/abs/1908.10081}{\texttt{arXiv:1908.10081}}},
-      YEAR = {2019},
+   JOURNAL = {Ars Math. Contemp.},
+  FJOURNAL = {Ars Mathematica Contemporanea},
+      NOTE = {\href{https://doi.org/10.26493/1855-3974.2101.b76}{\texttt{doi:10.26493/1855-3974.2101.b76}}},
+      YEAR = {2021},
 }
 ```
 ### Other uses

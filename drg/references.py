@@ -158,14 +158,6 @@ class Unpublished(Article):
     pass
 
 
-Unpublished("AzarijaMarc16",
-            author=[("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
-            title="There is no (95,40,12,20) strongly regular graph",
-            note="manuscript",
-            url="https://arxiv.org/abs/1603.02032",
-            year=2016
-)
-
 Article("AzarijaMarc18",
         author=[("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
         title="There is no (75,32,10,16) strongly regular graph",
@@ -175,6 +167,18 @@ Article("AzarijaMarc18",
         pages=(62, 83),
         url="https://doi.org/10.1016/j.laa.2018.07.019",
         year=2018
+)
+
+Article("AzarijaMarc20",
+        author=[("Azarija", ("Jernej", )), ("Marc", ("Tilen", ))],
+        title="There is no (95,40,12,20) strongly regular graph",
+        journal="J. Combin. Des.",
+        fjournal="Journal of Combinatorial Designs",
+        volume=28,
+        number=4,
+        pages=(294, 306),
+        url="https://doi.org/10.1002/jcd.21696",
+        year=2020
 )
 
 Book("BCN",
@@ -564,19 +568,23 @@ Article("GSV20",
         title="On tight $4$-designs in Hamming association schemes",
         journal="Combinatorica",
         fjournal="Combinatorica",
+        volume=40,
+        number=3,
+        pages=(345, 362),
         url="https://doi.org/10.1007/s00493-019-4115-z",
         year=2020
 )
 
-Unpublished("GVW19",
-            author=[("Gavrilyuk", ("Alexander", "L.")),
-                     ("Vidali", (u"Janoš", )),
-                     ("Williford", ("Jason", "S."))],
-            title="On few-class $Q$-polynomial association schemes: "
-                  "feasible parameters and nonexistence results",
-            note="manuscript",
-            url="https://arxiv.org/abs/1908.10081",
-            year=2019
+Article("GVW21",
+        author=[("Gavrilyuk", ("Alexander", "L.")),
+                ("Vidali", (u"Janoš", )),
+                ("Williford", ("Jason", "S."))],
+        title="On few-class $Q$-polynomial association schemes: "
+              "feasible parameters and nonexistence results",
+        journal="Ars Math. Contemp.",
+        fjournal="Ars Mathematica Contemporanea",
+        url="https://doi.org/10.26493/1855-3974.2101.b76",
+        year=2021
 )
 
 InCollection("Haemers93",
