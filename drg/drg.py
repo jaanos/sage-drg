@@ -1109,11 +1109,19 @@ class DRGParameters(PolyASParameters):
         For a graph with parameters of a generalized polygon,
         check whether its parameters satisfy the restrictions.
         """
+        g, s, t = self.genPoly_parameters()
+        if g == 4 and s > 1 and t > 1:
+            tf = 8*t/3 + 1
+            if is_constant(tf):
+                tf = floor(tf)
+            if not checkNonneg(t * tf - s):
+                raise InfeasibleError("infeasible parameters "
+                                      "for pseudo-generalized quadrangle",
+                                      "GKMP20")
         if not self._has("maxCliques"):
             self.check_combinatorial()
         if not self._.maxCliques:
             return
-        g, s, t = self.genPoly_parameters()
         if g:
             try:
                 st = integralize(s*t)

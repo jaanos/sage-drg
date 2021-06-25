@@ -562,6 +562,16 @@ Article("GodsilKoolen95",
         year=1995
 )
 
+Article("GKMP20",
+        author=[("Guo", ("Ivan", )), ("Koolen", ("Jack", "H.")),
+                 ("Markovsky", ("Greg", )), ("Park", ("Jongyook", ))],
+        title="On the nonexistence of pseudo-generalized quadrangles",
+        journal="European J. Combin.",
+        fjournal="European Journal of Combinatorics",
+        url="https://doi.org/10.1016/j.ejc.2020.103128",
+        year=2020
+)
+
 Article("GSV20",
         author=[("Gavrilyuk", ("Alexander", "L.")), ("Suda", ("Sho", )),
                  ("Vidali", (u"Janoš", ))],
