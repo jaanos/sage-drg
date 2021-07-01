@@ -572,6 +572,16 @@ Article("GKMP20",
         year=2020
 )
 
+Unpublished("GKP20",
+            author=[("Greaves", ("Gary", "R.", "W.")),
+                    ("Koolen", ("Jack", "H.")),
+                    ("Park", ("Jongyook", ))],
+            title="Improving the Delsarte bound",
+            note="manuscript",
+            url="https://arxiv.org/abs/2012.09391",
+            year=2020
+)
+
 Article("GSV20",
         author=[("Gavrilyuk", ("Alexander", "L.")), ("Suda", ("Sho", )),
                  ("Vidali", (u"Janoš", ))],

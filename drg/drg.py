@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import operator
+import six
 from sage.arith.misc import GCD
 from sage.combinat.q_analogues import q_int
 from sage.functions.generalized import sgn
@@ -337,6 +338,28 @@ class DRGParameters(PolyASParameters):
         except TypeError:
             return (False, None, None)
 
+    def guaranteed_clique_order(self):
+        """
+        Return the smallest feasible order for a maximal clique in the graph.
+        """
+        if not self._has("maxCliques"):
+            self.check_combinatorial()
+        if self._.maxCliques:
+            return self._.a[1] + 2
+        s = Integer(3 if checkPos(self._.a[1]) else 2)
+        a = self._.c[2] - 1
+        b = self._.c[2] + 2*self._.a[1] + 1
+        D = b**2 - 8*a*self._.k[1]
+        if D > 0:
+            r = hard_ceiling((b - sqrt(D))/(2*a))
+            if not is_constant(r):
+                r += 1
+            if (b + sqrt(D))/(2*a) > r:
+                t = self._.a[1] + 2 - (r-2)*a
+                if t > s:
+                    return t
+        return s
+
     def has_edges(self, h, i1, j1, i2, j2):
         """
         Determine if there can be edges between sets of vertices
@@ -667,6 +690,20 @@ class DRGParameters(PolyASParameters):
         """
         return self.subconstituent(1, compute=compute,
                                    check_local=check_local)
+
+    def maximalCliquePolynomial(self, var='x'):
+        """
+        Return the maximal clique polynomial of a strongly regular graph.
+        """
+        assert self._.d == 2, "diameter must be 2"
+        if not self._has("theta"):
+            self.eigenvalues()
+        m = -min(self._.theta, key=lambda x: CoefficientList(x, self._.vars))
+        x = SR.symbol(var) if isinstance(var, six.string_types) else var
+        M = ((x + m - 3) * (self._.k[1] - x + 1)
+             - 2 * (x - 1) * (self._.a[1] - x + 2))**2 - \
+            (self._.k[1] - x + 1)**2 * (x + m - 1) * (x - (m-1) * (4*m-1))
+        return M.expand()
 
     def merge(self, *args, **kargs):
         """
@@ -1186,6 +1223,27 @@ class DRGParameters(PolyASParameters):
                     2*(r+1) > s*(s+1)*(self._.c[2]+1):
                 raise InfeasibleError("claw bound exceeded",
                                       "BrouwerVanLint84")
+
+    @check(1)
+    def check_maximalClique(self):
+        """
+        For a strongly regular graph,
+        check whether the range of possible sizes of maximal cliques
+        is nonempty.
+        """
+        if self._.d != 2:
+            return
+        m = -min(self._.theta, key=lambda x: CoefficientList(x, self._.vars))
+        b = self._.c[2] - m*(m-1)
+        if checkNonneg(-b):
+            return
+        x = SR.symbol("__x")
+        M = self.maximalCliquePolynomial(x)
+        c = self.guaranteed_clique_order()
+        d = floor(1 + self._.k[1] / m)
+        if c > self._.c[2]**2 / b - m + 1 and \
+                M.subs(x == c) < 0 and M.subs(x == d) < 0:
+            raise InfeasibleError("no feasible maximal clique size", "GKP20")
 
     @check(1)
     def check_terwilliger(self):
