@@ -74,7 +74,7 @@ def checkPos(exp):
     Check whether an expression can be positive.
 
     Returns ``True`` if ``exp`` is an integer
-    or an expression that is not always negative.
+    or an expression that is not always nonpositive.
     Otherwise, returns ``False``.
     """
     return not (exp <= 0)

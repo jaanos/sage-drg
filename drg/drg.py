@@ -21,6 +21,7 @@ from .array3d import Array3D
 from .assoc_scheme import ASParameters
 from .assoc_scheme import PolyASParameters
 from .aux import InfeasibleError
+from .coefflist import CoefficientList
 from .find import find
 from .nonex import checkConditions
 from .nonex import classicalFamilies
@@ -871,7 +872,7 @@ class DRGParameters(PolyASParameters):
         """
         Check for various combinatorial conditions.
         """
-        self._.maxCliques = False
+        self._.maxCliques = self._.a[1] == 0
         if checkPos(self._.b[0] - 2):
             if self._.b[1] == 1 and \
                     (self._.d != 2 or self._.c[2] != self._.b[0]):
@@ -1179,7 +1180,8 @@ class DRGParameters(PolyASParameters):
         if not self._has("theta"):
             self.eigenvalues()
         if self._.d == 2:
-            s, r = sorted(self._.theta[1:])
+            s, r = sorted(self._.theta[1:],
+                          key=lambda x: CoefficientList(x, self._.vars))
             if self._.c[2] not in [s*s, s*(s+1)] and \
                     2*(r+1) > s*(s+1)*(self._.c[2]+1):
                 raise InfeasibleError("claw bound exceeded",
@@ -1199,7 +1201,7 @@ class DRGParameters(PolyASParameters):
         if self._.d >= 2 and isinstance(self._.b[0], Integer) and \
                 isinstance(self._.a[1], Integer) and \
                 isinstance(self._.c[2], Integer):
-            if all(isinstance(th, Integer) for th in self._.theta):
+            if all(is_constant(th) for th in self._.theta):
                 th = min(self._.theta)
             else:
                 th = None
@@ -1229,7 +1231,7 @@ class DRGParameters(PolyASParameters):
                                  (self._.d >= 3 and self._.c[3] > 1
                                   and 2*self._.c[2] > self._.c[3])):
             if aabc and aab < self._.b[2] - self._.b[1] + self._.a[1] + 1:
-                raise InfeasibleError("Quadrangle per claw bound "
+                raise InfeasibleError("quadrangle per claw bound "
                                       "exceeded", ("BCN", "Thm. 5.2.1.(ii)"))
             elif any(self._.c[i] + self._.a[1] + self._.b[i+1] + 2
                      > self._.b[i] + self._.c[i+1]

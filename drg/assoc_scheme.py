@@ -2071,11 +2071,10 @@ class PolyASParameters(ASParameters):
                                      for i in range(self._.d + 1))
             else:
                 B = Matrix(SR, [M[1] for M in p])
-                self._.theta = list(B.eigenvalues())
+                theta = [v for v in B.eigenvalues() if v != p[0, 1, 1]]
                 try:
-                    self._.theta.sort(
-                        key=lambda x: CoefficientList(x, self._.vars),
-                        reverse=True)
+                    theta.sort(key=lambda x: CoefficientList(x, self._.vars),
+                               reverse=True)
                 except Exception:
                     warn(Warning("Sorting of eigenvalues failed - "
                                  "you may want to sort them manually"))
@@ -2084,7 +2083,7 @@ class PolyASParameters(ASParameters):
                         warn(Warning("More than one variable is used - "
                                      "please check that the ordering "
                                      "of the eigenvalues is correct"))
-                self._.theta = tuple(self._.theta)
+                self._.theta = (p[0, 1, 1], *theta)
         self._.theta = rewriteTuple(self._.theta, expand=expand,
                                     factor=factor, simplify=simplify)
         return self._.theta
