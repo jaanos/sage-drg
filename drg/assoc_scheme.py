@@ -2493,13 +2493,13 @@ class PolyASParameters(ASParameters):
         if conditions:
             return _solve(eqs, self._.vars)
         else:
+            part = self.PART_SCHEME % \
+                (list(args) if len(args) > 1 else args[0])
             try:
                 pa = self._get_class()(b, c)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part=part)
-            self.add_subscheme(pa,
-                               self.PART_SCHEME %
-                               (list(args) if len(args) > 1 else args[0]))
+            self.add_subscheme(pa, part)
             return pa
 
     def parameterArray(self, expand=False, factor=False, simplify=False):
