@@ -10,6 +10,7 @@ from sage.functions.other import sqrt
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
 from sage.rings.polynomial.polynomial_element import Polynomial
+from sage.rings.real_double import RDF
 from sage.rings.real_mpfr import create_RealNumber
 from sage.sets.real_set import RealSet
 from sage.structure.element import Matrix as MatrixClass
@@ -204,6 +205,8 @@ def integralize(exp):
             return exp + Integer(0)
         elif exp.is_integer():
             return Integer(exp)
+        if exp.base_ring() is RDF:
+            return exp
         mp = exp.minpoly()
         if mp.degree() == 1:
             return Integer(mp.any_root())

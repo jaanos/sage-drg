@@ -49,7 +49,8 @@ class QPolyParameters(PolyASParameters):
     SIZES = "multiplicities"
     SYMBOL = "q"
 
-    def __init__(self, b, c=None, order=None, complement=None):
+    def __init__(self, b, c=None, *, order=None, complement=None,
+                 numeric=False):
         """
         Object constructor.
 
@@ -76,7 +77,7 @@ class QPolyParameters(PolyASParameters):
             self._.d = Integer(len(b))
             PolyASParameters.__init__(self, b, c)
             self._.m = tuple(self._init_multiplicities())
-            self._.q = Array3D(self._.d + 1)
+            self._.q = Array3D(self._.d + 1, base_ring=self._.base_ring)
             self._compute_parameters(self._.q, self._.m)
         self._compute_imprimitivity()
         self._compute_complement(complement)
@@ -127,7 +128,7 @@ class QPolyParameters(PolyASParameters):
         if not self._has("k"):
             self.kTable(expand=expand, factor=factor, simplify=simplify)
         if not self._has("p"):
-            p = Array3D(self._.d + 1)
+            p = Array3D(self._.d + 1, base_ring=self._.base_ring)
             self._compute_dualParameters(p, self._.m, self._.k, self.QTR)
             self._.p = p
             self.check_handshake()

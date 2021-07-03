@@ -91,8 +91,8 @@ class DRGParameters(PolyASParameters):
 
     _checklist = check_DRGParameters
 
-    def __init__(self, b, c=None, alpha=None, beta=None,
-                 complement=None, order=None):
+    def __init__(self, b, c=None, alpha=None, beta=None, *,
+                 complement=None, order=None, numeric=False):
         """
         Object constructor.
 
@@ -119,7 +119,7 @@ class DRGParameters(PolyASParameters):
             else:
                 order = self._reorder(order)
             assert order in o, "scheme not P-polynomial for given order"
-            PolyASParameters.__init__(self, b, order=order)
+            PolyASParameters.__init__(self, b, order=order, numeric=numeric)
             self._check_intersectionArray()
             if isinstance(b, DRGParameters):
                 return
@@ -140,10 +140,10 @@ class DRGParameters(PolyASParameters):
                     b, c = (b, b-c-1), (1, alpha)
             else:
                 self._.d = Integer(len(b))
-            PolyASParameters.__init__(self, b, c)
+            PolyASParameters.__init__(self, b, c, numeric=numeric)
             self._check_intersectionArray()
             self._.k = tuple(self._init_multiplicities())
-            self._.p = Array3D(self._.d + 1)
+            self._.p = Array3D(self._.d + 1, base_ring=self._.base_ring)
             self._compute_parameters(self._.p, self._.k)
         self._compute_imprimitivity()
         if not isinstance(b, ASParameters):
@@ -193,7 +193,7 @@ class DRGParameters(PolyASParameters):
             self.multiplicities(expand=expand, factor=factor,
                                 simplify=simplify)
         if not self._has("q"):
-            q = Array3D(self._.d + 1)
+            q = Array3D(self._.d + 1, base_ring=self._.base_ring)
             self._compute_dualParameters(q, self._.k, self._.m, self.PTR)
             self._.q = q
 

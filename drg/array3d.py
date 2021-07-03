@@ -18,20 +18,21 @@ class Array3D(SageObject):
     A three-dimensional array of expressions.
     """
 
-    def __init__(self, n):
+    def __init__(self, n, base_ring=SR):
         """
         Object constructor.
 
         ``n`` is the size of the array in each dimension.
         """
-        self.A = [Matrix(SR, n) for i in range(n)]
+        self.base_ring = base_ring
+        self.A = [Matrix(self.base_ring, n) for i in range(n)]
         self.n = n
 
     def __copy__(self):
         """
         Return a copy of the array.
         """
-        A = Array3D(self.n)
+        A = Array3D(self.n, base_ring=self.base_ring)
         A.A = [copy(M) for M in self.A]
         return A
 
@@ -135,7 +136,7 @@ class Array3D(SageObject):
         """
         if tuple(p) == (0, 1, 2):
             return self
-        A = Array3D(self.n)
+        A = Array3D(self.n, base_ring=self.base_ring)
         for h in range(self.n):
             for i in range(self.n):
                 for j in range(self.n):
@@ -150,8 +151,9 @@ class Array3D(SageObject):
         assert len(order) == self.n, "wrong number of indices"
         assert set(order) == set(range(self.n)), \
             "repeating or nonexisting indices"
-        A = self if inplace else Array3D(self.n)
-        A.A = [Matrix(SR, [[self.A[h][i, j] for j in order] for i in order])
+        A = self if inplace else Array3D(self.n, base_ring=self.base_ring)
+        A.A = [Matrix(self.base_ring, [[self.A[h][i, j] for j in order]
+                                       for i in order])
                for h in order]
         return A
 
@@ -172,7 +174,7 @@ class Array3D(SageObject):
         """
         Substitute the given subexpressions in the array.
         """
-        A = Array3D(self.n)
+        A = Array3D(self.n, base_ring=self.base_ring)
         for i, M in enumerate(self.A):
             A.A[i] = M.subs(*exp)
         return A
@@ -192,20 +194,21 @@ class Array4D(SageObject):
     A four-dimensional array of expressions.
     """
 
-    def __init__(self, n):
+    def __init__(self, n, base_ring=SR):
         """
         Object constructor.
 
         ``n`` is the size of the array in each dimension.
         """
-        self.A = [Array3D(n) for i in range(n)]
+        self.base_ring = base_ring
+        self.A = [Array3D(n, base_ring=base_ring) for i in range(n)]
         self.n = n
 
     def __copy__(self):
         """
         Return a copy of the array.
         """
-        Q = Array4D(self.n)
+        Q = Array4D(self.n, base_ring=self.base_ring)
         Q.A = [copy(A) for A in self.A]
         return Q
 
@@ -334,9 +337,10 @@ class Array4D(SageObject):
             "repeating or nonexisting indices"
         A = [Array3D(self.n) for k in range(self.n)]
         for l, h in enumerate(order):
-            A[l].A = [Matrix(SR, [[self.A[h][i, j, k] for k in order]
-                                  for j in order]) for i in order]
-        Q = self if inplace else Array4D(self.n)
+            A[l].A = [Matrix(self.base_ring, [[self.A[h][i, j, k]
+                                               for k in order] for j in order])
+                      for i in order]
+        Q = self if inplace else Array4D(self.n, base_ring=self.base_ring)
         Q.A = A
         return Q
 
@@ -357,7 +361,7 @@ class Array4D(SageObject):
         """
         Substitute the given subexpressions in the array.
         """
-        S = Array4D(self.n)
+        S = Array4D(self.n, base_ring=self.base_ring)
         S.A = [A.subs(*exp) for i, A in enumerate(self)]
         return S
 
