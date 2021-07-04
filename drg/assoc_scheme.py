@@ -1531,7 +1531,7 @@ class ASParameters(SageObject):
             return (out, vars)
         sol = _solve(out, tuple(vars))
         assert len(sol) > 0, "system of equations has no solution"
-        S = Array3D(self._.d + 1, base_ring=self._.base_ring)
+        S = Array3D(self._.d + 1)
         for h in r:
             for i in r:
                 for j in r:
