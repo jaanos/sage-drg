@@ -38,7 +38,7 @@ InfeasibleError: nonexistence by JurišićVidali12
 ### [`jupyter`](jupyter)
 
 A collection of sample Jupyter notebooks giving some nonexistence results.
-Also includes a [conference presentation](jupyter/2019-07-04-fpsac/).
+Also includes conference and seminar presentations.
 
 
 ## Citing
@@ -54,7 +54,7 @@ You may also want to cite other documents containing descriptions of features th
 * J. Vidali. Computing distance-regular graph and association scheme parameters in SageMath with `sage-drg`. *Sém. Lothar. Combin.* 82B#105, 2019. [`https://www.mat.univie.ac.at/~slc/wpapers/FPSAC2019/105.pdf`](https://www.mat.univie.ac.at/~slc/wpapers/FPSAC2019/105.pdf)
     + support for general and *Q*-polynomial association schemes
 
-* A. L. Gavrilyuk, J. Vidali, J. S. Williford. On few-class *Q*-polynomial association schemes: feasible parameters and nonexistence results, 2019. [`arXiv:1908.10081`](http://arxiv.org/abs/1908.10081).
+* A. L. Gavrilyuk, J. Vidali, J. S. Williford. On few-class *Q*-polynomial association schemes: feasible parameters and nonexistence results, *Ars Math. Contemp.*, 2021. [`doi:10.26493/1855-3974.2101.b76`](https://doi.org/10.26493/1855-3974.2101.b76).
     + triple intersection number solution finder and forbidden quadruples check
     + support for quadruple intersection numbers
 
