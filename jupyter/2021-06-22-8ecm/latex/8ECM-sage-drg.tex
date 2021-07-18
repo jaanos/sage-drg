@@ -1,0 +1,1497 @@
+\documentclass[11pt]{article}
+
+    \usepackage[a4paper]{geometry}
+    \usepackage[breakable]{tcolorbox}
+    \usepackage{parskip} % Stop auto-indenting (to mimic markdown behaviour)
+    
+    \usepackage{iftex}
+    \ifPDFTeX
+    	\usepackage[T1]{fontenc}
+    	\usepackage{mathpazo}
+    \else
+    	\usepackage{fontspec}
+    \fi
+
+    % Basic figure setup, for now with no caption control since it's done
+    % automatically by Pandoc (which extracts ![](path) syntax from Markdown).
+    \usepackage{graphicx}
+    % Maintain compatibility with old templates. Remove in nbconvert 6.0
+    \let\Oldincludegraphics\includegraphics
+    % Ensure that by default, figures have no caption (until we provide a
+    % proper Figure object with a Caption API and a way to capture that
+    % in the conversion process - todo).
+    \usepackage{caption}
+    \DeclareCaptionFormat{nocaption}{}
+    \captionsetup{format=nocaption,aboveskip=0pt,belowskip=0pt}
+
+    \usepackage[Export]{adjustbox} % Used to constrain images to a maximum size
+    \adjustboxset{max size={0.9\linewidth}{0.9\paperheight}}
+    \usepackage{float}
+    \floatplacement{figure}{H} % forces figures to be placed at the correct location
+    \usepackage{xcolor} % Allow colors to be defined
+    \usepackage{enumerate} % Needed for markdown enumerations to work
+    \usepackage{geometry} % Used to adjust the document margins
+    \usepackage{amsmath} % Equations
+    \usepackage{amssymb} % Equations
+    \usepackage{textcomp} % defines textquotesingle
+    % Hack from http://tex.stackexchange.com/a/47451/13684:
+    \AtBeginDocument{%
+        \def\PYZsq{\textquotesingle}% Upright quotes in Pygmentized code
+    }
+    \usepackage{upquote} % Upright quotes for verbatim code
+    \usepackage{eurosym} % defines \euro
+    \usepackage[mathletters]{ucs} % Extended unicode (utf-8) support
+    \usepackage{fancyvrb} % verbatim replacement that allows latex
+    \usepackage{grffile} % extends the file name processing of package graphics 
+                         % to support a larger range
+    \makeatletter % fix for grffile with XeLaTeX
+    \def\Gread@@xetex#1{%
+      \IfFileExists{"\Gin@base".bb}%
+      {\Gread@eps{\Gin@base.bb}}%
+      {\Gread@@xetex@aux#1}%
+    }
+    \makeatother
+
+    % The hyperref package gives us a pdf with properly built
+    % internal navigation ('pdf bookmarks' for the table of contents,
+    % internal cross-reference links, web links for URLs, etc.)
+    \usepackage{hyperref}
+    % The default LaTeX title has an obnoxious amount of whitespace. By default,
+    % titling removes some of it. It also provides customization options.
+    \usepackage{titling}
+    \usepackage{longtable} % longtable support required by pandoc >1.10
+    \usepackage{booktabs}  % table support for pandoc > 1.12.2
+    \usepackage[inline]{enumitem} % IRkernel/repr support (it uses the enumerate* environment)
+    \usepackage[normalem]{ulem} % ulem is needed to support strikethroughs (\sout)
+                                % normalem makes italics be italics, not underlines
+    \usepackage{mathrsfs}
+    
+
+    
+    % Colors for the hyperref package
+    \definecolor{urlcolor}{rgb}{0,.145,.698}
+    \definecolor{linkcolor}{rgb}{.71,0.21,0.01}
+    \definecolor{citecolor}{rgb}{.12,.54,.11}
+
+    % ANSI colors
+    \definecolor{ansi-black}{HTML}{3E424D}
+    \definecolor{ansi-black-intense}{HTML}{282C36}
+    \definecolor{ansi-red}{HTML}{E75C58}
+    \definecolor{ansi-red-intense}{HTML}{B22B31}
+    \definecolor{ansi-green}{HTML}{00A250}
+    \definecolor{ansi-green-intense}{HTML}{007427}
+    \definecolor{ansi-yellow}{HTML}{DDB62B}
+    \definecolor{ansi-yellow-intense}{HTML}{B27D12}
+    \definecolor{ansi-blue}{HTML}{208FFB}
+    \definecolor{ansi-blue-intense}{HTML}{0065CA}
+    \definecolor{ansi-magenta}{HTML}{D160C4}
+    \definecolor{ansi-magenta-intense}{HTML}{A03196}
+    \definecolor{ansi-cyan}{HTML}{60C6C8}
+    \definecolor{ansi-cyan-intense}{HTML}{258F8F}
+    \definecolor{ansi-white}{HTML}{C5C1B4}
+    \definecolor{ansi-white-intense}{HTML}{A1A6B2}
+    \definecolor{ansi-default-inverse-fg}{HTML}{FFFFFF}
+    \definecolor{ansi-default-inverse-bg}{HTML}{000000}
+
+    % commands and environments needed by pandoc snippets
+    % extracted from the output of `pandoc -s`
+    \providecommand{\tightlist}{%
+      \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+    % Add ',fontsize=\small' for more characters per line
+    \newenvironment{Shaded}{}{}
+    \newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{{#1}}}}
+    \newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{{#1}}}
+    \newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{{#1}}}}
+    \newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{{#1}}}
+    \newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{{#1}}}
+    \newcommand{\RegionMarkerTok}[1]{{#1}}
+    \newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\NormalTok}[1]{{#1}}
+    
+    % Additional commands for more recent versions of Pandoc
+    \newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{{#1}}}
+    \newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{{#1}}}
+    \newcommand{\ImportTok}[1]{{#1}}
+    \newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{{#1}}}}
+    \newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    \newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    \newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{{#1}}}
+    \newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{{#1}}}}
+    \newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{{#1}}}
+    \newcommand{\BuiltInTok}[1]{{#1}}
+    \newcommand{\ExtensionTok}[1]{{#1}}
+    \newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{{#1}}}
+    \newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{{#1}}}
+    \newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    \newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    
+    \renewcommand{\textbf}[1]{\textcolor[rgb]{1,0,0}{{#1}}}
+    \renewcommand{\emph}[1]{\textcolor[rgb]{0,0,1}{{#1}}}
+    \renewcommand{\sout}[1]{\textcolor[rgb]{0,0.5,0}{{#1}}}
+    
+    % Define a nice break command that doesn't care if a line doesn't already
+    % exist.
+    \def\br{\hspace*{\fill} \\* }
+    % Math Jax compatibility definitions
+    \def\gt{>}
+    \def\lt{<}
+    \let\Oldtex\TeX
+    \let\Oldlatex\LaTeX
+    \renewcommand{\TeX}{\textrm{\Oldtex}}
+    \renewcommand{\LaTeX}{\textrm{\Oldlatex}}
+    % Document parameters
+    % Document title
+    \title{Computing distance-regular graph and association scheme parameters in SageMath with \href{https://github.com/jaanos/sage-drg}{\texttt{sage-drg}}}
+    \author{Janoš Vidali, University of Ljubljana \\[5mm]
+    Based on joint work with Alexander Gavrilyuk, Aleksandar Jurišić, \\ Sho Suda and Jason Williford \\[5mm]
+    \href{https://mybinder.org/v2/gh/jaanos/sage-drg/master?filepath=jupyter/2021-06-22-8ecm/8ECM-sage-drg.ipynb}{Live slides} on \href{https://mybinder.org}{Binder} \\[2mm]
+    \url{https://github.com/jaanos/sage-drg}}
+    \date{June 22, 2021}
+    
+    
+    
+    
+% Pygments definitions
+\makeatletter
+\def\PY@reset{\let\PY@it=\relax \let\PY@bf=\relax%
+    \let\PY@ul=\relax \let\PY@tc=\relax%
+    \let\PY@bc=\relax \let\PY@ff=\relax}
+\def\PY@tok#1{\csname PY@tok@#1\endcsname}
+\def\PY@toks#1+{\ifx\relax#1\empty\else%
+    \PY@tok{#1}\expandafter\PY@toks\fi}
+\def\PY@do#1{\PY@bc{\PY@tc{\PY@ul{%
+    \PY@it{\PY@bf{\PY@ff{#1}}}}}}}
+\def\PY#1#2{\PY@reset\PY@toks#1+\relax+\PY@do{#2}}
+
+\expandafter\def\csname PY@tok@w\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.73,0.73}{##1}}}
+\expandafter\def\csname PY@tok@c\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.74,0.48,0.00}{##1}}}
+\expandafter\def\csname PY@tok@k\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.69,0.00,0.25}{##1}}}
+\expandafter\def\csname PY@tok@o\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@ow\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@ne\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.82,0.25,0.23}{##1}}}
+\expandafter\def\csname PY@tok@nv\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@no\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nl\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@ni\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.60,0.60,0.60}{##1}}}
+\expandafter\def\csname PY@tok@na\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.49,0.56,0.16}{##1}}}
+\expandafter\def\csname PY@tok@nt\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@s\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sd\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@si\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@se\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sr\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@ss\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@sx\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@m\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@gh\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@gu\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.50,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@gd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gr\endcsname{\def\PY@tc##1{\textcolor[rgb]{1.00,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@ge\endcsname{\let\PY@it=\textit}
+\expandafter\def\csname PY@tok@gs\endcsname{\let\PY@bf=\textbf}
+\expandafter\def\csname PY@tok@gp\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@go\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.53,0.53}{##1}}}
+\expandafter\def\csname PY@tok@gt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.27,0.87}{##1}}}
+\expandafter\def\csname PY@tok@err\endcsname{\def\PY@bc##1{\setlength{\fboxsep}{0pt}\fcolorbox[rgb]{1.00,0.00,0.00}{1,1,1}{\strut ##1}}}
+\expandafter\def\csname PY@tok@kc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kd\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kr\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@bp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@fm\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@vc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@vg\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@vi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@vm\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@sa\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@dl\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@s2\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@s1\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@mb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@il\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mo\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@ch\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cm\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cpf\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@c1\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cs\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+
+\def\PYZbs{\char`\\}
+\def\PYZus{\char`\_}
+\def\PYZob{\char`\{}
+\def\PYZcb{\char`\}}
+\def\PYZca{\char`\^}
+\def\PYZam{\char`\&}
+\def\PYZlt{\char`\<}
+\def\PYZgt{\char`\>}
+\def\PYZsh{\char`\#}
+\def\PYZpc{\char`\%}
+\def\PYZdl{\char`\$}
+\def\PYZhy{\char`\-}
+\def\PYZsq{\char`\'}
+\def\PYZdq{\char`\"}
+\def\PYZti{\char`\~}
+% for compatibility with earlier versions
+\def\PYZat{@}
+\def\PYZlb{[}
+\def\PYZrb{]}
+\makeatother
+
+
+    % For linebreaks inside Verbatim environment from package fancyvrb. 
+    \makeatletter
+        \newbox\Wrappedcontinuationbox 
+        \newbox\Wrappedvisiblespacebox 
+        \newcommand*\Wrappedvisiblespace {\textcolor{red}{\textvisiblespace}} 
+        \newcommand*\Wrappedcontinuationsymbol {\textcolor{red}{\llap{\tiny$\m@th\hookrightarrow$}}} 
+        \newcommand*\Wrappedcontinuationindent {3ex } 
+        \newcommand*\Wrappedafterbreak {\kern\Wrappedcontinuationindent\copy\Wrappedcontinuationbox} 
+        % Take advantage of the already applied Pygments mark-up to insert 
+        % potential linebreaks for TeX processing. 
+        %        {, <, #, %, $, ' and ": go to next line. 
+        %        _, }, ^, &, >, - and ~: stay at end of broken line. 
+        % Use of \textquotesingle for straight quote. 
+        \newcommand*\Wrappedbreaksatspecials {% 
+            \def\PYGZus{\discretionary{\char`\_}{\Wrappedafterbreak}{\char`\_}}% 
+            \def\PYGZob{\discretionary{}{\Wrappedafterbreak\char`\{}{\char`\{}}% 
+            \def\PYGZcb{\discretionary{\char`\}}{\Wrappedafterbreak}{\char`\}}}% 
+            \def\PYGZca{\discretionary{\char`\^}{\Wrappedafterbreak}{\char`\^}}% 
+            \def\PYGZam{\discretionary{\char`\&}{\Wrappedafterbreak}{\char`\&}}% 
+            \def\PYGZlt{\discretionary{}{\Wrappedafterbreak\char`\<}{\char`\<}}% 
+            \def\PYGZgt{\discretionary{\char`\>}{\Wrappedafterbreak}{\char`\>}}% 
+            \def\PYGZsh{\discretionary{}{\Wrappedafterbreak\char`\#}{\char`\#}}% 
+            \def\PYGZpc{\discretionary{}{\Wrappedafterbreak\char`\%}{\char`\%}}% 
+            \def\PYGZdl{\discretionary{}{\Wrappedafterbreak\char`\$}{\char`\$}}% 
+            \def\PYGZhy{\discretionary{\char`\-}{\Wrappedafterbreak}{\char`\-}}% 
+            \def\PYGZsq{\discretionary{}{\Wrappedafterbreak\textquotesingle}{\textquotesingle}}% 
+            \def\PYGZdq{\discretionary{}{\Wrappedafterbreak\char`\"}{\char`\"}}% 
+            \def\PYGZti{\discretionary{\char`\~}{\Wrappedafterbreak}{\char`\~}}% 
+        } 
+        % Some characters . , ; ? ! / are not pygmentized. 
+        % This macro makes them "active" and they will insert potential linebreaks 
+        \newcommand*\Wrappedbreaksatpunct {% 
+            \lccode`\~`\.\lowercase{\def~}{\discretionary{\hbox{\char`\.}}{\Wrappedafterbreak}{\hbox{\char`\.}}}% 
+            \lccode`\~`\,\lowercase{\def~}{\discretionary{\hbox{\char`\,}}{\Wrappedafterbreak}{\hbox{\char`\,}}}% 
+            \lccode`\~`\;\lowercase{\def~}{\discretionary{\hbox{\char`\;}}{\Wrappedafterbreak}{\hbox{\char`\;}}}% 
+            \lccode`\~`\:\lowercase{\def~}{\discretionary{\hbox{\char`\:}}{\Wrappedafterbreak}{\hbox{\char`\:}}}% 
+            \lccode`\~`\?\lowercase{\def~}{\discretionary{\hbox{\char`\?}}{\Wrappedafterbreak}{\hbox{\char`\?}}}% 
+            \lccode`\~`\!\lowercase{\def~}{\discretionary{\hbox{\char`\!}}{\Wrappedafterbreak}{\hbox{\char`\!}}}% 
+            \lccode`\~`\/\lowercase{\def~}{\discretionary{\hbox{\char`\/}}{\Wrappedafterbreak}{\hbox{\char`\/}}}% 
+            \catcode`\.\active
+            \catcode`\,\active 
+            \catcode`\;\active
+            \catcode`\:\active
+            \catcode`\?\active
+            \catcode`\!\active
+            \catcode`\/\active 
+            \lccode`\~`\~ 	
+        }
+    \makeatother
+
+    \let\OriginalVerbatim=\Verbatim
+    \makeatletter
+    \renewcommand{\Verbatim}[1][1]{%
+        %\parskip\z@skip
+        \sbox\Wrappedcontinuationbox {\Wrappedcontinuationsymbol}%
+        \sbox\Wrappedvisiblespacebox {\FV@SetupFont\Wrappedvisiblespace}%
+        \def\FancyVerbFormatLine ##1{\hsize\linewidth
+            \vtop{\raggedright\hyphenpenalty\z@\exhyphenpenalty\z@
+                \doublehyphendemerits\z@\finalhyphendemerits\z@
+                \strut ##1\strut}%
+        }%
+        % If the linebreak is at a space, the latter will be displayed as visible
+        % space at end of first line, and a continuation symbol starts next line.
+        % Stretch/shrink are however usually zero for typewriter font.
+        \def\FV@Space {%
+            \nobreak\hskip\z@ plus\fontdimen3\font minus\fontdimen4\font
+            \discretionary{\copy\Wrappedvisiblespacebox}{\Wrappedafterbreak}
+            {\kern\fontdimen2\font}%
+        }%
+        
+        % Allow breaks at special characters using \PYG... macros.
+        \Wrappedbreaksatspecials
+        % Breaks at punctuation characters . , ; ? ! and / need catcode=\active 	
+        \OriginalVerbatim[#1,codes*=\Wrappedbreaksatpunct]%
+    }
+    \makeatother
+
+    % Exact colors from NB
+    \definecolor{incolor}{HTML}{303F9F}
+    \definecolor{outcolor}{HTML}{D84315}
+    \definecolor{cellborder}{HTML}{CFCFCF}
+    \definecolor{cellbackground}{HTML}{F7F7F7}
+    
+    % prompt
+    \makeatletter
+    \newcommand{\boxspacing}{\kern\kvtcb@left@rule\kern\kvtcb@boxsep}
+    \makeatother
+    \newcommand{\prompt}[4]{
+        {\ttfamily\llap{{\color{#2}[#3]:\hspace{3pt}#4}}\vspace{-\baselineskip}}
+    }
+    
+
+    
+    % Prevent overflowing lines due to hard-to-break entities
+    \sloppy 
+    % Setup hyperref package
+    \hypersetup{
+      breaklinks=true,  % so long urls are correctly broken across lines
+      colorlinks=true,
+      urlcolor=urlcolor,
+      linkcolor=linkcolor,
+      citecolor=citecolor,
+      }
+    % Slightly bigger margins than the latex defaults
+    
+    \geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+    
+    
+
+\begin{document}
+    
+    \maketitle
+
+    \hypertarget{association-schemes}{%
+\section*{Association schemes}\label{association-schemes}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Association schemes} were defined by \emph{Bose} and
+  \emph{Shimamoto} in \emph{1952} as a theory underlying
+  \textbf{experimental design}.
+\item
+  They provide a \sout{unified approach} to many topics, such as
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \emph{combinatorial designs},
+  \item
+    \emph{coding theory},
+  \item
+    generalizing \emph{groups}, and
+  \item
+    \emph{strongly regular} and \emph{distance-regular graphs}.
+  \end{itemize}
+\end{itemize}
+
+\newpage
+
+    \hypertarget{examples}{%
+\section*{Examples}\label{examples}}
+
+\begin{itemize}
+\tightlist
+\item
+  \emph{Hamming schemes}: \textbf{\(X = \mathbb{Z}_n^d\)},
+  \textbf{\(x \ R_i \ y \Leftrightarrow \operatorname{weight}(x-y) = i\)}
+\item
+  \emph{Johnson schemes}:
+  \textbf{\(X = \{S \subseteq \mathbb{Z}_n \mid |S| = d\}\)}
+  (\(2d \le n\)),
+  \textbf{\(x \ R_i \ y \Leftrightarrow |x \cap y| = d-i\)}
+\end{itemize}
+
+    \begin{center}
+	\adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{as.png}
+\end{center}
+{ \hspace*{\fill} \\}
+
+    \hypertarget{definition}{%
+\section*{Definition}\label{definition}}
+
+\begin{itemize}
+\item
+  Let \textbf{\(X\)} be a set of \emph{vertices} and
+  \textbf{\(\mathcal{R} = \{R_0 = \operatorname{id}_X, R_1, \dots, R_D\}\)}
+  a set of \emph{symmetric relations} partitioning \emph{\(X^2\)}.
+\item
+  \textbf{\((X, \mathcal{R})\)} is said to be a \textbf{\(D\)-class
+  association scheme} if there exist numbers \textbf{\(p^h_{ij}\)}
+  (\(0 \le h, i, j \le D\)) such that, for any \emph{\(x, y \in X\)},
+  \textbf{\[
+  x \ R_h \ y \Rightarrow |\{z \in X \mid x \ R_i \ z \ R_j \ y\}| = p^h_{ij}
+  \]}
+\item
+  We call the numbers \textbf{\(p^h_{ij}\)} (\(0 \le h, i, j \le D\))
+  \textbf{intersection numbers}.
+\end{itemize}
+
+\newpage
+
+    \hypertarget{main-problem}{%
+\section*{Main problem}\label{main-problem}}
+
+\begin{itemize}
+\tightlist
+\item
+  Does an association scheme with given parameters \sout{exist}?
+
+  \begin{itemize}
+  \tightlist
+  \item
+    If so, is it \sout{unique}?
+  \item
+    Can we determine \sout{all} such schemes?
+  \end{itemize}
+\item
+  \sout{Lists} of feasible parameter sets have been compiled for
+  \href{https://www.win.tue.nl/~aeb/graphs/srg/srgtab.html}{\textbf{strongly
+  regular}} and
+  \href{https://www.win.tue.nl/~aeb/drg/drgtables.html}{\textbf{distance-regular
+  graphs}}.
+\item
+  Recently, lists have also been compiled for some
+  \href{http://www.uwyo.edu/jwilliford/}{\textbf{\(Q\)-polynomial
+  association schemes}}.
+\item
+  Computer software allows us to \emph{efficiently} compute parameters
+  and check for \emph{existence conditions}, and also to obtain new
+  information which would be helpful in the \sout{construction} of new
+  examples.
+\end{itemize}
+
+    \hypertarget{bose-mesner-algebra}{%
+\section*{Bose-Mesner algebra}\label{bose-mesner-algebra}}
+
+\begin{itemize}
+\item
+  Let \textbf{\(A_i\)} be the \emph{binary matrix} corresponding to the
+  relation \emph{\(R_i\)} (\(0 \le i \le D\)).
+\item
+  The vector space \textbf{\(\mathcal{M}\)} over \emph{\(\mathbb{R}\)}
+  spanned by \emph{\(A_i\)} (\(0 \le i \le D\)) is called the
+  \textbf{Bose-Mesner algebra}.
+\item
+  \emph{\(\mathcal{M}\)} has a second basis
+  \sout{\(\{E_0, E_1, \dots, E_D\}\)} consisting of \emph{projectors} to
+  the \emph{common eigenspaces} of \emph{\(A_i\)} (\(0 \le i \le D\)).
+\item
+  There exist the \textbf{eigenmatrix} \sout{\(P\)} and the \textbf{dual
+  eigenmatrix} \sout{\(Q\)} such that \emph{\[
+  A_j = \sum_{i=0}^D P_{ij} E_i, \qquad E_j = {1 \over |X|} \sum_{i=0}^D Q_{ij} A_i.
+  \]}
+\item
+  There are \sout{nonnegative} constants \textbf{\(q^h_{ij}\)}, called
+  \textbf{Krein parameters}, such that \textbf{\[
+  E_i \circ E_j = {1 \over |X|} \sum_{h=0}^D q^h_{ij} E_h ,
+  \]} where \textbf{\(\circ\)} is the \emph{entrywise matrix product}.
+\end{itemize}
+
+\newpage
+
+    \hypertarget{parameter-computation-general-association-schemes}{%
+\section*{Parameter computation: general association
+schemes}\label{parameter-computation-general-association-schemes}}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{2}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{o}{\PYZpc{}}\PY{k}{display} latex
+\PY{k+kn}{import} \PY{n+nn}{drg}
+\PY{n}{p} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{]}\PY{p}{]}\PY{p}{,}
+     \PY{p}{[}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{,}
+     \PY{p}{[}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{,}
+     \PY{p}{[}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{]}
+\PY{n}{scheme} \PY{o}{=} \PY{n}{drg}\PY{o}{.}\PY{n}{ASParameters}\PY{p}{(}\PY{n}{p}\PY{p}{)}
+\PY{n}{scheme}\PY{o}{.}\PY{n}{kreinParameters}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{2}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\begin{aligned}0: &\ \left(\begin{array}{rrrr}
+1 & 0 & 0 & 0 \\
+0 & 6 & 0 & 0 \\
+0 & 0 & 3 & 0 \\
+0 & 0 & 0 & 6
+\end{array}\right) \\
+1: &\ \left(\begin{array}{rrrr}
+0 & 1 & 0 & 0 \\
+1 & 2 & 1 & 2 \\
+0 & 1 & 0 & 2 \\
+0 & 2 & 2 & 2
+\end{array}\right) \\
+2: &\ \left(\begin{array}{rrrr}
+0 & 0 & 1 & 0 \\
+0 & 2 & 0 & 4 \\
+1 & 0 & 2 & 0 \\
+0 & 4 & 0 & 2
+\end{array}\right) \\
+3: &\ \left(\begin{array}{rrrr}
+0 & 0 & 0 & 1 \\
+0 & 2 & 2 & 2 \\
+0 & 2 & 0 & 1 \\
+1 & 2 & 1 & 2
+\end{array}\right) \\\end{aligned}
+\end{math}
+
+    
+
+    \hypertarget{metric-and-cometric-schemes}{%
+\section*{Metric and cometric
+schemes}\label{metric-and-cometric-schemes}}
+
+\begin{itemize}
+\item
+  If \textbf{\(p^h_{ij} \ne 0\)} (resp. \textbf{\(q^h_{ij} \ne 0\)})
+  implies \textbf{\(|i-j| \le h \le i+j\)}, then the association scheme
+  is said to be \textbf{metric} (resp. \textbf{cometric}).
+\item
+  The \emph{parameters} of a \emph{metric} (or
+  \textbf{\(P\)-polynomial}) association scheme can be \sout{determined}
+  from the \textbf{intersection array} \emph{\[
+  \{b_0, b_1, \dots, b_{D-1}; c_1, c_2, \dots, c_D\}
+  \quad (b_i = p^i_{1,i+1}, c_i = p^i_{1,i-1}).
+  \]}
+\item
+  The \emph{parameters} of a \emph{cometric} (or
+  \textbf{\(Q\)-polynomial}) association scheme can be \sout{determined}
+  from the \textbf{Krein array} \emph{\[
+  \{b^*_0, b^*_1, \dots, b^*_{D-1}; c^*_1, c^*_2, \dots, c^*_D\}
+  \quad (b^*_i = q^i_{1,i+1}, c^*_i = q^i_{1,i-1}).
+  \]}
+\item
+  \emph{Metric} association schemes correspond to \emph{distance-regular
+  graphs}.
+\end{itemize}
+
+    \hypertarget{parameter-computation-metric-and-cometric-schemes}{%
+\section*{Parameter computation: metric and cometric
+schemes}\label{parameter-computation-metric-and-cometric-schemes}}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{3}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{drg} \PY{k}{import} \PY{n}{DRGParameters}
+\PY{n}{syl} \PY{o}{=} \PY{n}{DRGParameters}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{]}\PY{p}{)}
+\PY{n}{syl}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{3}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\text{Parameters of a distance-regular graph with intersection array } \left\{5, 4, 2; 1, 1, 4\right\}
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{4}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{syl}\PY{o}{.}\PY{n}{order}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{4}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}36
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{5}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{drg} \PY{k}{import} \PY{n}{QPolyParameters}
+\PY{n}{q225} \PY{o}{=} \PY{n}{QPolyParameters}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{24}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{36}\PY{o}{/}\PY{l+m+mi}{11}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{30}\PY{o}{/}\PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{24}\PY{p}{]}\PY{p}{)}
+\PY{n}{q225}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{5}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\text{Parameters of a $Q$-polynomial association scheme with Krein array } \left\{24, 20, \frac{36}{11}; 1, \frac{30}{11}, 24\right\}
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{6}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{q225}\PY{o}{.}\PY{n}{order}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{6}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}225
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{7}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{syl}\PY{o}{.}\PY{n}{pTable}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{7}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\begin{aligned}0: &\ \left(\begin{array}{rrrr}
+1 & 0 & 0 & 0 \\
+0 & 5 & 0 & 0 \\
+0 & 0 & 20 & 0 \\
+0 & 0 & 0 & 10
+\end{array}\right) \\
+1: &\ \left(\begin{array}{rrrr}
+0 & 1 & 0 & 0 \\
+1 & 0 & 4 & 0 \\
+0 & 4 & 8 & 8 \\
+0 & 0 & 8 & 2
+\end{array}\right) \\
+2: &\ \left(\begin{array}{rrrr}
+0 & 0 & 1 & 0 \\
+0 & 1 & 2 & 2 \\
+1 & 2 & 11 & 6 \\
+0 & 2 & 6 & 2
+\end{array}\right) \\
+3: &\ \left(\begin{array}{rrrr}
+0 & 0 & 0 & 1 \\
+0 & 0 & 4 & 1 \\
+0 & 4 & 12 & 4 \\
+1 & 1 & 4 & 4
+\end{array}\right) \\\end{aligned}
+\end{math}
+
+\newpage
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{8}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{syl}\PY{o}{.}\PY{n}{kreinParameters}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{8}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\begin{aligned}0: &\ \left(\begin{array}{rrrr}
+1 & 0 & 0 & 0 \\
+0 & 16 & 0 & 0 \\
+0 & 0 & 10 & 0 \\
+0 & 0 & 0 & 9
+\end{array}\right) \\
+1: &\ \left(\begin{array}{rrrr}
+0 & 1 & 0 & 0 \\
+1 & \frac{44}{5} & \frac{22}{5} & \frac{9}{5} \\
+0 & \frac{22}{5} & 2 & \frac{18}{5} \\
+0 & \frac{9}{5} & \frac{18}{5} & \frac{18}{5}
+\end{array}\right) \\
+2: &\ \left(\begin{array}{rrrr}
+0 & 0 & 1 & 0 \\
+0 & \frac{176}{25} & \frac{16}{5} & \frac{144}{25} \\
+1 & \frac{16}{5} & 4 & \frac{9}{5} \\
+0 & \frac{144}{25} & \frac{9}{5} & \frac{36}{25}
+\end{array}\right) \\
+3: &\ \left(\begin{array}{rrrr}
+0 & 0 & 0 & 1 \\
+0 & \frac{16}{5} & \frac{32}{5} & \frac{32}{5} \\
+0 & \frac{32}{5} & 2 & \frac{8}{5} \\
+1 & \frac{32}{5} & \frac{8}{5} & 0
+\end{array}\right) \\\end{aligned}
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{9}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{syl}\PY{o}{.}\PY{n}{distancePartition}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{9}{}
+    
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_16_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+\newpage
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{11}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{syl}\PY{o}{.}\PY{n}{distancePartition}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{11}{}
+    
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_17_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+
+    \hypertarget{parameter-computation-parameters-with-variables}{%
+\section*{Parameter computation: parameters with
+variables}\label{parameter-computation-parameters-with-variables}}
+
+Let us define a \emph{one-parametric family} of \emph{intersection
+arrays}.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{12}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{r} \PY{o}{=} \PY{n}{var}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{r}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{f} \PY{o}{=} \PY{n}{DRGParameters}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{2}\PY{o}{*}\PY{n}{r}\PY{o}{\PYZca{}}\PY{l+m+mi}{2}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{2}\PY{o}{*}\PY{n}{r}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{l+m+mi}{2}\PY{o}{*}\PY{n}{r}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{2}\PY{o}{*}\PY{n}{r}\PY{o}{\PYZca{}}\PY{l+m+mi}{2}\PY{o}{+}\PY{n}{r}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{2}\PY{o}{*}\PY{n}{r}\PY{o}{\PYZca{}}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{o}{*}\PY{n}{r}\PY{o}{\PYZca{}}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{r}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{4}\PY{o}{*}\PY{n}{r}\PY{o}{\PYZca{}}\PY{l+m+mi}{2}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{)}
+\PY{n}{f}\PY{o}{.}\PY{n}{order}\PY{p}{(}\PY{n}{factor}\PY{o}{=}\PY{k+kc}{True}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{12}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}{\left(2 \, r + 1\right)}^{3} r
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{13}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{f1} \PY{o}{=} \PY{n}{f}\PY{o}{.}\PY{n}{subs}\PY{p}{(}\PY{n}{r} \PY{o}{==} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{f1}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{13}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\text{Parameters of a distance-regular graph with intersection array } \left\{6, 4, 2; 1, 2, 3\right\}
+\end{math}
+
+    
+
+    The parameters of \texttt{f1} are known to \sout{uniquely determine} the
+\emph{Hamming scheme \(H(3, 3)\)}.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{14}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{f2} \PY{o}{=} \PY{n}{f}\PY{o}{.}\PY{n}{subs}\PY{p}{(}\PY{n}{r} \PY{o}{==} \PY{l+m+mi}{2}\PY{p}{)}
+\PY{n}{f2}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{14}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\text{Parameters of a distance-regular graph with intersection array } \left\{40, 33, 8; 1, 8, 30\right\}
+\end{math}
+
+    
+
+    \hypertarget{feasibility-checking}{%
+\section*{Feasibility checking}\label{feasibility-checking}}
+
+A parameter set is called \textbf{feasible} if it passes all known
+\emph{existence conditions}.
+
+    Let us verify that \emph{\(H(3, 3)\)} is feasible.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{15}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{f1}\PY{o}{.}\PY{n}{check\PYZus{}feasible}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    No error has occured, since all existence conditions are met.
+
+    Let us now check whether the second member of the family is feasible.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{16}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{f2}\PY{o}{.}\PY{n}{check\PYZus{}feasible}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+...
+InfeasibleError: nonexistence by JurišićVidali12
+
+    \end{Verbatim}
+
+    In this case, \sout{nonexistence} has been shown by \emph{matching} the
+parameters against a list of \textbf{nonexistent families}.
+
+    \hypertarget{triple-intersection-numbers}{%
+\section*{Triple intersection
+numbers}\label{triple-intersection-numbers}}
+
+\begin{itemize}
+\tightlist
+\item
+  In some cases, \textbf{triple intersection numbers} can be computed.
+  \textbf{\[
+  [h \ i \ j] = \begin{bmatrix} x & y & z \\ h & i & j \end{bmatrix} = |\{w \in X \mid w \ R_i \ x \land w \ R_j \ y \land w \ R_h \ z\}|
+  \]}
+\item
+  If \textbf{\(x \ R_W \ y\)}, \textbf{\(x \ R_V \ z\)} and
+  \textbf{\(y \ R_U \ z\)}, then we have \emph{\[
+  \sum_{\ell=1}^D [\ell\ j\ h] = p^U_{jh} - [0\ j\ h], \qquad
+  \sum_{\ell=1}^D [i\ \ell\ h] = p^V_{ih} - [i\ 0\ h], \qquad
+  \sum_{\ell=1}^D [i\ j\ \ell] = p^W_{ij} - [i\ j\ 0],
+  \]} where \emph{\[
+  [0\ j\ h] = \delta_{jW} \delta_{hV}, \qquad
+  [i\ 0\ h] = \delta_{iW} \delta_{hU}, \qquad
+  [i\ j\ 0] = \delta_{iV} \delta_{jU}.
+  \]}
+\item
+  Additionally, \textbf{\(q^h_{ij} = 0\)} \sout{if and only if} \sout{\[
+  \sum_{r,s,t=0}^D Q_{ri}Q_{sj}Q_{th} \begin{bmatrix} x & y & z \\ r & s & t \end{bmatrix} = 0
+  \]} for \sout{all \(x, y, z \in X\)}.
+\end{itemize}
+
+\newpage
+
+    \hypertarget{example-parameters-for-a-bipartite-drg-of-diameter-5}{%
+\section*{\texorpdfstring{Example: parameters for a bipartite DRG of
+diameter
+\(5\)}{Example: parameters for a bipartite DRG of diameter 5}}\label{example-parameters-for-a-bipartite-drg-of-diameter-5}}
+
+We will show that a distance-regular graph with intersection array
+\textbf{\(\{55, 54, 50, 35, 10; 1, 5, 20, 45, 55\}\)} \sout{does not
+exist}. The existence of such a graph would give a \emph{counterexample}
+to a conjecture by MacLean and Terwilliger, see
+\href{http://dx.doi.org/10.1016/j.disc.2014.04.025}{Bipartite
+distance-regular graphs: The \(Q\)-polynomial property and pseudo
+primitive idempotents} by M. Lang.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{17}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{p} \PY{o}{=} \PY{n}{drg}\PY{o}{.}\PY{n}{DRGParameters}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{55}\PY{p}{,} \PY{l+m+mi}{54}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{,} \PY{l+m+mi}{35}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{45}\PY{p}{,} \PY{l+m+mi}{55}\PY{p}{]}\PY{p}{)}
+\PY{n}{p}\PY{o}{.}\PY{n}{check\PYZus{}feasible}\PY{p}{(}\PY{n}{skip}\PY{o}{=}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{sporadic}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{)}
+\PY{n}{p}\PY{o}{.}\PY{n}{order}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{17}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}3500
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{18}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{p}\PY{o}{.}\PY{n}{kreinParameters}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{18}{}
+    {\small
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\begin{aligned}0: &\ \left(\begin{array}{rrrrrr}
+1 & 0 & 0 & 0 & 0 & 0 \\
+0 & 132 & 0 & 0 & 0 & 0 \\
+0 & 0 & 1617 & 0 & 0 & 0 \\
+0 & 0 & 0 & 1617 & 0 & 0 \\
+0 & 0 & 0 & 0 & 132 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1
+\end{array}\right) \\
+1: &\ \left(\begin{array}{rrrrrr}
+0 & 1 & 0 & 0 & 0 & 0 \\
+1 & \frac{50}{3} & \frac{343}{3} & 0 & 0 & 0 \\
+0 & \frac{343}{3} & \frac{2450}{3} & 686 & 0 & 0 \\
+0 & 0 & 686 & \frac{2450}{3} & \frac{343}{3} & 0 \\
+0 & 0 & 0 & \frac{343}{3} & \frac{50}{3} & 1 \\
+0 & 0 & 0 & 0 & 1 & 0
+\end{array}\right) \\
+2: &\ \left(\begin{array}{rrrrrr}
+0 & 0 & 1 & 0 & 0 & 0 \\
+0 & \frac{28}{3} & \frac{200}{3} & 56 & 0 & 0 \\
+1 & \frac{200}{3} & \frac{2380}{3} & 700 & 56 & 0 \\
+0 & 56 & 700 & \frac{2380}{3} & \frac{200}{3} & 1 \\
+0 & 0 & 56 & \frac{200}{3} & \frac{28}{3} & 0 \\
+0 & 0 & 0 & 1 & 0 & 0
+\end{array}\right) \\
+3: &\ \left(\begin{array}{rrrrrr}
+0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 56 & \frac{200}{3} & \frac{28}{3} & 0 \\
+0 & 56 & 700 & \frac{2380}{3} & \frac{200}{3} & 1 \\
+1 & \frac{200}{3} & \frac{2380}{3} & 700 & 56 & 0 \\
+0 & \frac{28}{3} & \frac{200}{3} & 56 & 0 & 0 \\
+0 & 0 & 1 & 0 & 0 & 0
+\end{array}\right) \\
+4: &\ \left(\begin{array}{rrrrrr}
+0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & \frac{343}{3} & \frac{50}{3} & 1 \\
+0 & 0 & 686 & \frac{2450}{3} & \frac{343}{3} & 0 \\
+0 & \frac{343}{3} & \frac{2450}{3} & 686 & 0 & 0 \\
+1 & \frac{50}{3} & \frac{343}{3} & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 & 0 & 0
+\end{array}\right) \\
+5: &\ \left(\begin{array}{rrrrrr}
+0 & 0 & 0 & 0 & 0 & 1 \\
+0 & 0 & 0 & 0 & 132 & 0 \\
+0 & 0 & 0 & 1617 & 0 & 0 \\
+0 & 0 & 1617 & 0 & 0 & 0 \\
+0 & 132 & 0 & 0 & 0 & 0 \\
+1 & 0 & 0 & 0 & 0 & 0
+\end{array}\right) \\\end{aligned}
+\end{math}
+}
+    
+
+    We now compute the triple intersection numbers with respect to three
+vertices \textbf{\(x, y, z\) at mutual distances \(2\)}. Note that we
+have \sout{\(p^2_{22} = 243\)}, so such triples must exist. The
+parameter \textbf{\(\alpha\)} will denote the number of vertices
+adjacent to all of \emph{\(x, y, z\)}.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{19}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{p}\PY{o}{.}\PY{n}{distancePartition}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{19}{}
+    
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_35_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{20}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{S222} \PY{o}{=} \PY{n}{p}\PY{o}{.}\PY{n}{tripleEquations}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{n}{params}\PY{o}{=}\PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{alpha}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{)}
+\PY{n}{show}\PY{p}{(}\PY{n}{S222}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
+\PY{n}{show}\PY{p}{(}\PY{n}{S222}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{]}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\alpha
+\end{math}
+
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}-12 \, \alpha + 20
+\end{math}
+
+    
+    Let us consider the set \textbf{\(A\)} of \textbf{common neighbours of
+\(x\) and \(y\)}, and the set \textbf{\(B\)} of vertices at
+\textbf{distance \(2\) from both \(x\) and \(y\)}. By the above, each
+vertex in \emph{\(B\)} has \sout{at most one neighbour} in \emph{\(A\)},
+so there are \sout{at most \(243\)} edges between \emph{\(A\)} and
+\emph{\(B\)}. However, each vertex in \emph{\(A\)} is adjacent to both
+\emph{\(x\)} and \emph{\(y\)}, and the other \sout{\(53\)} neighbours
+are in \emph{\(B\)}, amounting to a total of \sout{\(5 \cdot 53 = 265\)}
+edges. We have arrived to a \sout{contradiction}, and we must conclude
+that a graph with intersection array
+\emph{\(\{55, 54, 50, 35, 10; 1, 5, 20, 45, 55\}\)} \sout{does not
+exist}.
+
+    \hypertarget{double-counting}{%
+\section*{Double counting}\label{double-counting}}
+
+\begin{itemize}
+\tightlist
+\item
+  Let \textbf{\(x, y \in X\)} with \textbf{\(x \ R_r \ y\)}.
+\item
+  Let \textbf{\(\alpha_1, \alpha_2, \dots \alpha_u\)} and
+  \textbf{\(\kappa_1, \kappa_2, \dots \kappa_u\)} be numbers such that
+  there are precisely \emph{\(\kappa_\ell\)} vertices
+  \textbf{\(z \in X\)} with \textbf{\(x \ R_s \ z \ R_t \ y\)} such that
+  \textbf{\[
+  \begin{bmatrix} x & y & z \\ h & i & j \end{bmatrix} = \alpha_\ell \qquad (1 \le \ell \le u).
+  \]}
+\item
+  Let \textbf{\(\beta_1, \beta_2, \dots \beta_v\)} and
+  \textbf{\(\lambda_1, \lambda_2, \dots \lambda_v\)} be numbers such
+  that there are precisely \emph{\(\lambda_\ell\)} vertices
+  \textbf{\(w \in X\)} with \textbf{\(x \ R_h \ w \ R_i \ y\)} such that
+  \textbf{\[
+  \begin{bmatrix} w & x & y \\ j & s & t \end{bmatrix} = \beta_\ell \qquad (1 \le \ell \le v).
+  \]}
+\item
+  Double-counting pairs \emph{\((w, z)\)} with \textbf{\(w \ R_j \ z\)}
+  gives \sout{\[
+  \sum_{\ell=1}^u \kappa_\ell \alpha_\ell = \sum_{\ell=1}^v \lambda_\ell \beta_\ell
+  \]}
+\item
+  Special case: \textbf{\(u = 1, \alpha_1 = 0\)} implies
+  \sout{\(v = 1, \beta_1 = 0\)}.
+\end{itemize}
+
+    \hypertarget{example-parameters-for-a-3-class-q-polynomial-scheme}{%
+\section*{\texorpdfstring{Example: parameters for a \(3\)-class
+\(Q\)-polynomial
+scheme}{Example: parameters for a 3-class Q-polynomial scheme}}\label{example-parameters-for-a-3-class-q-polynomial-scheme}}
+
+\sout{Nonexistence} of some \emph{\(Q\)-polynomial} association schemes
+has been proven by obtaining a \emph{contradiction} in \emph{double
+counting} with triple intersection numbers.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{21}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{q225}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{21}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\text{Parameters of a $Q$-polynomial association scheme with Krein array } \left\{24, 20, \frac{36}{11}; 1, \frac{30}{11}, 24\right\}
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{22}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{q225}\PY{o}{.}\PY{n}{check\PYZus{}quadruples}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+...
+InfeasibleError: found forbidden quadruple wxyz with d(w, x) = 2, d(w, y) = 2, d(w, z) = 2, d(x, y) = 3, d(x, z) = 3, d(y, z) = 3
+
+    \end{Verbatim}
+
+    \emph{Integer linear programming} has been used to find solutions to
+multiple systems of \emph{linear Diophantine equations},
+\emph{eliminating} inconsistent solutions.
+
+    \hypertarget{more-results}{%
+\section*{More results}\label{more-results}}
+
+There is no \emph{distance-regular graph} with intersection array
+\begin{itemize}
+\tightlist
+\item \sout{\(\{83, 54, 21; 1, 6, 63\}\)} (\sout{\(1080\)} vertices)
+\item \sout{\(\{135, 128, 16; 1, 16, 120\}\)} (\sout{\(1360\)} vertices)
+\item \sout{\(\{104, 70, 25; 1, 7, 80\}\)} (\sout{\(1470\)} vertices)
+\item \sout{\(\{234, 165, 12; 1, 30, 198\}\)} (\sout{\(1600\)} vertices)
+\item \sout{\(\{195, 160, 28; 1, 20, 168\}\)} (\sout{\(2016\)} vertices)
+\item \sout{\(\{125, 108, 24; 1, 9, 75\}\)} (\sout{\(2106\)} vertices)
+\item \sout{\(\{126, 90, 10; 1, 6, 105\}\)} (\sout{\(2197\)} vertices)
+\item \sout{\(\{203, 160, 34; 1, 16, 170\}\)} (\sout{\(2640\)} vertices)
+\item \sout{\(\{53, 40, 28, 16; 1, 4, 10, 28\}\)} (\sout{\(2916\)} vertices)
+\end{itemize}
+
+\sout{Nonexistence} of \emph{\(Q\)-polynomial association schemes}
+{[}GVW21{]} with parameters listed as \emph{feasible} by
+\href{http://www.uwyo.edu/jwilliford/}{Williford} has been shown for
+\begin{itemize}
+\tightlist
+\item \sout{\(29\)} cases of \emph{\(3\)-class primitive} \(Q\)-polynomial
+association schemes
+  \begin{itemize}
+  \tightlist
+  \item \emph{double counting} has been used in \sout{two} cases
+  \end{itemize}
+\item \sout{\(92\)} cases of \emph{\(4\)-class \(Q\)-bipartite}
+\(Q\)-polynomial association schemes
+\item \sout{\(11\)} cases of
+\emph{\(5\)-class \(Q\)-bipartite} \(Q\)-polynomial association schemes
+\end{itemize}
+
+\newpage
+
+    \hypertarget{nonexistence-of-infinite-families}{%
+\section*{Nonexistence of infinite
+families}\label{nonexistence-of-infinite-families}}
+
+Association schemes with the following parameters do not exist.
+
+\begin{itemize}
+\tightlist
+\item
+  \emph{distance-regular graphs} with \emph{intersection arrays}
+  \sout{\(\{(2r+1)(4r+1)(4t-1), 8r(4rt-r+2t), (r+t)(4r+1); 1, (r+t)(4r+1), 4r(2r+1)(4t-1)\}\)}
+  (\textbf{\(r, t \ge 1\)})
+\item
+  \emph{primitive \(Q\)-polynomial association schemes} with \emph{Krein
+  arrays} \sout{\(\{2r^2-1, 2r^2-2, r^2+1; 1, 2, r^2-1\}\)}
+  (\textbf{\(r \ge 3\) odd})
+\item
+  \emph{\(Q\)-bipartite \(Q\)-polynomial association schemes} with
+  \emph{Krein arrays}
+  \sout{\(\left\{m, m-1, {m(r^2-1) \over r^2}, m-r^2+1; 1, {m \over r^2}, r^2-1, m\right\}\)}
+  (\textbf{\(m, r \ge 3\) odd})
+\item
+  \emph{\(Q\)-bipartite \(Q\)-polynomial association schemes} with
+  \emph{Krein arrays}
+  \sout{\(\left\{{r^2+1 \over 2}, {r^2-1 \over 2}, {(r^2+1)^2 \over 2r(r+1)},  {(r-1)(r^2+1) \over 4r}, {r^2+1 \over 2r};  1, {(r-1)(r^2+1) \over 2r(r+1)}, {(r+1)(r^2 + 1) \over 4r},  {(r-1)(r^2+1) \over 2r}, {r^2+1 \over 2}\right\}\)}
+  (\textbf{\(r \ge 5\)}, \textbf{\(r \equiv 3 \pmod{4}\)})
+\item
+  \emph{\(Q\)-antipodal \(Q\)-polynomial association schemes} with
+  \emph{Krein arrays}
+  \sout{\(\left\{r^2 - 4, r^2 - 9, \frac{12(s-1)}{s}, 1; 1, \frac{12}{s}, r^2 - 9, r^2 - 4\right\}\)}
+  (\textbf{\(r \ge 5\)}, \textbf{\(s \ge 4\)})
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \textbf{Corollary}: a \emph{tight \(4\)-design} in
+    \textbf{\(H((9a^2+1)/5,6)\)} \sout{does not exist} {[}GSV20{]}.
+  \end{itemize}
+\end{itemize}
+
+    \hypertarget{using-schuxf6nbergs-theorem}{%
+\section*{Using Schönberg's
+theorem}\label{using-schuxf6nbergs-theorem}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Schönberg's theorem}: A \emph{polynomial}
+  \textbf{\(f: [-1, 1] \to \mathbb{R}\)} of degree \textbf{\(D\)} is
+  \sout{positive definite on \(S^{m-1}\)} iff it is a \sout{nonnegative
+  linear combination} of \emph{Gegenbauer polynomials}
+  \textbf{\(Q^m_{\ell}\)} (\textbf{\(0 \le \ell \le D\)}).
+\item
+  \textbf{Theorem} (\emph{Kodalen, Martin}): If
+  \textbf{\((X, \mathcal{R})\)} is an \emph{association scheme}, then
+  \sout{\[
+  Q_{\ell}^{m_i} \left({1 \over m_i} L^*_i \right) = {1 \over |X|} \sum_{j=0}^D \theta_{\ell j} L^*_j
+  \]} for some \sout{nonnegative constants} \textbf{\(\theta_{\ell j}\)}
+  (\textbf{\(0 \le j \le D\)}), where
+  \textbf{\(m_i = \operatorname{rank}(E_i)\)} and
+  \textbf{\(L^*_i = (q^h_{ij})_{h,j=0}^D\)}.
+\end{itemize}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{23}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{q594} \PY{o}{=} \PY{n}{drg}\PY{o}{.}\PY{n}{QPolyParameters}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{9}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{81}\PY{o}{/}\PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{63}\PY{o}{/}\PY{l+m+mi}{8}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{18}\PY{o}{/}\PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{9}\PY{o}{/}\PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{9}\PY{p}{]}\PY{p}{)}
+\PY{n}{q594}\PY{o}{.}\PY{n}{order}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{23}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}594
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{24}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{q594}\PY{o}{.}\PY{n}{check\PYZus{}schoenberg}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+...
+InfeasibleError: Gegenbauer polynomial 4 on L*[1] not nonnegative: nonexistence by Kodalen19, Corollary 3.8.
+
+    \end{Verbatim}
+
+\newpage
+
+    \hypertarget{the-terwilliger-polynomial}{%
+\section*{The Terwilliger
+polynomial}\label{the-terwilliger-polynomial}}
+
+\begin{itemize}
+\tightlist
+\item
+  \emph{Terwilliger} has observed that for a \emph{\(Q\)-polynomial
+  distance-regular graph \(\Gamma\)}, there exists a \sout{polynomial
+  \(T\) of degree \(4\)} whose coefficients can be expressed in terms of
+  the \emph{intersection numbers} of \emph{\(\Gamma\)} such that
+  \sout{\(T(\theta) \ge 0\)} for each \emph{non-principal eigenvalue}
+  \textbf{\(\theta\)} of the \textbf{local graph} at a vertex of
+  \emph{\(\Gamma\)}.
+\item
+  \texttt{sage-drg} can be used to \emph{compute} this polynomial.
+\end{itemize}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{25}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{p750} \PY{o}{=} \PY{n}{drg}\PY{o}{.}\PY{n}{DRGParameters}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{49}\PY{p}{,} \PY{l+m+mi}{40}\PY{p}{,} \PY{l+m+mi}{22}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{28}\PY{p}{]}\PY{p}{)}
+\PY{n}{p750}\PY{o}{.}\PY{n}{order}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{25}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}750
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{26}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{T750} \PY{o}{=} \PY{n}{p750}\PY{o}{.}\PY{n}{terwilligerPolynomial}\PY{p}{(}\PY{p}{)}
+\PY{n}{T750}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{26}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}-18 \, x^{4} + 42 \, x^{3} + 366 \, x^{2} - 506 \, x - 1452
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{27}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{sorted}\PY{p}{(}\PY{n}{s}\PY{o}{.}\PY{n}{rhs}\PY{p}{(}\PY{p}{)} \PY{k}{for} \PY{n}{s} \PY{o+ow}{in} \PY{n}{solve}\PY{p}{(}\PY{n}{T750} \PY{o}{==} \PY{l+m+mi}{0}\PY{p}{,} \PY{n}{x}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{27}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\left[-\frac{11}{3}, -\frac{1}{6} \, \sqrt{345} + \frac{3}{2}, 3, \frac{1}{6} \, \sqrt{345} + \frac{3}{2}\right]
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{28}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{plot}\PY{p}{(}\PY{n}{T750}\PY{p}{,} \PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{28}{}
+    
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_52_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+
+    We may now use \textbf{{[}BCN, Thm. 4.4.4{]}} to further \emph{restrict}
+the possible \emph{non-principal eigenvalues} of the \emph{local
+graphs}.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{29}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{l}\PY{p}{,} \PY{n}{u} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{p750}\PY{o}{.}\PY{n}{b}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{/} \PY{p}{(}\PY{n}{p750}\PY{o}{.}\PY{n}{theta}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{p750}\PY{o}{.}\PY{n}{b}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{/} \PY{p}{(}\PY{n}{p750}\PY{o}{.}\PY{n}{theta}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{l}\PY{p}{,} \PY{n}{u}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{29}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\left(-\frac{11}{3}, 3\right)
+\end{math}
+
+    
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{30}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{plot}\PY{p}{(}\PY{n}{T750}\PY{p}{,} \PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)} \PY{o}{+} \PY{n}{line}\PY{p}{(}\PY{p}{[}\PY{p}{(}\PY{n}{l}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{n}{u}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{)}\PY{p}{]}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{red}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{thickness}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{30}{}
+    
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_55_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+
+    Since graph eigenvalues are \emph{algebraic integers} and all
+\emph{non-integral eigenvalues} of the \emph{local graph} lie on a
+subinterval of \sout{\((-4, -1)\)}, it can be shown that the only
+permissible \emph{non-principal eigenvalues} are \sout{\(-3, -2, 3\)}.
+
+    We may now set up a \emph{system of equations} to determine the
+\emph{multiplicities}.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{31}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{var}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{m1 m2 m3}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{solve}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{1} \PY{o}{+} \PY{n}{m1} \PY{o}{+} \PY{n}{m2} \PY{o}{+} \PY{n}{m3} \PY{o}{==} \PY{n}{p750}\PY{o}{.}\PY{n}{k}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}
+       \PY{l+m+mi}{1} \PY{o}{*} \PY{n}{p750}\PY{o}{.}\PY{n}{a}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{+} \PY{n}{m1} \PY{o}{*} \PY{l+m+mi}{3} \PY{o}{+} \PY{n}{m2} \PY{o}{*} \PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{2}\PY{p}{)} \PY{o}{+} \PY{n}{m3} \PY{o}{*} \PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{3}\PY{p}{)} \PY{o}{==} \PY{l+m+mi}{0}\PY{p}{,}
+       \PY{l+m+mi}{1} \PY{o}{*} \PY{n}{p750}\PY{o}{.}\PY{n}{a}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{\PYZca{}}\PY{l+m+mi}{2} \PY{o}{+} \PY{n}{m1} \PY{o}{*} \PY{l+m+mi}{3}\PY{o}{\PYZca{}}\PY{l+m+mi}{2} \PY{o}{+} \PY{n}{m2} \PY{o}{*} \PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{2}\PY{p}{)}\PY{o}{\PYZca{}}\PY{l+m+mi}{2} \PY{o}{+} \PY{n}{m3} \PY{o}{*} \PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{3}\PY{p}{)}\PY{o}{\PYZca{}}\PY{l+m+mi}{2} \PY{o}{==} \PY{n}{p750}\PY{o}{.}\PY{n}{k}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{*} \PY{n}{p750}\PY{o}{.}\PY{n}{a}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{,}
+      \PY{p}{(}\PY{n}{m1}\PY{p}{,} \PY{n}{m2}\PY{p}{,} \PY{n}{m3}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+ 
+            
+\prompt{Out}{outcolor}{31}{}
+    
+    \begin{math}
+\newcommand{\Bold}[1]{\mathbf{#1}}\left[\left[m_{1} = \left(\frac{96}{5}\right), m_{2} = \left(\frac{104}{5}\right), m_{3} = 8\right]\right]
+\end{math}
+
+    
+
+    Since all multiplicities are not \emph{nonnegative integers}, we
+conclude that there is no \emph{distance-regular graph} with
+intersection array
+\begin{itemize}
+\tightlist
+\item \sout{\(\{49, 40, 22; 1, 5, 28\}\)} (\sout{\(750\)}
+vertices)
+\item \sout{\(\{109, 80, 22; 1, 10, 88\}\)} (\sout{\(1200\)}
+vertices)
+\item \sout{\(\{164, 121, 33; 1, 11, 132\}\)} (\sout{\(2420\)}
+vertices)
+\end{itemize}
+
+\newpage
+
+    \hypertarget{distance-regular-graphs-with-classical-parameters}{%
+\section*{Distance-regular graphs with classical
+parameters}\label{distance-regular-graphs-with-classical-parameters}}
+
+We use a similar technique to prove \sout{nonexistence} of certain
+\emph{distance-regular graphs} with \emph{classical parameters}
+\textbf{\((D, b, \alpha, \beta)\)}:
+\begin{itemize}
+\tightlist
+\item \sout{\((3, 2, 2, 9)\)} (\sout{\(430\)} vertices)
+\item \sout{\((3, 2, 5, 21)\)} (\sout{\(1100\)} vertices)
+\item \sout{\((6, 2, 2, 107)\)} (\sout{\(87\,725\,820\,468\)}
+vertices)
+\item \sout{\((b, \alpha) = (2, 1)\)} and
+  \begin{itemize}
+  \tightlist
+  \item \sout{\(D = 4\)}, \sout{\(\beta \in \{8, 10, 12\}\)}
+  \item \sout{\(D = 5\)}, \sout{\(\beta \in \{16, 17, 19, 20, 21, 28\}\)}
+  \item \sout{\(D = 6\)}, \sout{\(\beta \in \{32, 33, 34, 35, 36, 38, 40, 46, 49, 54, 60\}\)}
+  \item \sout{\(D = 7\)}, \sout{\(\beta \in \{64, 65, 66, 67, 69, 70, 71, 72, 73, 74, 77, 79, 81, 84, 85, 92, 99, 124\}\)}
+  \item \sout{\(D = 8\)}, \sout{\(\beta \in \{128, 129, 130, 131, 133, 134, 135, 136, 137, 139, 140, 141, 151, 152, 155, 158,\) \(160, 165, 168, 174, 175, 183, 184, 190, 202, 238, 252\}\)}
+  \item \sout{\(D \ge 3\)}, \sout{\(\beta \in \{2^{D-1}, 2^D-4\}\)}
+\end{itemize}
+\end{itemize}
+
+    \hypertarget{local-graphs-with-at-most-four-eigenvalues}{%
+\section*{Local graphs with at most four
+eigenvalues}\label{local-graphs-with-at-most-four-eigenvalues}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Lemma} (\emph{Van Dam}): A \emph{connected graph} on
+  \textbf{\(n\)} vertices with \emph{spectrum} \textbf{\[
+  {\theta_0}^{\ell_0} \quad
+  {\theta_1}^{\ell_1} \quad
+  {\theta_2}^{\ell_2} \quad
+  {\theta_3}^{\ell_3}
+  \]} is \sout{walk-regular} with precisely \sout{\[
+  w_r = {1 \over n} \sum_{i=0}^3 \ell_i \cdot {(\theta_i)}^r
+  \]} \emph{closed \(r\)-walks} (\textbf{\(r \ge 3\)}) through
+  \emph{each vertex}.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    If \textbf{\(r\)} is \emph{odd}, \textbf{\(w_r\)} must be
+    \sout{even}.
+  \end{itemize}
+\item
+  A \emph{distance-regular graph} \textbf{\(\Gamma\)} with
+  \emph{classical parameters} \textbf{\((D, 2, 1, \beta)\)} has
+  \emph{local graphs} with
+
+  \begin{itemize}
+  \tightlist
+  \item
+    precisely \textbf{three distinct eigenvalues} if
+    \textbf{\(\beta = 2^D - 1\)}, and then \emph{\(\Gamma\)} is a
+    \sout{bilinear forms graph} (Gavrilyuk, Koolen)
+  \item
+    precisely \textbf{four distinct eigenvalues} if
+    \textbf{\((\beta+1) \mid (2^D-2)(2^D-1)\)}, and then
+    \sout{\(\beta = 2^D-2\)} (or \emph{\(w_3\)} is \sout{nonintegral})
+  \end{itemize}
+\item
+  There is no \emph{distance-regular graph} with \emph{classical
+  parameters} \textbf{\((D, 2, 1, \beta)\)} such that
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \sout{\((D, \beta) \in \{(3, 5), (4, 9), (4, 13), (5, 29), (6, 41), (6, 61), (7, 125), (8, 169), (8, 253)\}\)}
+  \item
+    \sout{\(D \ge 3\)} and \sout{\(\beta = 2^D - 3\)}
+  \end{itemize}
+\end{itemize}
+
+
+    % Add a bibliography block to the postdoc
+    
+    
+    
+\end{document}
