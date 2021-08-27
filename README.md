@@ -54,7 +54,7 @@ You may also want to cite other documents containing descriptions of features th
 * J. Vidali. Computing distance-regular graph and association scheme parameters in SageMath with `sage-drg`. *Sém. Lothar. Combin.* 82B#105, 2019. [`https://www.mat.univie.ac.at/~slc/wpapers/FPSAC2019/105.pdf`](https://www.mat.univie.ac.at/~slc/wpapers/FPSAC2019/105.pdf)
     + support for general and *Q*-polynomial association schemes
 
-* A. L. Gavrilyuk, J. Vidali, J. S. Williford. On few-class *Q*-polynomial association schemes: feasible parameters and nonexistence results, *Ars Math. Contemp.*, 2021. [`https://amc-journal.eu/index.php/amc/article/view/2101`](https://amc-journal.eu/index.php/amc/article/view/2101), [`doi:10.26493/1855-3974.2101.b76`](https://doi.org/10.26493/1855-3974.2101.b76).
+* A. L. Gavrilyuk, J. Vidali, J. S. Williford. On few-class *Q*-polynomial association schemes: feasible parameters and nonexistence results, *Ars Math. Contemp.*, 20(1):103-127, 2021. [`doi:10.26493/1855-3974.2101.b76`](https://doi.org/10.26493/1855-3974.2101.b76).
     + triple intersection number solution finder and forbidden quadruples check
     + support for quadruple intersection numbers
 
@@ -99,7 +99,10 @@ The above citations are given here in BibTeX format.
      TITLE = {On few-class $Q$-polynomial association schemes: feasible parameters and nonexistence results},
    JOURNAL = {Ars Math. Contemp.},
   FJOURNAL = {Ars Mathematica Contemporanea},
-      NOTE = {\url{https://amc-journal.eu/index.php/amc/article/view/2101}, \href{https://doi.org/10.26493/1855-3974.2101.b76}{\texttt{doi:10.26493/1855-3974.2101.b76}}},
+    VOLUME = {20},
+    NUMBER = {1},
+     PAGES = {103--127},
+      NOTE = {\href{https://doi.org/10.26493/1855-3974.2101.b76}{\texttt{doi:10.26493/1855-3974.2101.b76}}},
       YEAR = {2021},
 }
 ```

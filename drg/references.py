@@ -603,6 +603,9 @@ Article("GVW21",
               "feasible parameters and nonexistence results",
         journal="Ars Math. Contemp.",
         fjournal="Ars Mathematica Contemporanea",
+        volume=20,
+        number=1,
+        pages=(103, 127),
         url="https://doi.org/10.26493/1855-3974.2101.b76",
         year=2021
 )
