@@ -1243,7 +1243,7 @@ class DRGParameters(PolyASParameters):
         d = floor(1 + self._.k[1] / m)
         if c > self._.c[2]**2 / b - m + 1 and \
                 M.subs(x == c) < 0 and M.subs(x == d) < 0:
-            raise InfeasibleError("no feasible maximal clique size", "GKP20")
+            raise InfeasibleError("no feasible maximal clique size", "GKP21")
 
     @check(1)
     def check_terwilliger(self):

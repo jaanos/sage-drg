@@ -538,6 +538,15 @@ Article("GavrilyukMakhnev13",
         year=2013
 )
 
+Unpublished("KoolenGebremichel21",
+            author=[("Koolen", ("Jack", "H.")), ("Gebremichel", ("Brhane", ))],
+            title="There does not exist a strongly regular graph "
+                  "with parameters $(1911,270,105,27)$",
+            note="manuscript",
+            url="https://arxiv.org/abs/2109.04000",
+            year=2021
+)
+
 Article("GodsilHensel92",
         author=[("Godsil", ("Christopher", "D.")), ("Hensel", ("A.", "D."))],
         title="Distance regular covers of the complete graph",
@@ -568,18 +577,24 @@ Article("GKMP20",
         title="On the nonexistence of pseudo-generalized quadrangles",
         journal="European J. Combin.",
         fjournal="European Journal of Combinatorics",
+        volume=89,
+        pages=103128,
         url="https://doi.org/10.1016/j.ejc.2020.103128",
         year=2020
 )
 
-Unpublished("GKP20",
-            author=[("Greaves", ("Gary", "R.", "W.")),
-                    ("Koolen", ("Jack", "H.")),
-                    ("Park", ("Jongyook", ))],
-            title="Improving the Delsarte bound",
-            note="manuscript",
-            url="https://arxiv.org/abs/2012.09391",
-            year=2020
+Article("GKP21",
+        author=[("Greaves", ("Gary", "R.", "W.")),
+                ("Koolen", ("Jack", "H.")),
+                ("Park", ("Jongyook", ))],
+        title="Augmenting the Delsarte bound: a forbidden interval for "
+              "the order of maximal cliques in strongly regular graphs",
+        journal="European J. Combin.",
+        fjournal="European Journal of Combinatorics",
+        volume=97,
+        pages=103384,
+        url="https://doi.org/10.1016/j.ejc.2021.103384",
+        year=2021
 )
 
 Article("GSV20",
