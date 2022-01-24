@@ -231,6 +231,16 @@ def is_constant(x):
     return not isinstance(x, Expression) or x.is_constant()
 
 
+def is_integer(x):
+    """
+    Determine whether an expression is an integer.
+    """
+    try:
+        integralize(x)
+        return True
+    except TypeError:
+        return False
+
 def is_integral(sol):
     """
     Determine whether a solution of a system of equations can be integral.

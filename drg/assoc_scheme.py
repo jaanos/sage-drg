@@ -775,7 +775,7 @@ class ASParameters(SageObject):
             return
         if skip is None:
             skip = set()
-        elif isinstance(skip, str):
+        elif isinstance(skip, six.string_types):
             skip = {skip}
         else:
             skip = set(skip)
@@ -2111,7 +2111,7 @@ class PolyASParameters(ASParameters):
                 else:
                     b = self._.b[:m]
                     c = list(self._.c[1:m+1])
-                    if self._.d % 2 == 0:
+                    if is_divisible(self._.d, 2):
                         c[-1] *= self._.r
                 scheme = self._get_class()(tuple(b), tuple(c))
             else:

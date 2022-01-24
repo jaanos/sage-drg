@@ -40,6 +40,8 @@ from .util import hard_floor
 from .util import integralize
 from .util import is_algebraic_integer
 from .util import is_constant
+from .util import is_divisible
+from .util import is_integer
 from .util import is_squareSum
 from .util import pair_keep
 from .util import pair_swap
@@ -628,7 +630,7 @@ class DRGParameters(PolyASParameters):
             raise InfeasibleError("invalid eigenvalues for local graph",
                                   refs)
         if interval.cardinality() == 2:
-            if self._.b[0] % (a+1) != 0:
+            if not is_divisible(self._.b[0], a+1):
                 raise InfeasibleError("graph with maximal cliques "
                                       "but a[1]+1 does not divide k", refs)
             if bp < a:
@@ -1060,11 +1062,11 @@ class DRGParameters(PolyASParameters):
         """
         Check whether a conference graph can exist.
         """
-        if self._.d == 2 and all(isinstance(x, Integer)
+        if self._.d == 2 and all(is_integer(x)
                                  for x in self._.b + self._.c) and \
                 self._.b[1] == self._.c[2] and \
                 self._.b[0] == 2*self._.b[1] and \
-                (self._.n % 4 != 1 or not is_squareSum(self._.n)):
+                (not is_divisible(self._.n - 1, 4) or not is_squareSum(self._.n)):
             raise InfeasibleError("conference graph must have order a sum "
                                   "of two squares with residue 1 (mod 4)")
 
@@ -1089,14 +1091,13 @@ class DRGParameters(PolyASParameters):
         check whether a corresponding 2-design exists.
         """
         if self._.d == 3 and self._.antipodal \
-                and isinstance(self._.r, Integer) \
-                and isinstance(self._.b[0], Integer) \
+                and is_integer(self._.r) and is_integer(self._.b[0]) \
                 and self._.b[0] - 1 == self._.b[1] + self._.c[2]:
             ok = True
-            if self._.r % 2 == 0:
+            if is_divisible(self._.r, 2):
                 ok = is_squareSum(self._.b[0])
-            elif self._.b[0] % 2 == 0:
-                r = Integer(self._.r if self._.r % 4 == 1 else -self._.r)
+            elif is_divisible(self._.b[0], 2):
+                r = Integer(self._.r if is_divisible(self._.r - 1, 4) else -self._.r)
                 ok = Integer(self._.b[0]).is_square() or r.is_square() or \
                     (Integers(self._.r)(self._.b[0]).is_square() and
                      Integers(self._.b[0])(r).is_square())
@@ -1125,7 +1126,7 @@ class DRGParameters(PolyASParameters):
         check whether its quotient satisfies necessary conditions
         for the existence of a cover.
         """
-        if self._.antipodal and self._.d >= 4 and self._.d % 2 == 0:
+        if self._.antipodal and self._.d >= 4 and is_divisible(self._.d, 2):
             q = self.antipodalQuotient()
             try:
                 integralize(sum(q._.p[q._.d, i, q._.d-i]
@@ -1185,7 +1186,7 @@ class DRGParameters(PolyASParameters):
                                           ("PayneThas", "1.2.2."))
             elif g == 6 and 1 in [s, t]:
                 m = next(x for x in [s, t] if x != 1)
-                if isinstance(m, Integer) and m % 4 in [1, 2] and \
+                if is_integer(m) and Integer(m) % 4 in [1, 2] and \
                         not is_squareSum(m):
                     raise InfeasibleError("Bruck-Ryser theorem",
                                           ("BCN", "Thm. 1.10.4."))
@@ -1256,9 +1257,8 @@ class DRGParameters(PolyASParameters):
             self.eigenvalues()
         small = (self._.d == 2 and 50 * self._.c[2] > self._.n) or \
                 (self._.d >= 3 and 50 * (self._.c[2] - 1) > self._.b[0])
-        if self._.d >= 2 and isinstance(self._.b[0], Integer) and \
-                isinstance(self._.a[1], Integer) and \
-                isinstance(self._.c[2], Integer):
+        if self._.d >= 2 and is_integer(self._.b[0]) and \
+                is_integer(self._.a[1]) and is_integer(self._.c[2]):
             if all(is_constant(th) for th in self._.theta):
                 th = min(self._.theta)
             else:
@@ -1418,7 +1418,7 @@ class DRGParameters(PolyASParameters):
                                                return_refs=True)
         c = rng.cardinality()
         if rng.sup() <= bp or self._.subconstituents[1] is not None or \
-                not isinstance(c, Integer):
+                not is_integer(c):
             return
         ths = {SR.symbol("__m%d" % i): ii.lower()
                for i, ii in enumerate(rng) if ii.lower() != self._.a[1]}
@@ -1443,8 +1443,7 @@ class DRGParameters(PolyASParameters):
                     for th in thi:
                         thi[th] *= th
                     tr = sum(thi.values())
-                    if Integer(tr) % \
-                            Integer(self._.k[1] * (1 + i % 2)) != 0:
+                    if not is_divisible(tr, self._.k[1] * (1 + i % 2)):
                         if lvl < 1:
                             lvl = 1
                             reason = "local graph has nonintegral " \
@@ -1463,7 +1462,7 @@ class DRGParameters(PolyASParameters):
                                     "through a vertex"
                                 ref = "vanDam95"
                             break
-                        if lsp == 2 and xi % Integer(self._.a[1]) != 0:
+                        if lsp == 2 and not is_divisible(xi, self._.a[1]):
                             if lvl < 3:
                                 lvl = 3
                                 reason = "local graph has nonintegral " \
