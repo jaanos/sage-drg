@@ -768,17 +768,25 @@ class DRGParameters(PolyASParameters):
                 self.check_2graph()
             if self._.subconstituents[h] is None and check_local:
                 self.check_localEigenvalues(check_range=False)
+        elif h == 3 and self._.d == 3:
+            sol = FAMILY_EXTCODE._match(*self.intersectionArray())
+            if sol:
+                self._.subconstituents[h] = \
+                    (self.add_subscheme(FAMILY_EXTCODE_SUBC3.subs(*sol[0]),
+                                        self._subconstituent_name(h)),
+                     [("Vidali13", "Thm. 4.6.3")])
         if self._.subconstituents[h] is None:
-            subc, rels = PolyASParameters.subconstituent(self, h,
-                                                         compute=compute,
-                                                         return_rels=True)
+            subc, refs, rels = PolyASParameters.subconstituent(self, h,
+                compute=compute, return_rels=True)
+            trd = tuple(range(subc._.d+1))
             if subc is not None and len(rels) > 1 and rels[1] == 1 \
                     and subc.is_pPolynomial() \
-                    and tuple(range(subc._.d+1)) \
-                    in subc._.pPolynomial_ordering:
-                self._.subconstituents[h] = DRGParameters(
-                    subc, order=tuple(range(subc._.d+1)))
-        return self._.subconstituents[h]
+                    and trd in subc._.pPolynomial_ordering:
+                subc = DRGParameters(subc, order=trd)
+                self._.subconstituents[h] = (subc, refs)
+        else:
+            subc, refs = self._.subconstituents[h]
+        return subc
 
     def subs(self, *exp, **kargs):
         """
@@ -810,17 +818,17 @@ class DRGParameters(PolyASParameters):
                                    "2-graph derivation")
         elif self._.d == 3 and self._.antipodal and \
                 self._.r == 2 and self._.a[1] > 0:
+            bcn = ("BCN", "Thm. 1.5.3.")
             try:
                 mu = integralize(self._.a[1] / 2)
                 n = integralize(self._.n / 4)
             except TypeError:
                 raise InfeasibleError("Taylor graph with a[1] > 0 odd "
-                                      "or cover of K_n with n odd",
-                                      ("BCN", "Thm. 1.5.3."))
+                                      "or cover of K_n with n odd", bcn)
             self._.subconstituents[1] = \
-                self.add_subscheme(DRGParameters((self._.a[1], n - mu - 1),
-                                                 (Integer(1), mu)),
-                                   "local graph")
+                (self.add_subscheme(DRGParameters((self._.a[1], n - mu - 1),
+                                                  (Integer(1), mu)),
+                                    "local graph"), [bcn])
 
     @check(1)
     def check_classical(self):
@@ -1190,7 +1198,7 @@ class DRGParameters(PolyASParameters):
                         not is_squareSum(m):
                     raise InfeasibleError("Bruck-Ryser theorem",
                                           ("BCN", "Thm. 1.10.4."))
-        if self._.antipodal and self._.d == 3 and \
+        if self._.antipodal and self._.d == 3 and self._.r > 2 and \
                 self._.b[0] == (self._.r - 1) * (self._.c[2] + 1):
             s = self._.r - 1
             t = self._.c[2] + 1
@@ -1345,19 +1353,25 @@ class DRGParameters(PolyASParameters):
             fb = self._.k[1] * self._.a[1] * self._.b[1] + \
                 (th1 * (self._.a[1] + 1) + self._.k[1]) * \
                 (thd * (self._.a[1] + 1) + self._.k[1])
+            refs = []
+            jk = u"JurišićKoolen00"
+            jkt = "JKT00"
+            if bd == 0:
+                refs.append(jk)
+            if fb == 0:
+                refs.append(jkt)
             if bd > 0:
                 raise InfeasibleError("bound on local eigenvalues "
-                                      "exceeded", u"JurišićKoolen00")
+                                      "exceeded", jk)
             if fb < 0:
-                raise InfeasibleError("fundamental bound exceeded", "JKT00")
-            elif bd == 0 or fb == 0:
+                raise InfeasibleError("fundamental bound exceeded", jkt)
+            elif refs:
                 try:
                     integralize(self._.c[2]*mu/2)
                     if self._.c[2] < mu + 1:
                         raise TypeError
                 except TypeError:
-                    raise InfeasibleError("local graph strongly regular",
-                                          u"JurišićKoolen00")
+                    raise InfeasibleError("local graph strongly regular", jk)
                 if self._.d == 4 and self._.antipodal:
                     try:
                         bm = integralize(bm)
@@ -1367,11 +1381,10 @@ class DRGParameters(PolyASParameters):
                             raise TypeError
                     except TypeError:
                         raise InfeasibleError("locally strongly regular "
-                                              "antipodal graph with d=4",
-                                              u"JurišićKoolen00")
-                self._.subconstituents[1] = self.add_subscheme(
+                                              "antipodal graph with d=4", jk)
+                self._.subconstituents[1] = (self.add_subscheme(
                     DRGParameters((self._.a[1], -(bp+1)*(bm+1)),
-                                  (Integer(1), mu)), "local graph")
+                                  (Integer(1), mu)), "local graph"), refs)
 
         def checkMul(h):
             if self._.antipodal and self._.omega[h, self._.d] != 1 and \
@@ -1488,3 +1501,10 @@ class DRGParameters(PolyASParameters):
     intersectionArray = PolyASParameters.parameterArray
     mergeClasses = merge
     substitute = subs
+
+
+r = symbol("__r")
+t = symbol("__t")
+
+FAMILY_EXTCODE = DRGParameters([2*r*t*(2*r+1), (2*r-1)*(2*r*t+t+1), r*(r+t)], [1, r*(r+t), t*(4*r**2-1)])
+FAMILY_EXTCODE_SUBC3 = DRGParameters([t*(2*r+1), (t+1)*(2*r-1), 1], [1, t+1, t*(2*r+1)])

@@ -483,10 +483,18 @@ class ASParameters(SageObject):
         self.all_subconstituents(compute=derived > 1)
         if derived > 1:
             self.all_fusions()
+        subcs = set()
         for pa, part in self._.fusion_schemes.items():
-            yield (pa, part, True)
+            yield (pa, part, [], True)
+        for par in self._.subconstituents:
+            if par is None:
+                continue
+            pa, refs = par
+            yield (pa, self._.subschemes[pa], refs, False)
+            subcs.add(pa)
         for pa, part in self._.subschemes.items():
-            yield (pa, part, False)
+            if pa not in subcs:
+                yield (pa, part, [], False)
 
     @staticmethod
     def _get_class():
@@ -690,10 +698,11 @@ class ASParameters(SageObject):
         for h, s in enumerate(self._.subconstituents):
             if s is None:
                 continue
+            s, refs = s
             name = self._subconstituent_name(h)
             try:
-                p._.subconstituents[h] = p.add_subscheme(
-                    self._.subconstituents[h].subs(*exp, seen=seen), name)
+                p._.subconstituents[h] = (p.add_subscheme(
+                    s.subs(*exp, seen=seen), name), refs)
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part=name)
         if self._has("complement") and not p._has("complement"):
@@ -793,19 +802,19 @@ class ASParameters(SageObject):
         if queue is None:
             queue = []
             do_bfs = True
-        for par, pt, reorder in self._derived(derived):
+        for par, pt, refs, reorder in self._derived(derived):
             if par in checked:
                 continue
-            queue.append((par, (pt, ) + part, skip if reorder else None))
+            queue.append((par, (pt, *part), refs, skip if reorder else None))
         if do_bfs:
             i = 0
             while i < len(queue):
-                par, pt, skip = queue[i]
+                par, pt, refs, skip = queue[i]
                 try:
                     par.check_feasible(checked=checked, skip=skip,
                                        levels=levels, queue=queue, part=pt)
                 except (InfeasibleError, AssertionError) as ex:
-                    raise InfeasibleError(ex, part=pt)
+                    raise InfeasibleError(ex, refs=refs, part=pt)
                 i += 1
 
     def check_handshake(self):
@@ -1302,12 +1311,15 @@ class ASParameters(SageObject):
             except StopIteration:
                 raise IndexError("%s is not known to be an association scheme"
                                  % name)
-            self._.subconstituents[h] = self.add_subscheme(ASParameters(p=a),
-                                                           name)
-        if return_rels:
-            return (self._.subconstituents[h], rels)
+            subc = self.add_subscheme(ASParameters(p=a), name)
+            refs = []
+            self._.subconstituents[h] = (subc, refs)
         else:
-            return self._.subconstituents[h]
+            subc, refs = self._.subconstituents[h]
+        if return_rels:
+            return (subc, refs, rels)
+        else:
+            return subc
 
     def subs(self, *exp, **kargs):
         """
@@ -2240,8 +2252,8 @@ class PolyASParameters(ASParameters):
         Generate parameters sets of derived association schemes.
         """
         self.partSchemes()
-        for par, part, reorder in ASParameters._derived(self, derived):
-            yield (par, part, reorder)
+        for par, part, refs, reorder in ASParameters._derived(self, derived):
+            yield (par, part, refs, reorder)
 
     def _format_parameterArray(self):
         """
@@ -2320,6 +2332,15 @@ class PolyASParameters(ASParameters):
         return LatexExpr(r"\text{Parameters of a %s with %s } %s" %
                          (self.OBJECT_LATEX, self.ARRAY,
                           self._format_parameterArray_latex()))
+
+    def _match(self, b, c):
+        """
+        Return the values the variables need to take
+        to match with the given array.
+        """
+        return _solve([SR(l) == r for l, r in
+                       zip(self._.b[:-1] + self._.c[1:], tuple(b) + tuple(c))],
+                      self._.vars)
 
     def _subs(self, exp, p, seen):
         """
@@ -2450,9 +2471,7 @@ class PolyASParameters(ASParameters):
             assert len(b) == len(c), "parameter length mismatch"
             if self._.d != len(b):
                 continue
-            if len(_solve([SR(l) == r for l, r
-                          in zip(self._.b[:-1] + self._.c[1:],
-                                 tuple(b) + tuple(c))], self._.vars)) > 0:
+            if len(self._match(b, c)) > 0:
                 return True
         return False
 

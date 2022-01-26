@@ -138,8 +138,8 @@ class QPolyParameters(PolyASParameters):
         """
         if self._.antipodal and self._.d >= 3:
             self.all_dismantlements()
-        for par, part, reorder in PolyASParameters._derived(self, derived):
-            yield (par, part, reorder)
+        for par, part, refs, reorder in PolyASParameters._derived(self, derived):
+            yield (par, part, refs, reorder)
 
     def _copy(self, p):
         """
@@ -328,10 +328,14 @@ class QPolyParameters(PolyASParameters):
         then the relevant triple intersection numbers will be computed.
         """
         if self._.subconstituents[h] is None:
-            subc = PolyASParameters.subconstituent(self, h, compute=compute)
+            subc, refs, rels = PolyASParameters.subconstituent(self, h,
+                compute=compute, return_rels=True)
             if subc is not None and subc.is_qPolynomial():
-                self._.subconstituents[h] = QPolyParameters(subc)
-        return self._.subconstituents[h]
+                subc = QPolyParameters(subc)
+                self._.subconstituents[h] = (subc, refs)
+        else:
+            subc, refs = self._.subconstituents[h]
+        return subc
 
     def subs(self, *exp, **kargs):
         """

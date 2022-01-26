@@ -15,23 +15,24 @@ class InfeasibleError(Exception):
             part = ()
         elif not isinstance(part, tuple):
             part = (part, )
+        if refs is None:
+                refs = []
+        elif not isinstance(refs, list):
+            refs = [refs]
+        refs = [(references[pap], thm)
+                for pap, thm in (ref if isinstance(ref, tuple) else (ref, None)
+                                 for ref in refs)]
         if isinstance(reason, InfeasibleError):
             self.reason = reason.reason
-            self.refs = reason.refs
+            self.refs = reason.refs + refs
             self.part = reason.part + part
         elif isinstance(reason, Exception):
             self.reason = ", ".join(str(x) for x in reason.args)
-            self.refs = []
+            self.refs = refs
             self.part = part
         else:
             self.reason = reason
-            if refs is None:
-                refs = []
-            elif not isinstance(refs, list):
-                refs = [refs]
-            refs = [ref if isinstance(ref, tuple) else (ref, None)
-                    for ref in refs]
-            self.refs = [(references[pap], thm) for pap, thm in refs]
+            self.refs = refs
             self.part = part
         msg = []
         if len(self.part) > 0:

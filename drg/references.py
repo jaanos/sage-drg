@@ -924,6 +924,14 @@ Article("Urlep12",
         year=2012
 )
 
+PhDThesis("Vidali13",
+          author=[("Vidali", (u"Janoš", ))],
+          title="Codes in distance-regular graphs",
+          school="University of Ljubljana",
+          url="http://eprints.fri.uni-lj.si/2167/",
+          year=2013
+)
+
 Article("Vidali18",
         author=[("Vidali", (u"Janoš", ))],
         title="Using symbolic computation "
