@@ -550,7 +550,7 @@ class DRGParameters(PolyASParameters):
                 return True
         return False
 
-    def localEigenvalue_range(self, compute=False, b=None,
+    def localEigenvalue_range(self, compute=False, b=None, lowm=None,
                               return_refs=False):
         """
         Return the range of possible eigenvalues of a local graph.
@@ -565,8 +565,8 @@ class DRGParameters(PolyASParameters):
             return out(RealSet([0, 0]))
         elif a == 1 or self._.d == 1:
             return out(RealSet([-1, -1]) + RealSet([a, a]))
-        if not self._has("theta"):
-            self.eigenvalues()
+        if not self._has("m"):
+            self.multiplicities()
         assert all(is_constant(th) for th in self._.theta), \
             "eigenvalues not constant"
         check_local = b is None
@@ -574,6 +574,8 @@ class DRGParameters(PolyASParameters):
             _, _, _, _, bm, bp = self._compute_localEigenvalues()
         else:
             bm, bp = b
+        if lowm is None:
+            lowm = [h for h in range(1, self._.d+1) if self._.m[h] < self._.k[1]]
         try:
             loc = self.localGraph(compute=compute, check_local=check_local)
             if isinstance(loc, DRGParameters):
@@ -680,6 +682,35 @@ class DRGParameters(PolyASParameters):
                 interval -= RealSet((l, u))
                 interval += keep
                 refs.append(("BrouwerKoolen99", "cf. Thm. 7.1."))
+        minmult = {a: 1}
+        for h in lowm:
+            th = -1 - self._.b[1] / (self._.theta[h] + 1)
+            minmult[th] = self._.k[1] - self._.m[h] + (1 if th == a else 0)
+        th1 = (interval - RealSet([a, a])).sup()
+        th2 = (interval - RealSet.unbounded_above_open(0)).sup()
+        if th2 <= -th2 <= th1 and th1 > 0:
+            rest = self._.k[1] - sum(minmult.values())
+            m1 = -(rest * th2 + sum(th * mul for th, mul in minmult.items())) \
+                / (th1 - th2)
+            if m1 < 0:
+                m1 = 0
+            m2 = rest - m1
+            sth2 = sum(th**2 * mul for th, mul in minmult.items()) + \
+                m1 * th1**2 + m2 * th2**2
+            edges = a * self._.k[1]
+            if sth2 >= edges:
+                if len(minmult) > 1 or minmult[a] > 1:
+                    refs.append(("BCN", "Thm. 4.4.4."))
+                refs.append(("MakhnevBelousov21", "cf. Sec. 4"))
+                if m1 > 0:
+                    minmult[th1] = minmult.get(th1, 0) + m1
+                if m2 > 0:
+                    minmult[th2] = minmult.get(th2, 0) + m2
+                if sth2 > edges or any(th not in interval for th in minmult):
+                    raise InfeasibleError("no solution for the multiplicities "
+                                "of the eigenvalues of the local graph", refs)
+                interval = sum((RealSet([th, th]) for th in minmult),
+                               RealSet())
         return out(interval)
 
     def localGraph(self, compute=False, check_local=True):
@@ -1428,6 +1459,8 @@ class DRGParameters(PolyASParameters):
             return
         rng, refs = self.localEigenvalue_range(compute=compute,
                                                b=(bm, bp),
+                                               lowm=[h for h in s if
+                                                self._.m[h] < self._.k[1]],
                                                return_refs=True)
         c = rng.cardinality()
         if rng.sup() <= bp or self._.subconstituents[1] is not None or \

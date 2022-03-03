@@ -819,6 +819,19 @@ Article("Makhnev17",
         year=2017
 )
 
+Article("MakhnevBelousov21",
+        author=[("Makhnev", ("Alexander", "Alexeevich")),
+                ("Belousov", ("Ivan", "Nikolaevich"))],
+        title="Shilla graphs with $b = 5$ and $b = 6$",
+        journal="Ural Math. J.",
+        fjournal="Ural Mathematical Journal",
+        volume=7,
+        number=2,
+        pages=(51, 58),
+        url="https://doi.org/10.15826/umj.2021.2.004",
+        year=2021
+)
+
 Article("MartinWilliford09",
         author=[("Martin", ("William", "J.")),
                  ("Williford", ("Jason", "S."))],
