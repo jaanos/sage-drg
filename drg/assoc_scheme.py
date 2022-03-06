@@ -593,7 +593,7 @@ class ASParameters(SageObject):
         order = [0, i]
         while len(order) <= self._.d:
             j = {h for h in range(self._.d+1)
-                 if h not in order[-2:] and p[order[-1], i, h] != 0}
+                 if h not in order[-2:] and not p[order[-1], i, h] == 0}
             if len(j) != 1:
                 return False
             j, = j
