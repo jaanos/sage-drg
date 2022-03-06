@@ -1,12 +1,16 @@
 import six
 from sage.misc.functional import numerical_approx
-from sage.rings.complex_number import ComplexNumber
 from sage.rings.integer import Integer
 from sage.symbolic.expression import Expression
 from sage.symbolic.ring import SR
 from .util import checkNonneg
 from .util import checkPos
 from .util import variables
+
+try:
+    from sage.rings.complex_mpfr import ComplexNumber
+except ImportError:
+    from sage.rings.complex_number import ComplexNumber
 
 
 class CoefficientList:
