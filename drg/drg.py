@@ -682,33 +682,53 @@ class DRGParameters(PolyASParameters):
                 interval -= RealSet((l, u))
                 interval += keep
                 refs.append(("BrouwerKoolen99", "cf. Thm. 7.1."))
-        minmult = {a: 1}
+        minmult = {a: Integer(1)}
         for h in lowm:
             th = -1 - self._.b[1] / (self._.theta[h] + 1)
             minmult[th] = self._.k[1] - self._.m[h] + (1 if th == a else 0)
-        th1 = (interval - RealSet([a, a])).sup()
+        posint = interval - RealSet.unbounded_below_open(0)
+        th1 = posint.inf()
         th2 = (interval - RealSet.unbounded_above_open(0)).sup()
-        if th2 <= -th2 <= th1 and th1 > 0:
+        if posint.cardinality() <= 2 and th1 != th2 and -th2 <= th1:
+            rr = [("MakhnevBelousov21", "cf. Sec. 4")]
+            if len(minmult) > 1 or minmult[a] > 1:
+                rr.insert(0, ("BCN", "Thm. 4.4.4."))
+            th3 = interval.inf()
             rest = self._.k[1] - sum(minmult.values())
-            m1 = -(rest * th2 + sum(th * mul for th, mul in minmult.items())) \
-                / (th1 - th2)
-            if m1 < 0:
-                m1 = 0
-            m2 = rest - m1
-            sth2 = sum(th**2 * mul for th, mul in minmult.items()) + \
-                m1 * th1**2 + m2 * th2**2
+            fix = sum(th * mul for th, mul in minmult.items())
+            m1u = floor(-(rest * th3 + fix) / (th1 - th3))
+            if rest < 0 or m1u < 0:
+                raise InfeasibleError("no solution for the multiplicities "
+                                "of the eigenvalues of the local graph", refs + rr)
+            m1l = ceil(-(rest * th2 + fix) / (th1 - th2))
+            if m1l < 0:
+                m1l = Integer(0)
+            m2 = rest - m1l
+            m3 = rest - m1u
+            fix2 = sum(th**2 * mul for th, mul in minmult.items())
+            sth2 = fix2 + m1l * th1**2 + m2 * th2**2
+            sth3 = fix2 + m1u * th1**2 + m3 * th3**2
             edges = a * self._.k[1]
             if sth2 >= edges:
-                if len(minmult) > 1 or minmult[a] > 1:
-                    refs.append(("BCN", "Thm. 4.4.4."))
-                refs.append(("MakhnevBelousov21", "cf. Sec. 4"))
-                if m1 > 0:
-                    minmult[th1] = minmult.get(th1, 0) + m1
+                refs += rr
+                if m1l > 0:
+                    minmult[th1] = minmult.get(th1, 0) + m1l
                 if m2 > 0:
                     minmult[th2] = minmult.get(th2, 0) + m2
                 if sth2 > edges or any(th not in interval for th in minmult):
-                    raise InfeasibleError("no solution for the multiplicities "
-                                "of the eigenvalues of the local graph", refs)
+                    raise InfeasibleError("lower bound for the number of edges"
+                                          " in the local graph exceeded", refs)
+                interval = sum((RealSet([th, th]) for th in minmult),
+                               RealSet())
+            elif -th3 <= th1 and sth3 <= edges:
+                refs += rr
+                if m1u > 0:
+                    minmult[th1] = minmult.get(th1, 0) + m1u
+                if m3 > 0:
+                    minmult[th3] = minmult.get(th3, 0) + m3
+                if sth3 < edges or any(th not in interval for th in minmult):
+                    raise InfeasibleError("upper bound for the number of edges"
+                                          " in the local graph exceeded", refs)
                 interval = sum((RealSet([th, th]) for th in minmult),
                                RealSet())
         return out(interval)
