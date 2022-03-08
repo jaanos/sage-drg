@@ -1291,6 +1291,8 @@ class ASParameters(SageObject):
         rels = None
         assert checkPos(self._.p[0, h, h]), \
             "%s consists of a single vertex" % name
+        if self._.d == 2:
+            compute = True
         if self._.subconstituents[h] is None:
             rels = [i for i in range(self._.d+1)
                     if checkPos(self._.p[h, h, i])]
