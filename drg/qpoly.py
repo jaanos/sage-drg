@@ -331,8 +331,9 @@ class QPolyParameters(PolyASParameters):
             subc, refs, rels = PolyASParameters.subconstituent(self, h,
                 compute=compute, return_rels=True)
             if subc is not None and subc.is_qPolynomial():
-                subc = QPolyParameters(subc)
+                old, subc = subc, QPolyParameters(subc)
                 self._.subconstituents[h] = (subc, refs)
+                self.add_subscheme(subc, replace=old)
         else:
             subc, refs = self._.subconstituents[h]
         return subc

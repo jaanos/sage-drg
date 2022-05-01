@@ -833,8 +833,9 @@ class DRGParameters(PolyASParameters):
             if subc is not None and len(rels) > 1 and rels[1] == 1 \
                     and subc.is_pPolynomial() \
                     and trd in subc._.pPolynomial_ordering:
-                subc = DRGParameters(subc, order=trd)
+                old, subc = subc, DRGParameters(subc, order=trd)
                 self._.subconstituents[h] = (subc, refs)
+                self.add_subscheme(subc, replace=old)
         else:
             subc, refs = self._.subconstituents[h]
         return subc

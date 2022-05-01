@@ -484,17 +484,23 @@ class ASParameters(SageObject):
         if derived > 1:
             self.all_fusions()
         subcs = set()
-        for pa, part in self._.fusion_schemes.items():
-            yield (pa, part, [], True)
-        for par in self._.subconstituents:
-            if par is None:
-                continue
-            pa, refs = par
-            yield (pa, self._.subschemes[pa], refs, False)
-            subcs.add(pa)
-        for pa, part in self._.subschemes.items():
-            if pa not in subcs:
-                yield (pa, part, [], False)
+        pars = self._get_parameters()
+        c = self.classes()
+        def derived():
+            for pa, part in self._.fusion_schemes.items():
+                yield (pa, part, [], True)
+            for par in self._.subconstituents:
+                if par is None:
+                    continue
+                pa, refs = par
+                yield (pa, self._.subschemes[pa], refs, False)
+                subcs.add(pa)
+            for pa, part in self._.subschemes.items():
+                if pa not in subcs:
+                    yield (pa, part, [], False)
+        for pa, part, refs, fusion in derived():
+            if pars is not None or not fusion or pa.classes() < c:
+                yield pa, part, refs, fusion
 
     @staticmethod
     def _get_class():
@@ -712,7 +718,7 @@ class ASParameters(SageObject):
                 raise InfeasibleError(ex, part="complement")
         return (p, True)
 
-    def add_subscheme(self, par, part):
+    def add_subscheme(self, par, part=None, replace=None):
         """
         Add a derived scheme into the list.
         """
@@ -726,9 +732,12 @@ class ASParameters(SageObject):
             except (InfeasibleError, AssertionError) as ex:
                 raise InfeasibleError(ex, part=part)
         if par._.n == self._.n:
-            self._.fusion_schemes[par] = part
+            d = self._.fusion_schemes
         else:
-            self._.subschemes[par] = part
+            d = self._.subschemes
+        if replace is not None and replace in d:
+            part = d.pop(replace)
+        d[par] = part
         return par
 
     def all_fusions(self):
@@ -770,7 +779,7 @@ class ASParameters(SageObject):
                 pass
         return out
 
-    def check_feasible(self, checked=None, skip=None, derived=True, levels=3,
+    def check_feasible(self, checked=None, skip=None, derived=None, levels=3,
                        queue=None, part=()):
         """
         Check whether the parameter set is feasible.
@@ -794,7 +803,8 @@ class ASParameters(SageObject):
                     check(self)
                     if i > 1:
                         skip.add(name)
-        if not derived:
+        if (derived is None and self.is_complete_multipartite()) \
+                or not derived:
             return
         if par is not None:
             checked.add(par)
@@ -802,7 +812,8 @@ class ASParameters(SageObject):
         if queue is None:
             queue = []
             do_bfs = True
-        for par, pt, refs, reorder in self._derived(derived):
+        for par, pt, refs, reorder in \
+                self._derived(derived or derived is None):
             if par in checked:
                 continue
             queue.append((par, (pt, *part), refs, skip if reorder else None))
@@ -812,7 +823,8 @@ class ASParameters(SageObject):
                 par, pt, refs, skip = queue[i]
                 try:
                     par.check_feasible(checked=checked, skip=skip,
-                                       levels=levels, queue=queue, part=pt)
+                                       derived=derived, levels=levels,
+                                       queue=queue, part=pt)
                 except (InfeasibleError, AssertionError) as ex:
                     raise InfeasibleError(ex, refs=refs, part=pt)
                 i += 1
@@ -879,6 +891,18 @@ class ASParameters(SageObject):
         rewriteMatrix(self._.P, expand=expand, factor=factor,
                       simplify=simplify)
         return Matrix(SR, self._.P)
+
+    def is_complete_multipartite(self):
+        """
+        Check whether the association scheme
+        corresponds to a complete multipartite graph.
+        """
+        if self._.d != 2:
+            return False
+        if not self._has("p"):
+            self.pTable()
+        return any(self._.p[0, i, i] == self._.p[j, i, i]
+                   for i, j in [(1, 2), (2, 1)])
 
     def is_formallySelfDual(self):
         """
