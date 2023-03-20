@@ -401,6 +401,18 @@ Article("vanDam95",
         year=1995
 )
 
+Article("DeBruyn01",
+        author=[("De Bruyn", ("Bart", ))],
+        title="Near hexagons with four points on a line",
+        journal="Adv. Geom.",
+        fjournal="Advances in Geometry",
+        volume=1,
+        number=3,
+        pages=(211, 228),
+        url="https://doi.org/10.1515/advg.2001.014",
+        year=2001
+)
+
 Article("DeBruynVanhove15",
         author=[("De Bruyn", ("Bart", )), ("Vanhove", (u"Frédéric", ))],
         title="On $Q$-polynomial regular near $2d$-gons",
