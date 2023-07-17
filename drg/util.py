@@ -3,12 +3,13 @@ import re
 import six
 from sage.arith.misc import factor as factorize
 from sage.calculus.functional import expand as _expand
-from sage.calculus.functional import simplify as _simplify
+from sage.calculus.functional import simplify as __simplify
 from sage.functions.other import ceil
 from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
+from sage.rings.number_field.number_field_element import NumberFieldElement
 from sage.rings.polynomial.polynomial_element import Polynomial
 from sage.rings.real_mpfr import create_RealNumber
 from sage.sets.real_set import RealSet
@@ -372,6 +373,16 @@ def round(x):
     Return ``x`` rounded to an ``Integer``.
     """
     return create_RealNumber(x).round()
+
+
+def _simplify(exp):
+    """
+    Simplify the expression ``exp''.
+    """
+    out = __simplify(exp)
+    if out is None:
+        out = exp
+    return out
 
 
 def sort_solution(sol):

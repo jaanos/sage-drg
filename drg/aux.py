@@ -1,3 +1,4 @@
+from sage.symbolic.ring import SR
 from .references import refs as references
 from .util import utf8
 
@@ -74,6 +75,7 @@ class Parameters(object):
         self.triple_solution = {}
         self.triple_solution_generator = {}
         self.quadruple = {}
+        self.ring = SR
 
     def __repr__(self):
         """

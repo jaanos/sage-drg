@@ -34,7 +34,6 @@ from .util import checkNonneg
 from .util import checkPos
 from .util import checkPrimePower
 from .util import eigenvalue_interval
-from .util import full_simplify
 from .util import hard_ceiling
 from .util import hard_floor
 from .util import integralize
@@ -145,7 +144,7 @@ class DRGParameters(PolyASParameters):
             PolyASParameters.__init__(self, b, c)
             self._check_intersectionArray()
             self._.k = tuple(self._init_multiplicities())
-            self._.p = Array3D(self._.d + 1)
+            self._.p = Array3D(self._.d + 1, self._.ring)
             self._compute_parameters(self._.p, self._.k)
         self._compute_imprimitivity()
         if not isinstance(b, ASParameters):
@@ -195,7 +194,7 @@ class DRGParameters(PolyASParameters):
             self.multiplicities(expand=expand, factor=factor,
                                 simplify=simplify)
         if not self._has("q"):
-            q = Array3D(self._.d + 1)
+            q = Array3D(self._.d + 1, self._.ring)
             self._compute_dualParameters(q, self._.k, self._.m, self.PTR)
             self._.q = q
 

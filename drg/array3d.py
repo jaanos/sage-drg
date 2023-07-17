@@ -1,6 +1,5 @@
 from copy import copy
 from sage.calculus.functional import expand as _expand
-from sage.calculus.functional import simplify as _simplify
 from sage.matrix.constructor import Matrix
 from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
@@ -10,6 +9,7 @@ from sage.typeset.ascii_art import ascii_art
 from sage.typeset.unicode_art import unicode_art
 from .util import _factor
 from .util import full_simplify
+from .util import _simplify
 from .util import variables
 
 
@@ -18,13 +18,13 @@ class Array3D(SageObject):
     A three-dimensional array of expressions.
     """
 
-    def __init__(self, n):
+    def __init__(self, n, K=SR):
         """
         Object constructor.
 
         ``n`` is the size of the array in each dimension.
         """
-        self.A = [Matrix(SR, n) for i in range(n)]
+        self.A = [Matrix(K, n) for i in range(n)]
         self.n = n
 
     def __copy__(self):
@@ -120,6 +120,14 @@ class Array3D(SageObject):
         return unicode_art("\n".join((fmt % i) + "\n"*a.height()
                                      for i, a in enumerate(art))) + \
             unicode_art("\n".join(sum([a._matrix + [""] for a in art], [])))
+
+    def change_ring(self, K):
+        """
+        Return a copy of the array with the given ring.
+        """
+        A = Array3D(self.n, K)
+        A.A = [Matrix(K, M) for M in self.A]
+        return A
 
     def map(self, fun):
         """

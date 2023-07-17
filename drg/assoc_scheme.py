@@ -4,7 +4,6 @@ from copy import copy
 from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
-from sage.calculus.functional import simplify as _simplify
 from sage.combinat.set_partition import SetPartitions
 from sage.functions.orthogonal_polys import gegenbauer
 from sage.functions.other import floor
@@ -16,7 +15,12 @@ from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
 from sage.misc.misc import subsets
 from sage.rings.integer import Integer
+from sage.rings.number_field.number_field import NumberField
+from sage.rings.number_field.number_field import NumberField_generic
+from sage.rings.number_field.number_field_element import NumberFieldElement
+from sage.rings.rational_field import Q as QQ
 from sage.structure.sage_object import SageObject
+from sage.symbolic.expression import Expression
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
 from sage.typeset.ascii_art import ascii_art
@@ -41,6 +45,7 @@ from .util import checkPos
 from .util import _factor
 from .util import full_simplify
 from .util import integralize
+from .util import is_constant
 from .util import is_divisible
 from .util import is_integral
 from .util import make_expressions
@@ -49,6 +54,7 @@ from .util import refresh
 from .util import rewriteExp
 from .util import rewriteMatrix
 from .util import rewriteTuple
+from .util import _simplify
 from .util import sort_solution
 from .util import subs
 from .util import symbol
@@ -155,6 +161,24 @@ class ASParameters(SageObject):
         return "Parameters of an association scheme on %s vertices " \
                "with %d classes" % (self._.n, self._.d)
 
+    def _change_ring(self, K=None):
+        """
+        Change the ring for stored parameters and return it.
+        """
+        if K is None:
+            K = self._.ring
+        else:
+            self._.ring = K
+        if self._has("p"):
+            self._.p = self._.p.change_ring(K)
+        if self._has("q"):
+            self._.q = self._.q.change_ring(K)
+        if self._has("P"):
+            self._.P = Matrix(K, self._.P)
+        if self._has("Q"):
+            self._.Q = Matrix(K, self._.Q)
+        return K
+
     def _check_consistency(self, p, k, name=None, sym=None):
         """
         Check for the consistency of the intersection numbers
@@ -193,7 +217,7 @@ class ASParameters(SageObject):
         if self._has("P") and self._has("Q") and \
                 _simplify(_expand(self._.P * self._.Q)) \
                 != self.order(expand=True, simplify=True) \
-                * identity_matrix(SR, self._.d + 1):
+                * identity_matrix(self._.ring, self._.d + 1):
             warn(Warning("the eigenmatrices do not multiply "
                          "into a multiple of the identity matrix"))
 
@@ -299,7 +323,7 @@ class ASParameters(SageObject):
         Compute and return an eigenmatrix of the association scheme.
         """
         B = [Matrix(SR, [M[i] for M in p]) for i in range(self._.d + 1)]
-        V = SR**(self._.d + 1)
+        V = self._.ring**(self._.d + 1)
         R = [[self._.d + 1, V, [Integer(1)]]]
         for i in range(1, self._.d + 1):
             S = sorted(([k, m, V.subspace_with_basis(b)]
@@ -332,7 +356,7 @@ class ASParameters(SageObject):
         assert len(R) == self._.d + 1 and all(len(r) == self._.d + 1
                                               for _, _, r in R), \
             "failed to compute the eigenmatrix"
-        return Matrix(SR, [r for _, _, r in R])
+        return Matrix(self._.ring, [r for _, _, r in R])
 
     def _compute_kreinParameters(self, expand=False, factor=False,
                                  simplify=False):
@@ -347,7 +371,7 @@ class ASParameters(SageObject):
         if not self._has("k"):
             self.kTable(expand=expand, factor=factor,
                         simplify=simplify)
-        q = Array3D(self._.d + 1)
+        q = Array3D(self._.d + 1, self._.ring)
         self._compute_parameters(q, self._.Q, self._.k, integral=False,
                                  name=DUAL_PARAMETER, sym=DUAL_SYMBOL)
         self._.q = q
@@ -435,7 +459,7 @@ class ASParameters(SageObject):
         if not self._has("m"):
             self.multiplicities(expand=expand, factor=factor,
                                 simplify=simplify)
-        p = Array3D(self._.d + 1)
+        p = Array3D(self._.d + 1, self._.ring)
         self._compute_parameters(p, self._.P, self._.m, integral=True,
                                  name=PARAMETER, sym=SYMBOL)
         self._.p = p
@@ -530,7 +554,7 @@ class ASParameters(SageObject):
         self._.d = nrows(P) - 1
         assert all(len(r) == self._.d + 1 for r in P), \
             "parameter length mismatch"
-        P = Matrix(SR, P)
+        P = Matrix(self._.ring, P)
         for i, x in enumerate(P[0]):
             P[0, i] = integralize(x)
         self._.n = sum(P[0])
@@ -548,7 +572,7 @@ class ASParameters(SageObject):
             assert all(len(M) == self._.d + 1 and all(len(r) == self._.d+1
                                                       for r in M)
                        for M in p), "parameter length mismatch"
-            a = Array3D(self._.d + 1)
+            a = Array3D(self._.d + 1, self._.ring)
             for h in range(self._.d + 1):
                 for i in range(self._.d + 1):
                     for j in range(self._.d + 1):
@@ -590,6 +614,8 @@ class ASParameters(SageObject):
             elif self._has("Q"):
                 self._.vars = variables(self._.Q)
         self._.vars_ordered = len(self._.vars) <= 1
+        if len(self._.vars) == 0:
+            self._change_ring(QQ)
 
     def _is_polynomial(self, p, i):
         """
@@ -627,7 +653,7 @@ class ASParameters(SageObject):
         assert all(len(pt) > 0 for pt in parts), "empty group specified"
         assert len(concat) == len(set(concat)), "repeated part specified"
         assert set(concat) == set(range(len(p))), "invalid part specified"
-        a = Array3D(d)
+        a = Array3D(d, self._.ring)
         for h in range(d):
             for i in range(d):
                 for j in range(d):
@@ -879,7 +905,7 @@ class ASParameters(SageObject):
         self._check_eigenmatrices()
         rewriteMatrix(self._.Q, expand=expand, factor=factor,
                       simplify=simplify)
-        return Matrix(SR, self._.Q)
+        return Matrix(self._.ring, self._.Q)
 
     def eigenmatrix(self, expand=False, factor=False, simplify=False):
         """
@@ -890,7 +916,7 @@ class ASParameters(SageObject):
         self._check_eigenmatrices()
         rewriteMatrix(self._.P, expand=expand, factor=factor,
                       simplify=simplify)
-        return Matrix(SR, self._.P)
+        return Matrix(self._.ring, self._.P)
 
     def is_complete_multipartite(self):
         """
@@ -1202,16 +1228,25 @@ class ASParameters(SageObject):
                      for (C, D), CD in pairs.items() if AB | CD == Rs]
         if krein:
             for A, B, C, D in krein:
-                Z = sum(self._.Q[tA, A] * self._.Q[tB, B] *
-                        self._.Q[tC, C] * self._.Q[tD, D] *
-                        S[tA][tB][tC][tD]
-                        for tA in R for tB in R for tC in R for tD in R)
-                if isinstance(Z, Integer):
-                    assert Z == 0, \
-                        "Krein equation for (%d, %d, %d, %d) " \
-                        "not satisfied" % (A, B, C, D)
-                else:
-                    out.append(Z == 0)
+                l = {(tA, tB, tC, tD): [self._.Q[tA, A] * self._.Q[tB, B] *
+                                        self._.Q[tC, C] * self._.Q[tD, D]]
+                     for tA in R for tB in R for tC in R for tD in R}
+                d = 1
+                ring = self._.ring
+                while isinstance(ring, NumberField_generic):
+                    l = {t: [c for y in z for c in y.list()]
+                         for t, z in l.items()}
+                    d *= ring.relative_degree()
+                    ring = ring.base_ring()
+                for k in range(d):
+                    Z = sum(z[k] * S[tA][tB][tC][tD]
+                            for (tA, tB, tC, tD), z in l.items())
+                    if is_constant(Z):
+                        assert Z == 0, \
+                            "Krein equation for (%d, %d, %d, %d) " \
+                            "not satisfied" % (A, B, C, D)
+                    else:
+                        out.append(Z == 0)
         if params:
             for a, (A, B, C, D) in params.items():
                 x = SR.symbol(a)
@@ -1232,10 +1267,10 @@ class ASParameters(SageObject):
             for B in R:
                 for C in R:
                     for D in R:
-                        if isinstance(S[A][B][C][D], Integer):
-                            Q[A, B, C, D] = S[A][B][C][D]
-                        else:
+                        if isinstance(S[A][B][C][D], Expression):
                             Q[A, B, C, D] = S[A][B][C][D].subs(sol[0])
+                        else:
+                            Q[A, B, C, D] = S[A][B][C][D]
         if save:
             self._.quadruple[h, i, j, r, s, t] = Q
         return Q
@@ -1248,9 +1283,9 @@ class ASParameters(SageObject):
         if self._has("m"):
             self._.m = tuple(self._.m[i] for i in order)
         if self._has("P"):
-            self._.P = Matrix(SR, [self._.P[i] for i in order])
+            self._.P = Matrix(self._.ring, [self._.P[i] for i in order])
         if self._has("Q"):
-            self._.Q = Matrix(SR, [[r[j] for j in order] for r in self._.Q])
+            self._.Q = Matrix(self._.ring, [[r[j] for j in order] for r in self._.Q])
         if self._has("q"):
             self._.q.reorder(order)
         if self._has("qPolynomial_ordering") and self._.qPolynomial_ordering:
@@ -1266,9 +1301,9 @@ class ASParameters(SageObject):
         if self._has("k"):
             self._.k = tuple(self._.k[i] for i in order)
         if self._has("P"):
-            self._.P = Matrix(SR, [[r[j] for j in order] for r in self._.P])
+            self._.P = Matrix(self._.ring, [[r[j] for j in order] for r in self._.P])
         if self._has("Q"):
-            self._.Q = Matrix(SR, [self._.Q[i] for i in order])
+            self._.Q = Matrix(self._.ring, [self._.Q[i] for i in order])
         if self._has("p"):
             self._.p.reorder(order)
         self._.triple = {tuple(order.index(i) for i in t):
@@ -1325,7 +1360,7 @@ class ASParameters(SageObject):
                 for i in rels:
                     self.tripleEquations(h, h, i)
             vars = set(self._.vars)
-            a = Array3D(d)
+            a = Array3D(d, self._.ring)
             try:
                 for i in range(d):
                     for j in range(d):
@@ -1425,7 +1460,8 @@ class ASParameters(SageObject):
             self.dualEigenmatrix()
         if not self._has("p"):
             self.pTable()
-        assert checkPos(self._.p[u, v, w]), \
+        p = self._.p.change_ring(QQ)
+        assert checkPos(p[u, v, w]), \
             "no triple of vertices in relations %d, %d, %d" % (u, v, w)
         if not self._has("q"):
             self.kreinParameters()
@@ -1437,21 +1473,18 @@ class ASParameters(SageObject):
                for j in r] for i in r] for h in r]
         for i in r:
             for j in r:
-                if self._.p[u, i, j] == sum(s[i][j][t] for t in r
-                                            if isinstance(s[i][j][t],
-                                                          Integer)):
+                if p[u, i, j] == sum(s[i][j][t] for t in r
+                                     if isinstance(s[i][j][t], Integer)):
                     for t in r:
                         if not isinstance(s[i][j][t], Integer):
                             s[i][j][t] = Integer(0)
-                if self._.p[v, i, j] == sum(s[i][t][j] for t in r
-                                            if isinstance(s[i][t][j],
-                                                          Integer)):
+                if p[v, i, j] == sum(s[i][t][j] for t in r
+                                     if isinstance(s[i][t][j], Integer)):
                     for t in r:
                         if not isinstance(s[i][t][j], Integer):
                             s[i][t][j] = Integer(0)
-                if self._.p[w, i, j] == sum(s[t][i][j] for t in r
-                                            if isinstance(s[t][i][j],
-                                                          Integer)):
+                if p[w, i, j] == sum(s[t][i][j] for t in r
+                                     if isinstance(s[t][i][j], Integer)):
                     for t in r:
                         if not isinstance(s[t][i][j], Integer):
                             s[t][i][j] = Integer(0)
@@ -1478,8 +1511,7 @@ class ASParameters(SageObject):
             if j is None:
                 j = next(t for t in r if s[h][i][t] in vars)
                 x = s[h][i][j]
-                s[h][i][j] = self._.p[u, h, i] - sum(s[h][i][t] for t in r
-                                                     if t != j)
+                s[h][i][j] = p[u, h, i] - sum(s[h][i][t] for t in r if t != j)
                 c[1][h][j] -= 1
                 c[2][i][j] -= 1
                 if c[1][h][j] == 1:
@@ -1489,8 +1521,7 @@ class ASParameters(SageObject):
             elif i is None:
                 i = next(t for t in r if s[h][t][j] in vars)
                 x = s[h][i][j]
-                s[h][i][j] = self._.p[v, h, j] - sum(s[h][t][j] for t in r
-                                                     if t != i)
+                s[h][i][j] = p[v, h, j] - sum(s[h][t][j] for t in r if t != i)
                 c[0][h][i] -= 1
                 c[2][i][j] -= 1
                 if c[0][h][i] == 1:
@@ -1500,8 +1531,7 @@ class ASParameters(SageObject):
             elif h is None:
                 h = next(t for t in r if s[t][i][j] in vars)
                 x = s[h][i][j]
-                s[h][i][j] = self._.p[w, i, j] - sum(s[t][i][j] for t in r
-                                                     if t != h)
+                s[h][i][j] = p[w, i, j] - sum(s[t][i][j] for t in r if t != h)
                 c[0][h][i] -= 1
                 c[1][h][j] -= 1
                 if c[0][h][i] == 1:
@@ -1514,22 +1544,22 @@ class ASParameters(SageObject):
             for j in r:
                 l = sum(s[i][j][t] for t in r)
                 if isinstance(l, Integer):
-                    assert self._.p[u, i, j] == l, \
+                    assert p[u, i, j] == l, \
                         "value of p[%d, %d, %d] exceeded" % (u, i, j)
                 else:
-                    out.append(self._.p[u, i, j] == l)
+                    out.append(p[u, i, j] == l)
                 l = sum(s[i][t][j] for t in r)
                 if isinstance(l, Integer):
-                    assert self._.p[v, i, j] == l, \
+                    assert p[v, i, j] == l, \
                         "value of p[%d, %d, %d] exceeded" % (v, i, j)
                 else:
-                    out.append(self._.p[v, i, j] == l)
+                    out.append(p[v, i, j] == l)
                 l = sum(s[t][i][j] for t in r)
                 if isinstance(l, Integer):
-                    assert self._.p[w, i, j] == l, \
+                    assert p[w, i, j] == l, \
                         "value of p[%d, %d, %d] exceeded" % (w, i, j)
                 else:
-                    out.append(self._.p[w, i, j] == l)
+                    out.append(p[w, i, j] == l)
         if krein is None:
             if save is None:
                 save = True
@@ -1541,20 +1571,28 @@ class ASParameters(SageObject):
                             krein.append((h, i, j))
         if krein:
             for h, i, j in krein:
-                l = sum(self._.Q[th, h] * self._.Q[ti, i] *
-                        self._.Q[tj, j] * s[th][ti][tj]
-                        for th in r for ti in r for tj in r)
-                if isinstance(l, Integer):
-                    assert l == 0, \
-                        "Krein equation for (%d, %d, %d) not satisfied" % \
-                        (h, i, j)
-                else:
-                    out.append(l == 0)
+                l = {(th, ti, tj):
+                     [self._.Q[th, h] * self._.Q[ti, i] * self._.Q[tj, j]]
+                     for th in r for ti in r for tj in r}
+                d = 1
+                ring = self._.ring
+                while isinstance(ring, NumberField_generic):
+                    l = {t: [c for y in z for c in y.list()]
+                         for t, z in l.items()}
+                    d *= ring.relative_degree()
+                    ring = ring.base_ring()
+                for k in range(d):
+                    y = sum(z[k] * s[th][ti][tj] for (th, ti, tj), z in l.items())
+                    if is_constant(y):
+                        assert y == 0, \
+                            "Krein equation for (%d, %d, %d) not satisfied" % \
+                            (h, i, j)
+                    else:
+                        out.append(y == 0)
         if params:
             for a, (h, i, j) in params.items():
-                x = symbol(a)
-                out.append(s[h][i][j] == x)
-        vars.intersection_update(sum([sum(l, []) for l in s], []))
+                out.append(s[h][i][j] == symbol(a))
+        vars.intersection_update(x for l in s for m in l for x in m)
         vars.update(consts)
         if not solve:
             return (out, vars)
@@ -1564,10 +1602,10 @@ class ASParameters(SageObject):
         for h in r:
             for i in r:
                 for j in r:
-                    if isinstance(s[h][i][j], Integer):
-                        S[h, i, j] = s[h][i][j]
-                    else:
+                    if isinstance(s[h][i][j], Expression):
                         S[h, i, j] = s[h][i][j].subs(sol[0])
+                    else:
+                        S[h, i, j] = s[h][i][j]
         if save:
             self._.triple[u, v, w] = S
         return S
@@ -1582,10 +1620,11 @@ class ASParameters(SageObject):
         """
         if S is None:
             S = self.tripleEquations(u, v, w)
+        pu = Matrix(QQ, self._.p[u])
+        pv = Matrix(QQ, self._.p[v])
+        pw = Matrix(QQ, self._.p[w])
         return find(make_expressions((S[h, i, j], 0,
-                                        min(self._.p[u, h, i],
-                                            self._.p[v, h, j],
-                                            self._.p[w, i, j]))
+                                        min(pu[h, i], pv[h, j], pw[i, j]))
                                         for h in range(self._.d + 1)
                                         for i in range(self._.d + 1)
                                         for j in range(self._.d + 1)),
@@ -1742,17 +1781,20 @@ class ASParameters(SageObject):
             lm = [(q / self._.Q[0, i])**2 for q, in self._.Q[:, i]]
             if 1 in lm[1:d+1]:
                 continue
-            L = [identity_matrix(SR, self._.d + 1),
-                 Matrix(SR, [[self._.q[h, i, j] for j in rr] for h in rr])
+            L = [identity_matrix(self._.ring, self._.d + 1),
+                 Matrix(self._.ring, [[self._.q[h, i, j] for j in rr] for h in rr])
                  / self._.Q[0, i]]
             l = 0
             G = [1] * d
             PP = [self._.P[0, j+1] * (1 + lm[j+1]) for j in range(d)]
+            Qi = self._.Q[0, i]
+            if isinstance(Qi, NumberFieldElement):
+                Qi = SR(Qi.absolute_minpoly().any_root())
             while sum(g*pp for g, pp in zip(G, PP)) > n:
                 if l >= 2:
                     L.append(L[1] * L[-1])
                     M = sum(integralize(2**l * c) * L[e] for c, e in
-                            gegenbauer(l, self._.Q[0, i]/2 - 1, t)
+                            gegenbauer(l, Qi/2 - 1, t)
                             .coefficients(t))
                     if any(m < 0 for m, in M[:, 0]):
                         raise InfeasibleError("Gegenbauer polynomial %d "
@@ -2044,7 +2086,7 @@ class PolyASParameters(ASParameters):
         if not self._has("theta"):
             self.eigenvalues(expand=expand, factor=factor,
                              simplify=simplify)
-        omega = Matrix(SR, self._.d + 1)
+        omega = Matrix(self._.ring, self._.d + 1)
         omega[:, 0] = 1
         for i in range(self._.d + 1):
             omega[i, 1] = self._.theta[i]/self._.b[0]
@@ -2092,9 +2134,9 @@ class PolyASParameters(ASParameters):
         if not self._has("omega"):
             self.cosineSequences(expand=expand, factor=factor,
                                  simplify=simplify)
-        return Matrix(SR, [[self._.omega[tr(i, j)] * k[j]
-                            for j in range(self._.d + 1)]
-                           for i in range(self._.d + 1)])
+        return Matrix(self._.ring, [[self._.omega[tr(i, j)] * k[j]
+                                     for j in range(self._.d + 1)]
+                                    for i in range(self._.d + 1)])
 
     def _compute_eigenvalues(self, p, expand=False, factor=False,
                              simplify=False):
@@ -2108,27 +2150,51 @@ class PolyASParameters(ASParameters):
                 self._.theta = tuple(2*cos(2*i*pi/self._.n)
                                      for i in range(self._.d + 1))
             else:
-                B = Matrix(SR, [M[1] for M in p])
-                theta = [v for v in B.eigenvalues()
-                         if (v - p[0, 1, 1]).expand().simplify() != 0]
-                try:
-                    theta.sort(key=lambda x: CoefficientList(x, self._.vars),
-                               reverse=True)
-                except Exception:
-                    warn(Warning("Sorting of eigenvalues failed - "
-                                 "you may want to sort them manually"))
-                else:
-                    if not self._.vars_ordered:
-                        warn(Warning("More than one variable is used - "
-                                     "please check that the ordering "
-                                     "of the eigenvalues is correct"))
-                if len(theta) > self._.d:
-                    warn(Warning("%s not identified among eigenvalues "
-                                 "and may not appear in initial position"
-                                 % self.SIZE.capitalize()))
+                B = Matrix(self._.ring, [M[1] for M in p])
+                theta = B.eigenvalues()
+                if any(th.parent() is not self._.ring for th in theta):
+                    d = {}
+                    for th in theta:
+                        mp = th.minpoly()
+                        if mp.degree() > 1:
+                            d.setdefault(mp, th)
+                    names, polys, embs = zip(*(("e%s" % (i if i else ""),
+                                                mp, th)
+                                               for i, (mp, th) in
+                                               enumerate(d.items())))
+                    K = NumberField(polys, names=names, embedding=embs)
+                    if K.gen_embedding() is None:
+                        nf = K.pari_nf()
+                        K = NumberField(nf[0].sage({'y': SR.symbol("x")}),
+                                        name="e", embedding=nf[5][0].sage())
+                    B = Matrix(K, [M[1] for M in p])
+                    theta = B.eigenvalues()
+                    theta.sort(reverse=True)
+                    p = p.change_ring(K)
+                    self._change_ring(K)
                     self._.theta = theta
                 else:
-                    self._.theta = (p[0, 1, 1], *theta)
+                    theta = [v for v in theta
+                             if _simplify(_expand(v - p[0, 1, 1])) != 0]
+                    try:
+                        theta.sort(key=lambda x: CoefficientList(x,
+                                                                 self._.vars),
+                                   reverse=True)
+                    except Exception:
+                        warn(Warning("Sorting of eigenvalues failed - "
+                                    "you may want to sort them manually"))
+                    else:
+                        if not self._.vars_ordered:
+                            warn(Warning("More than one variable is used - "
+                                        "please check that the ordering "
+                                        "of the eigenvalues is correct"))
+                    if len(theta) > self._.d:
+                        warn(Warning("%s not identified among eigenvalues "
+                                    "and may not appear in initial position"
+                                    % self.SIZE.capitalize()))
+                        self._.theta = theta
+                    else:
+                        self._.theta = (p[0, 1, 1], *theta)
         self._.theta = rewriteTuple(self._.theta, expand=expand,
                                     factor=factor, simplify=simplify)
         return self._.theta
@@ -2458,7 +2524,7 @@ class PolyASParameters(ASParameters):
                     raise ex
         if index is not None:
             return self._.omega[index]
-        return Matrix(SR, self._.omega)
+        return Matrix(self._.ring, self._.omega)
 
     def eigenvalues(self, expand=False, factor=False, simplify=False):
         """
@@ -2589,7 +2655,7 @@ class PolyASParameters(ASParameters):
             self.eigenvalues()
         self._.theta = tuple(self._.theta[i] for i in order)
         if self._has("omega"):
-            self._.omega = Matrix(SR, [self._.omega[i] for i in order])
+            self._.omega = Matrix(self._.ring, [self._.omega[i] for i in order])
         if self._has("fsd"):
             del self._.fsd
         return order
@@ -2607,7 +2673,7 @@ class PolyASParameters(ASParameters):
         self._.c = tuple(p[i, i-1, 1] if i > 0 else Integer(0)
                          for i in range(self._.d + 1))
         if self._has("omega"):
-            self._.omega = Matrix(SR, [[r[i] for i in order]
+            self._.omega = Matrix(self._.ring, [[r[i] for i in order]
                                        for r in self._.omega])
         if self._has("theta"):
             del self._.theta
