@@ -1,3 +1,4 @@
+import collections
 import operator
 import re
 import six
@@ -7,6 +8,7 @@ from sage.calculus.functional import simplify as __simplify
 from sage.functions.other import ceil
 from sage.functions.other import floor
 from sage.functions.other import sqrt
+from sage.matrix.constructor import Matrix
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
 from sage.rings.number_field.number_field_element import NumberFieldElement
@@ -33,6 +35,21 @@ INTERVAL = {(True, True): RealSet.closed,
             (None, True): lambda l, u: RealSet.unbounded_below_closed(u),
             (None, False): lambda l, u: RealSet.unbounded_below_open(u),
             (None, None): lambda l, u: RealSet().complement()}
+
+
+def change_ring(obj, K):
+    """
+    Return a copy of ``obj`` with ring changed to ``K``.
+    """
+    from .array3d import Array3D, Array4D
+    if isinstance(obj, (Array3D, Array4D)):
+        return obj.change_ring(K)
+    elif isinstance(obj, MatrixClass):
+        return Matrix(K, obj)
+    elif isinstance(obj, (tuple, list, set, frozenset)):
+        return obj.__class__(change_ring(x, K) for x in obj)
+    else:
+        return K(obj)
 
 
 def checklist(checks, inherit=None):

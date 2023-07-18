@@ -309,6 +309,14 @@ class Array4D(SageObject):
             unicode_art("\n".join(sum([a._matrix + [""] for i, a in art],
                                       [])))
 
+    def change_ring(self, K):
+        """
+        Return a copy of the array with the given ring.
+        """
+        A = Array4D(self.n, K)
+        A.A = [M.change_ring(K) for M in self.A]
+        return A
+
     def map(self, fun):
         """
         Replace each value by its image under ``fun``.

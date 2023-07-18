@@ -39,6 +39,7 @@ from .nonex import checkConditions
 from .nonex import families
 from .nonex import sporadic
 from .view import Param
+from .util import change_ring
 from .util import checklist
 from .util import checkNonneg
 from .util import checkPos
@@ -161,22 +162,19 @@ class ASParameters(SageObject):
         return "Parameters of an association scheme on %s vertices " \
                "with %d classes" % (self._.n, self._.d)
 
-    def _change_ring(self, K=None):
+    def _change_ring(self, K=None, params=None):
         """
         Change the ring for stored parameters and return it.
         """
         if K is None:
             K = self._.ring
-        else:
-            self._.ring = K
-        if self._has("p"):
-            self._.p = self._.p.change_ring(K)
-        if self._has("q"):
-            self._.q = self._.q.change_ring(K)
-        if self._has("P"):
-            self._.P = Matrix(K, self._.P)
-        if self._has("Q"):
-            self._.Q = Matrix(K, self._.Q)
+        if params is None:
+            params = []
+        params += filter(self._has, ("p", "q", "P", "Q"))
+        changed = {param: change_ring(getattr(self._, param), K) for param in params}
+        self._.ring = K
+        for param, val in changed.items():
+            setattr(self._, param, val)
         return K
 
     def _check_consistency(self, p, k, name=None, sym=None):
@@ -471,6 +469,7 @@ class ASParameters(SageObject):
         """
         p._.d = self._.d
         p._.n = self._.n
+        p._.ring = self._.ring
         if self._has("p"):
             p._.p = copy(self._.p)
         if self._has("q"):
@@ -614,7 +613,7 @@ class ASParameters(SageObject):
             elif self._has("Q"):
                 self._.vars = variables(self._.Q)
         self._.vars_ordered = len(self._.vars) <= 1
-        if len(self._.vars) == 0:
+        if len(self._.vars) == 0 and self._.ring is SR:
             self._change_ring(QQ)
 
     def _is_polynomial(self, p, i):
@@ -2022,6 +2021,15 @@ class PolyASParameters(ASParameters):
                          (self.OBJECT, self.ARRAY),
                          self._format_parameterArray_ascii())
 
+    def _change_ring(self, K=None, params=None):
+        """
+        Change the ring for stored parameters and return it.
+        """
+        if params is None:
+            params = []
+        params += filter(self._has, ("a", "b", "c", "omega", "theta"))
+        return ASParameters._change_ring(self, K, params)
+        
     def _check_family(self):
         """
         Check whether the association scheme has parameter array for which
@@ -2170,9 +2178,8 @@ class PolyASParameters(ASParameters):
                     B = Matrix(K, [M[1] for M in p])
                     theta = B.eigenvalues()
                     theta.sort(reverse=True)
-                    p = p.change_ring(K)
                     self._change_ring(K)
-                    self._.theta = theta
+                    self._.theta = tuple(theta)
                 else:
                     theta = [v for v in theta
                              if _simplify(_expand(v - p[0, 1, 1])) != 0]
