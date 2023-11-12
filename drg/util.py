@@ -1,7 +1,7 @@
-import collections
 import operator
 import re
 import six
+from collections import defaultdict
 from sage.arith.misc import factor as factorize
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as __simplify
@@ -9,10 +9,14 @@ from sage.functions.other import ceil
 from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.matrix.constructor import Matrix
+from sage.matrix.special import block_matrix
+from sage.matrix.special import identity_matrix
+from sage.matrix.special import zero_matrix
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
 from sage.rings.number_field.number_field_element import NumberFieldElement
 from sage.rings.polynomial.polynomial_element import Polynomial
+from sage.rings.rational_field import Q as QQ
 from sage.rings.real_mpfr import create_RealNumber
 from sage.sets.real_set import RealSet
 from sage.structure.element import Matrix as MatrixClass
@@ -323,11 +327,74 @@ def matrixMap(fun, M):
         M[i] = tuple(map(fun, M[i]))
 
 
+def normalize_field(K, *mcs):
+    """
+    Return a normalized number field with a complex embedding
+    and the given matrices converted to the new field.
+    """
+    if K.absolute_degree() > 1 and K.gen_embedding() is None:
+        nf = K.pari_nf()
+        K = NumberField(nf[0].sage({'y': SR.symbol("x")}),
+                        name="e", embedding=nf[5][0].sage())
+        loc = {'y': K.gen()}
+        mcs = [Matrix(K, [[x._pari_polynomial().sage(loc) for x in r]
+                          for r in M]) for M in mcs]
+    return K, mcs
+
+
 def nrows(M):
     """
     Return the number of rows in the matrix.
     """
     return M.nrows() if isinstance(M, MatrixClass) else len(M)
+
+
+def numberField(*mcs, K=QQ, x=None):
+    """
+    Return the number field containing the eigenvalues of the given matrices.
+
+    A characteristic polynomial can also be specified instead of a matrix.
+    """
+    i = 0
+    for M in mcs:
+        coeffs = None
+        if isinstance(M, Expression):
+            coeffs = M.coefficients(x=x)
+            n, a = max((d, c) for c, d in coeffs)
+        elif isinstance(M, Polynomial):
+            coeffs = [(c, d) for d, c in M.coefficients(sparse=False)]
+            a, n = coeffs[-1]
+        if coeffs is not None:
+            b = zero_matrix(K, n, 1)
+            for c, d in coeffs:
+                if d < n:
+                    b[d, 0] = -c / a
+            M = block_matrix(K, [[block_matrix(K, 2, 1,
+                [zero_matrix(K, 1, n-1), identity_matrix(K, n-1)]), b]])
+        else:
+            M = Matrix(K, M)
+        theta = M.eigenvalues()
+        d = defaultdict(list)
+        for th in theta:
+            mp = th.minpoly()
+            if mp.change_ring(K).is_irreducible() and mp.degree() > 1:
+                d[mp].append(th)
+        for mp, ths in d.items():
+            mps = [mp]
+            for j, th in enumerate(ths):
+                if j == len(mps):
+                    break
+                name = "e%s" % (i if i else "")
+                i += 1
+                try:
+                    K = K.extension(mps[j], names=name, embedding=th)
+                except TypeError:
+                    K = K.extension(mps[j], names=name)
+                for mp, _ in K.relative_polynomial().change_ring(K).factor():
+                    if mp.degree() > 1:
+                        mps.append(mp)
+    K, _ = normalize_field(K)
+    return K
 
 
 def refresh(vars):

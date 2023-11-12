@@ -26,12 +26,13 @@ class Array3D(SageObject):
         """
         self.A = [Matrix(K, n) for i in range(n)]
         self.n = n
+        self.ring = K
 
     def __copy__(self):
         """
         Return a copy of the array.
         """
-        A = Array3D(self.n)
+        A = Array3D(self.n, self.ring)
         A.A = [copy(M) for M in self.A]
         return A
 
@@ -143,7 +144,7 @@ class Array3D(SageObject):
         """
         if tuple(p) == (0, 1, 2):
             return self
-        A = Array3D(self.n)
+        A = Array3D(self.n, self.ring)
         for h in range(self.n):
             for i in range(self.n):
                 for j in range(self.n):
@@ -158,7 +159,7 @@ class Array3D(SageObject):
         assert len(order) == self.n, "wrong number of indices"
         assert set(order) == set(range(self.n)), \
             "repeating or nonexisting indices"
-        A = self if inplace else Array3D(self.n)
+        A = self if inplace else Array3D(self.n, self.ring)
         A.A = [Matrix(SR, [[self.A[h][i, j] for j in order] for i in order])
                for h in order]
         return A
@@ -180,7 +181,7 @@ class Array3D(SageObject):
         """
         Substitute the given subexpressions in the array.
         """
-        A = Array3D(self.n)
+        A = Array3D(self.n, self.ring)
         for i, M in enumerate(self.A):
             A.A[i] = M.subs(*exp)
         return A
@@ -189,8 +190,8 @@ class Array3D(SageObject):
         """
         Return the variables occuring in the array.
         """
-        return tuple(set(sum((variables(x)
-                              for M in self for r in M for x in r), ())))
+        return tuple(set(y for M in self for r in M
+                         for x in r for y in variables(x)))
 
     substitute = subs
 
@@ -200,20 +201,21 @@ class Array4D(SageObject):
     A four-dimensional array of expressions.
     """
 
-    def __init__(self, n):
+    def __init__(self, n, K=SR):
         """
         Object constructor.
 
         ``n`` is the size of the array in each dimension.
         """
-        self.A = [Array3D(n) for i in range(n)]
+        self.A = [Array3D(n, K) for i in range(n)]
         self.n = n
+        self.ring = K
 
     def __copy__(self):
         """
         Return a copy of the array.
         """
-        Q = Array4D(self.n)
+        Q = Array4D(self.n, self.ring)
         Q.A = [copy(A) for A in self.A]
         return Q
 
@@ -332,7 +334,7 @@ class Array4D(SageObject):
         """
         if tuple(p) == (0, 1, 2, 3):
             return self
-        A = Array4D(self.n)
+        A = Array4D(self.n, self.ring)
         for h in range(self.n):
             for i in range(self.n):
                 for j in range(self.n):
@@ -348,11 +350,11 @@ class Array4D(SageObject):
         assert len(order) == self.n, "wrong number of indices"
         assert set(order) == set(range(self.n)), \
             "repeating or nonexisting indices"
-        A = [Array3D(self.n) for k in range(self.n)]
+        A = [Array3D(self.n, self.ring) for k in range(self.n)]
         for l, h in enumerate(order):
             A[l].A = [Matrix(SR, [[self.A[h][i, j, k] for k in order]
                                   for j in order]) for i in order]
-        Q = self if inplace else Array4D(self.n)
+        Q = self if inplace else Array4D(self.n, self.ring)
         Q.A = A
         return Q
 
@@ -373,7 +375,7 @@ class Array4D(SageObject):
         """
         Substitute the given subexpressions in the array.
         """
-        S = Array4D(self.n)
+        S = Array4D(self.n, self.ring)
         S.A = [A.subs(*exp) for i, A in enumerate(self)]
         return S
 
@@ -381,8 +383,7 @@ class Array4D(SageObject):
         """
         Return the variables occuring in the array.
         """
-        return tuple(set(sum((variables(x)
-                              for A in self for M in A for r in M for x in r),
-                             ())))
+        return tuple(set(y for A in self for M in A for r in M
+                         for x in r for y in variables(x)))
 
     substitute = subs

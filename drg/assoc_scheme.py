@@ -4,6 +4,7 @@ from copy import copy
 from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
+from sage.combinat.permutation import Permutations
 from sage.combinat.set_partition import SetPartitions
 from sage.functions.orthogonal_polys import gegenbauer
 from sage.functions.other import floor
@@ -17,8 +18,12 @@ from sage.misc.misc import subsets
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
 from sage.rings.number_field.number_field import NumberField_generic
+from sage.rings.number_field.number_field_base import NumberField as NumberField_base
 from sage.rings.number_field.number_field_element import NumberFieldElement
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+from sage.rings.qqbar import QQbar
 from sage.rings.rational_field import Q as QQ
+from sage.structure.element import Matrix as MatrixClass
 from sage.structure.sage_object import SageObject
 from sage.symbolic.expression import Expression
 from sage.symbolic.relation import solve as _solve
@@ -51,6 +56,8 @@ from .util import is_divisible
 from .util import is_integral
 from .util import make_expressions
 from .util import nrows
+from .util import normalize_field
+from .util import numberField
 from .util import refresh
 from .util import rewriteExp
 from .util import rewriteMatrix
@@ -170,7 +177,7 @@ class ASParameters(SageObject):
             K = self._.ring
         if params is None:
             params = []
-        params += filter(self._has, ("p", "q", "P", "Q"))
+        params += filter(self._has, ("k", "m", "n", "p", "q", "P", "Q"))
         changed = {param: change_ring(getattr(self._, param), K) for param in params}
         self._.ring = K
         for param, val in changed.items():
@@ -320,8 +327,13 @@ class ASParameters(SageObject):
         """
         Compute and return an eigenmatrix of the association scheme.
         """
-        B = [Matrix(SR, [M[i] for M in p]) for i in range(self._.d + 1)]
-        V = self._.ring**(self._.d + 1)
+        B = [Matrix(self._.ring, [M[i] for M in p]) for i in range(self._.d + 1)]
+        if isinstance(self._.ring, NumberField_base):
+            K = numberField(*B, K=self._.ring)
+            B = [Matrix(K, M) for M in B]
+        else:
+            K = self._.ring
+        V = K**(self._.d + 1)
         R = [[self._.d + 1, V, [Integer(1)]]]
         for i in range(1, self._.d + 1):
             S = sorted(([k, m, V.subspace_with_basis(b)]
@@ -354,7 +366,8 @@ class ASParameters(SageObject):
         assert len(R) == self._.d + 1 and all(len(r) == self._.d + 1
                                               for _, _, r in R), \
             "failed to compute the eigenmatrix"
-        return Matrix(self._.ring, [r for _, _, r in R])
+        self._change_ring(K)
+        return Matrix(K, [r for _, _, r in R])
 
     def _compute_kreinParameters(self, expand=False, factor=False,
                                  simplify=False):
@@ -553,7 +566,14 @@ class ASParameters(SageObject):
         self._.d = nrows(P) - 1
         assert all(len(r) == self._.d + 1 for r in P), \
             "parameter length mismatch"
-        P = Matrix(self._.ring, P)
+        if not isinstance(P, MatrixClass):
+            P = Matrix(P)
+        K = P.base_ring()
+        if K.is_subring(QQ):
+            P = Matrix(QQ, P)
+        elif isinstance(K, NumberField_generic):
+            K, (P, ) = normalize_field(K, P)
+        self._.ring = K
         for i, x in enumerate(P[0]):
             P[0, i] = integralize(x)
         self._.n = sum(P[0])
@@ -567,6 +587,7 @@ class ASParameters(SageObject):
         self._.d = nrows(p) - 1
         if isinstance(p, Array3D):
             a = p
+            self._.ring = p.ring
         else:
             assert all(len(M) == self._.d + 1 and all(len(r) == self._.d+1
                                                       for r in M)
@@ -652,7 +673,7 @@ class ASParameters(SageObject):
         assert all(len(pt) > 0 for pt in parts), "empty group specified"
         assert len(concat) == len(set(concat)), "repeated part specified"
         assert set(concat) == set(range(len(p))), "invalid part specified"
-        a = Array3D(d, self._.ring)
+        a = Array3D(d, p.ring)
         for h in range(d):
             for i in range(d):
                 for j in range(d):
@@ -916,6 +937,53 @@ class ASParameters(SageObject):
         rewriteMatrix(self._.P, expand=expand, factor=factor,
                       simplify=simplify)
         return Matrix(self._.ring, self._.P)
+
+    @classmethod
+    def from_charPolys(cls, *cps, x=None):
+        assert len(cps) >= 1, "no characteristic polynomials given"
+        cp1, *cpt = cps
+        if x is None:
+            xs = cp1.variables()
+            assert len(xs) == 1 and all(cp.variables() == xs for cp in cpt), \
+                "variable not uniquely determined"
+            x, = xs
+        d = cp1.degree(x)
+        assert all(cp.degree(x) == d for cp in cpt), \
+            "polynomials not all of the same degree"
+        if len(cps) == d-1:
+            cps = ((x-1)**d, *cps)
+        else:
+            assert len(cps) == d, \
+                "the number of polynomials does not match their degree"
+        K = numberField(*cps, x=x)
+        KK = PolynomialRing(K, names=('z__',))
+        z = KK.gen()
+        roots = [[r for r, m in sorted(KK(cp.subs(x == z)).roots(),
+                                       reverse=True)
+                 for _ in range(m)] for cp in cps]
+        i = roots.index([1] * d)
+        if i != 0:
+            roots = [roots[i], *roots[:i], *roots[i+1:]]
+        
+        def permute(*cols):
+            l = len(cols)
+            if l == d:
+                if all(sum(r) == 0 for r in zip(*cols)):
+                    return [[r[0], *c] for r, c in zip(roots, cols)]
+            else:
+                for perm in Permutations(roots[l][1:]):
+                    out = permute(*cols, perm)
+                    if out is not None:
+                        return out
+            return None
+        
+        P = permute(roots[0][1:])
+        assert P is not None, "no feasible permutation of roots found"
+        params = ASParameters(P=Matrix(K, P).transpose())
+        if cls is not ASParameters:
+            params = cls(params)
+        return params
+
 
     def is_complete_multipartite(self):
         """
@@ -2159,29 +2227,8 @@ class PolyASParameters(ASParameters):
                                      for i in range(self._.d + 1))
             else:
                 B = Matrix(self._.ring, [M[1] for M in p])
-                theta = B.eigenvalues()
-                if any(th.parent() is not self._.ring for th in theta):
-                    d = {}
-                    for th in theta:
-                        mp = th.minpoly()
-                        if mp.degree() > 1:
-                            d.setdefault(mp, th)
-                    names, polys, embs = zip(*(("e%s" % (i if i else ""),
-                                                mp, th)
-                                               for i, (mp, th) in
-                                               enumerate(d.items())))
-                    K = NumberField(polys, names=names, embedding=embs)
-                    if K.gen_embedding() is None:
-                        nf = K.pari_nf()
-                        K = NumberField(nf[0].sage({'y': SR.symbol("x")}),
-                                        name="e", embedding=nf[5][0].sage())
-                    B = Matrix(K, [M[1] for M in p])
-                    theta = B.eigenvalues()
-                    theta.sort(reverse=True)
-                    self._change_ring(K)
-                    self._.theta = tuple(theta)
-                else:
-                    theta = [v for v in theta
+                if self._.ring is SR:
+                    theta = [v for v in B.eigenvalues()
                              if _simplify(_expand(v - p[0, 1, 1])) != 0]
                     try:
                         theta.sort(key=lambda x: CoefficientList(x,
@@ -2202,6 +2249,13 @@ class PolyASParameters(ASParameters):
                         self._.theta = theta
                     else:
                         self._.theta = (p[0, 1, 1], *theta)
+                else:
+                    K = numberField(B, K=self._.ring)
+                    B = Matrix(K, B)
+                    theta = B.eigenvalues()
+                    theta.sort(reverse=True)
+                    self._change_ring(K)
+                    self._.theta = tuple(theta)
         self._.theta = rewriteTuple(self._.theta, expand=expand,
                                     factor=factor, simplify=simplify)
         return self._.theta
