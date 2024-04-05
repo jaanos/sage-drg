@@ -29,6 +29,8 @@ class QPolyParameters(PolyASParameters):
     ANTIPODAL = "Q-antipodal fraction"
     ARRAY = "Krein array"
     BIPARTITE = "Q-bipartite quotient"
+    DUAL_ANTIPODAL = "Q-antipodal quotient"
+    DUAL_BIPARTITE = "Q-bipartite subset"
     DUAL_INTEGRAL = True
     DUAL_MATRIX = "P"
     DUAL_PARAMETER = "intersection number"
@@ -196,6 +198,9 @@ class QPolyParameters(PolyASParameters):
         Return the principal class of the object.
         """
         return QPolyParameters
+
+    def _imprimitivity_dicts(self):
+        return (self._.quotients, self._.subsets)
 
     def _init_schoenberg(self):
         u"""

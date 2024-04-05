@@ -71,6 +71,8 @@ class Parameters(object):
         self._parameters = p
         self.fusion_schemes = {}
         self.subschemes = {}
+        self.subsets = {}
+        self.quotients = {}
         self.triple = {}
         self.triple_solution = {}
         self.triple_solution_generator = {}

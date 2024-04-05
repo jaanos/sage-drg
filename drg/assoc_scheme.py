@@ -23,6 +23,7 @@ from sage.rings.number_field.number_field_element import NumberFieldElement
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.qqbar import QQbar
 from sage.rings.rational_field import Q as QQ
+from sage.sets.set import Set
 from sage.structure.element import Matrix as MatrixClass
 from sage.structure.sage_object import SageObject
 from sage.symbolic.expression import Expression
@@ -167,7 +168,8 @@ class ASParameters(SageObject):
         String representation.
         """
         return "Parameters of an association scheme on %s vertices " \
-               "with %d classes" % (self._.n, self._.d)
+               "with %d class%s" % (self._.n, self._.d,
+                                    'es' if self._.d > 1 else '')
 
     def _change_ring(self, K=None, params=None):
         """
@@ -475,6 +477,66 @@ class ASParameters(SageObject):
                                  name=PARAMETER, sym=SYMBOL)
         self._.p = p
         self.check_handshake()
+
+    def _compute_subset_quotient(self, base, verify=True):
+        if verify:
+            assert all(self._.p[h, i, j] == 0 for h in range(1, self._.d+1)
+                    if h not in base for i in base for j in base), \
+                "specified relations do not form a closed subset"
+        sb = sorted(base)
+        ps = [sb]
+        d = {i: sb for i in sb}
+        for i in range(1, self._.d+1):
+            if i in d:
+                continue
+            for j, (p, *pt) in enumerate(ps[1:], 1):
+                if any(checkPos(self.p[h, i, p]) for h in base):
+                    assert all(any(checkPos(self.p[h, i, pp]) for h in base)
+                               for pp in pt), \
+                        "inconsistent relations between subsets"
+                    assert all(self.p[h, i, pp] == 0 for h in base
+                               for pr in ps[j+1:] for pp in pr), \
+                        "inconsistent relations between subsets"
+                    ps[j].append(i)
+                    d[i] = ps[j]
+                    break
+                else:
+                    assert all(self.p[h, i, pp] == 0
+                               for h in base for pp in pt), \
+                        "inconsistent relations between subsets"
+            else:
+                p = [i]
+                d[i] = p
+                ps.append(p)
+
+        bs = ', '.join(str(x) for x in sb)
+        n = sum(self._.p[0, i, i] for i in base)
+        a = Array3D(len(ps), self._.ring)
+        for h, (hh, *ht) in enumerate(ps):
+            for i, I in enumerate(ps):
+                for j, J in enumerate(ps):
+                    a[h, i, j] = sum(self._.p[hh, ii, jj]
+                                     for ii in I for jj in J) / n
+                    assert all(a[h, i, j] == sum(self._.p[hr, ii, jj]
+                                                 for ii in I for jj in J) / n
+                               for hr in ht), \
+                        "inconsistent relations between subsets"
+        name = "quotient for relations %s" % bs
+        try:
+            self._.quotients[base] = self.add_subscheme(ASParameters(p=a), name)
+        except (InfeasibleError, AssertionError) as ex:
+            raise InfeasibleError(ex, part=name)
+
+        a = Array3D(len(base), self._.ring)
+        for h, hh in enumerate(sb):
+            for i, ii in enumerate(sb):
+                for j, jj in enumerate(sb):
+                    a[h, i, j] = self._.p[hh, ii, jj]
+        name = "subset of vertices in relations %s" % bs
+        try:
+            self._.subsets[base] = self.add_subscheme(ASParameters(p=a), name)
+        except (InfeasibleError, AssertionError) as ex:
+            raise InfeasibleError(ex, part=name)
 
     def _copy(self, p):
         """
@@ -1342,6 +1404,16 @@ class ASParameters(SageObject):
             self._.quadruple[h, i, j, r, s, t] = Q
         return Q
 
+    def quotient(self, *args):
+        base = set(args)
+        base.add(0)
+        base = Set(base)
+        if base not in self._.quotients:
+            if not self._has("p"):
+                self.pTable()
+            self._compute_subset_quotient(base)
+        return self._.quotients[base]
+
     def reorderEigenspaces(self, *order):
         """
         Specify a new order for the eigenspaces.
@@ -1464,6 +1536,16 @@ class ASParameters(SageObject):
             par["Q"] = self._.Q.subs(*exp)
         p, new = self._subs(exp, ASParameters(**par), kargs.get("seen", {}))
         return p
+
+    def subset(self, *args):
+        base = set(args)
+        base.add(0)
+        base = Set(base)
+        if base not in self._.subsets:
+            if not self._has("p"):
+                self.pTable()
+            self._compute_subset_quotient(base)
+        return self._.subsets[base]
 
     def triple_generator(self, t, d):
         """
@@ -2004,6 +2086,8 @@ class PolyASParameters(ASParameters):
     ANTIPODAL = None
     ARRAY = None
     BIPARTITE = None
+    DUAL_ANTIPODAL = None
+    DUAL_BIPARTITE = None
     DUAL_INTEGRAL = None
     DUAL_MATRIX = None
     DUAL_PARAMETER = None
@@ -2270,6 +2354,7 @@ class PolyASParameters(ASParameters):
             self._.b[i] - self._.c[self._.d - i]) == 0
             for i in range(self._.d) if i != m)
         self._.bipartite = all(a == 0 for a in self._.a)
+        d1, d2 = self._imprimitivity_dicts()
         if self._.antipodal:
             try:
                 self._.r = integralize(
@@ -2286,6 +2371,10 @@ class PolyASParameters(ASParameters):
                     if is_divisible(self._.d, 2):
                         c[-1] *= self._.r
                 scheme = self._get_class()(tuple(b), tuple(c))
+                coscheme = self._get_class()([self._.r-1], [1])
+                s = Set([0, self._.d])
+                d1[s] = self.add_subscheme(coscheme, self.DUAL_ANTIPODAL)
+                d2[s] = scheme
             else:
                 scheme = ASParameters(P=[[1]])
             self._.antipodal_subscheme = self.add_subscheme(scheme,
@@ -2297,6 +2386,10 @@ class PolyASParameters(ASParameters):
                 c = tuple(self._.c[2*i+1]*self._.c[2*i+2]/self._.c[2]
                           for i in range(m))
                 scheme = self._get_class()(b, c)
+                coscheme = self._get_class()([1], [1])
+                s = Set(range(0, self._.d+1, 2))
+                d1[s] = scheme
+                d2[s] = self.add_subscheme(coscheme, self.DUAL_BIPARTITE)
             else:
                 scheme = ASParameters(P=[[1]])
             self._.bipartite_subscheme = self.add_subscheme(scheme,
@@ -2454,6 +2547,9 @@ class PolyASParameters(ASParameters):
         together with an appropriate symbol.
         """
         return (self.SYMBOL, self.parameterArray())
+
+    def _imprimitivity_dicts(self):
+        raise NotImplementedError
 
     def _init_array(self, b, c):
         """

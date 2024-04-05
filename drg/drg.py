@@ -70,6 +70,8 @@ class DRGParameters(PolyASParameters):
     ANTIPODAL = "antipodal quotient"
     ARRAY = "intersection array"
     BIPARTITE = "bipartite half"
+    DUAL_ANTIPODAL = "antipodal subset"
+    DUAL_BIPARTITE = "bipartite quotient"
     DUAL_INTEGRAL = False
     DUAL_MATRIX = "Q"
     DUAL_PARAMETER = "Krein parameter"
@@ -252,6 +254,9 @@ class DRGParameters(PolyASParameters):
         Return the principal class of the object.
         """
         return DRGParameters
+
+    def _imprimitivity_dicts(self):
+        return (self._.subsets, self._.quotients)
 
     def _init_array(self, b, c):
         """
