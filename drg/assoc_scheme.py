@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
-import six
 from copy import copy
 from warnings import warn
-from sage.all import pi
+
+from sage.symbolic.constants import pi
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
 from sage.combinat.set_partition import SetPartitions
@@ -14,7 +13,7 @@ from sage.matrix.constructor import diagonal_matrix
 from sage.matrix.constructor import identity_matrix
 from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
-from sage.misc.misc import subsets
+from sage.combinat.subset import subsets
 from sage.rings.integer import Integer
 from sage.structure.sage_object import SageObject
 from sage.symbolic.relation import solve as _solve
@@ -397,9 +396,9 @@ class ASParameters(SageObject):
             for i in range(self._.d + 1):
                 for j in range(self._.d + 1):
                     p[h, i, j] = full_simplify(
-                                    sum(m[t] * P[t, h] * P[t, i] * P[t, j]
-                                        for t in range(self._.d + 1))
-                                    / (self._.n * P[0, h]))
+                        sum(m[t] * P[t, h] * P[t, i] * P[t, j]
+                            for t in range(self._.d + 1))
+                        / (self._.n * P[0, h]))
                     self._check_parameter(h, i, j, p[h, i, j],
                                           integral=integral,
                                           name=name, sym=sym)
@@ -443,7 +442,7 @@ class ASParameters(SageObject):
 
     def _copy(self, p):
         """
-        Copy fields to the given obejct.
+        Copy fields to the given object.
         """
         p._.d = self._.d
         p._.n = self._.n
@@ -486,6 +485,7 @@ class ASParameters(SageObject):
         subcs = set()
         pars = self._get_parameters()
         c = self.classes()
+
         def derived():
             for pa, part in self._.fusion_schemes.items():
                 yield (pa, part, [], True)
@@ -563,7 +563,7 @@ class ASParameters(SageObject):
         self._.prefix = "v%x" % (hash(self) % Integer(2)**32)
 
     def _init_schoenberg(self):
-        u"""
+        """
         Initialize parameters for the computation of the limit
         up to which Schönberg's theorem is tested.
         """
@@ -674,7 +674,7 @@ class ASParameters(SageObject):
 
     def _subs(self, exp, p, seen):
         """
-        Substitute the given subexpressions in the paramaters.
+        Substitute the given subexpressions in the parameters.
         """
         if id(self) in seen:
             return (seen[id(self)], False)
@@ -793,7 +793,7 @@ class ASParameters(SageObject):
             return
         if skip is None:
             skip = set()
-        elif isinstance(skip, six.string_types):
+        elif isinstance(skip, str):
             skip = {skip}
         else:
             skip = set(skip)
@@ -997,12 +997,12 @@ class ASParameters(SageObject):
         if self.is_pPolynomial():
             for order in self._.pPolynomial_ordering:
                 pa = self.add_subscheme(DRGParameters(self, order=order),
-                                        "P-polynomial ordering %s" % (order, ))
+                                        f"P-polynomial ordering {order}")
                 out["P", order] = pa
         if self.is_qPolynomial():
             for order in self._.qPolynomial_ordering:
                 pa = self.add_subscheme(QPolyParameters(self, order=order),
-                                        "Q-polynomial ordering %s" % (order, ))
+                                        f"Q-polynomial ordering {order}")
                 out["Q", order] = pa
         return out
 
@@ -1583,12 +1583,12 @@ class ASParameters(SageObject):
         if S is None:
             S = self.tripleEquations(u, v, w)
         return find(make_expressions((S[h, i, j], 0,
-                                        min(self._.p[u, h, i],
-                                            self._.p[v, h, j],
-                                            self._.p[w, i, j]))
-                                        for h in range(self._.d + 1)
-                                        for i in range(self._.d + 1)
-                                        for j in range(self._.d + 1)),
+                                      min(self._.p[u, h, i],
+                                          self._.p[v, h, j],
+                                          self._.p[w, i, j]))
+                                     for h in range(self._.d + 1)
+                                     for i in range(self._.d + 1)
+                                     for j in range(self._.d + 1)),
                     S.variables(), solver=solver)
 
     def variables(self):
@@ -1711,7 +1711,7 @@ class ASParameters(SageObject):
 
     @check(2)
     def check_schoenberg(self, expand=False, factor=False, simplify=False):
-        u"""
+        """
         Check whether Schönberg's theorem holds.
         """
         if len(self._.vars) > 0:
@@ -1730,8 +1730,7 @@ class ASParameters(SageObject):
             try:
                 QPolyParameters(self, order=order).check_schoenberg()
             except InfeasibleError as ex:
-                raise InfeasibleError(ex, part="Q-polynomial ordering %s" %
-                                      (order, ))
+                raise InfeasibleError(ex, part=f"Q-polynomial ordering {order}")
             return
         rr = range(self._.d + 1)
         t = SR.symbol("__t")
@@ -1955,9 +1954,9 @@ class PolyASParameters(ASParameters):
         """
         if isinstance(other, self._get_class()):
             return self._.hash_parameters == other._.hash_parameters
-        else:
-            return not isinstance(other, ASParameters) \
-                   and self._.hash_parameters == other
+
+        return not isinstance(other, ASParameters) \
+            and self._.hash_parameters == other
 
     def __hash__(self):
         """
@@ -1969,15 +1968,13 @@ class PolyASParameters(ASParameters):
         """
         String representation.
         """
-        return "Parameters of a %s with %s %s" % \
-            (self.OBJECT, self.ARRAY, self._format_parameterArray())
+        return "Parameters of a {} with {} {}".format(self.OBJECT, self.ARRAY, self._format_parameterArray())
 
     def _ascii_art_(self):
         """
         ASCII art representation.
         """
-        return ascii_art("Parameters of a %s with %s " %
-                         (self.OBJECT, self.ARRAY),
+        return ascii_art(f"Parameters of a {self.OBJECT} with {self.ARRAY} ",
                          self._format_parameterArray_ascii())
 
     def _check_family(self):
@@ -2074,11 +2071,11 @@ class PolyASParameters(ASParameters):
             for i in range(self._.d + 1):
                 for j in range(self._.d + 1):
                     q[h, i, j] = full_simplify(
-                                    sum(k[t] * self._.omega[tr(h, t)]
-                                             * self._.omega[tr(i, t)]
-                                             * self._.omega[tr(j, t)]
-                                        for t in range(self._.d + 1))
-                                    * m[i] * m[j] / self._.n)
+                        sum(k[t] * self._.omega[tr(h, t)]
+                            * self._.omega[tr(i, t)]
+                            * self._.omega[tr(j, t)]
+                            for t in range(self._.d + 1))
+                        * m[i] * m[j] / self._.n)
                     self._check_parameter(h, i, j, q[h, i, j],
                                           integral=self.DUAL_INTEGRAL,
                                           name=self.DUAL_PARAMETER,
@@ -2236,8 +2233,8 @@ class PolyASParameters(ASParameters):
         else:
             try:
                 m = tuple(integralize(_simplify(_factor(
-                            self._.n / sum(s * om**2
-                                           for s, om in zip(k, omg)))))
+                    self._.n / sum(s * om**2
+                                   for s, om in zip(k, omg)))))
                           for omg in self._.omega)
             except TypeError:
                 raise InfeasibleError("%s not integral" % self.DUAL_SIZES)
@@ -2245,7 +2242,7 @@ class PolyASParameters(ASParameters):
 
     def _copy(self, p):
         """
-        Copy fields to the given obejct.
+        Copy fields to the given object.
         """
         ASParameters._copy(self, p)
         if isinstance(p, self._get_class()):
@@ -2278,15 +2275,14 @@ class PolyASParameters(ASParameters):
         Generate parameters sets of derived association schemes.
         """
         self.partSchemes()
-        for par, part, refs, reorder in ASParameters._derived(self, derived):
-            yield (par, part, refs, reorder)
+        yield from ASParameters._derived(self, derived)
 
     def _format_parameterArray(self):
         """
         Return a string representation of the intersection array.
         """
-        return "{%s; %s}" % tuple(', '.join(str(x) for x in l)
-                                  for l in self.parameterArray())
+        return "{{{}; {}}}".format(*tuple(', '.join(str(x) for x in l)
+                                          for l in self.parameterArray()))
 
     def _format_parameterArray_ascii(self):
         """
@@ -2303,9 +2299,9 @@ class PolyASParameters(ASParameters):
         """
         Return a LaTeX representation of the intersection array.
         """
-        return r"\left\{%s; %s\right\}" % tuple(', '.join(latex(x)
-                                                          for x in l) for l
-                                                in self.parameterArray())
+        return r"\left\{{{}; {}\right\}}".format(*tuple(', '.join(latex(x)
+                                                                  for x in l)
+                                                        for l in self.parameterArray()))
 
     def _format_parameterArray_unicode(self):
         """
@@ -2355,9 +2351,8 @@ class PolyASParameters(ASParameters):
         """
         LaTeX representation.
         """
-        return LatexExpr(r"\text{Parameters of a %s with %s } %s" %
-                         (self.OBJECT_LATEX, self.ARRAY,
-                          self._format_parameterArray_latex()))
+        return LatexExpr(r"\text{{Parameters of a {} with {} }} {}".format(self.OBJECT_LATEX, self.ARRAY,
+                                                                           self._format_parameterArray_latex()))
 
     def _match(self, b, c):
         """
@@ -2384,8 +2379,7 @@ class PolyASParameters(ASParameters):
         """
         Unicode art representation.
         """
-        return unicode_art("Parameters of a %s with %s " %
-                           (self.OBJECT, self.ARRAY),
+        return unicode_art(f"Parameters of a {self.OBJECT} with {self.ARRAY} ",
                            self._format_parameterArray_unicode())
 
     def antipodalSubscheme(self):
@@ -2535,9 +2529,8 @@ class PolyASParameters(ASParameters):
                     eqs.append(c0 == cc)
             else:
                 if len(bi) > 1 or len(ci) > 1:
-                    raise IndexError("merging %s %s does not yield "
-                                     "a %s-polynomial scheme" %
-                                     (self.PARTS, sorted(adj), self.MATRIX))
+                    raise IndexError("merging {} {} does not yield "
+                                     "a {}-polynomial scheme".format(self.PARTS, sorted(adj), self.MATRIX))
                 b.append(next(iter(bi)))
                 c.append(next(iter(ci)))
             cur = nxt
@@ -2640,7 +2633,7 @@ class PolyASParameters(ASParameters):
             self.pTable()
         if not self._has("Q"):
             self.dualEigenmatrix()
-        x = SR.symbol(var) if isinstance(var, six.string_types) else var
+        x = SR.symbol(var) if isinstance(var, str) else var
         ths = next(iter(zip(*self._.Q[p_order, q_order[1]]))) \
             + (Integer(0), )
         o = p_order[1]

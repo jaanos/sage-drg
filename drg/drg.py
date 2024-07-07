@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 import operator
-import six
+
 from sage.arith.misc import GCD
 from sage.combinat.q_analogues import q_int
 from sage.functions.generalized import sgn
@@ -9,7 +8,6 @@ from sage.functions.other import ceil
 from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.functions.trig import cos
-from sage.matrix.constructor import Matrix
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from sage.rings.infinity import Infinity
@@ -26,15 +24,12 @@ from .coefflist import CoefficientList
 from .find import find
 from .nonex import checkConditions
 from .nonex import classicalFamilies
-from .nonex import families
-from .nonex import sporadic
 from .partition import PartitionGraph
 from .util import checklist
 from .util import checkNonneg
 from .util import checkPos
 from .util import checkPrimePower
 from .util import eigenvalue_interval
-from .util import full_simplify
 from .util import hard_ceiling
 from .util import hard_floor
 from .util import integralize
@@ -559,7 +554,9 @@ class DRGParameters(PolyASParameters):
         then the relevant triple intersection numbers will be computed.
         """
         refs = []
-        out = lambda ii: (ii, refs) if return_refs else ii
+
+        def out(ii):
+            return (ii, refs) if return_refs else ii
         a = self._.a[1]
         if a == 0:
             return out(RealSet([0, 0]))
@@ -699,7 +696,8 @@ class DRGParameters(PolyASParameters):
             m1u = floor(-(rest * th3 + fix) / (th1 - th3))
             if rest < 0 or m1u < 0:
                 raise InfeasibleError("no solution for the multiplicities "
-                                "of the eigenvalues of the local graph", refs + rr)
+                                      "of the eigenvalues of the local graph",
+                                      refs + rr)
             m1l = ceil(-(rest * th2 + fix) / (th1 - th2))
             if m1l < 0:
                 m1l = Integer(0)
@@ -752,7 +750,7 @@ class DRGParameters(PolyASParameters):
         if not self._has("theta"):
             self.eigenvalues()
         m = -min(self._.theta, key=lambda x: CoefficientList(x, self._.vars))
-        x = SR.symbol(var) if isinstance(var, six.string_types) else var
+        x = SR.symbol(var) if isinstance(var, str) else var
         M = ((x + m - 3) * (self._.k[1] - x + 1)
              - 2 * (x - 1) * (self._.a[1] - x + 2))**2 - \
             (self._.k[1] - x + 1)**2 * (x + m - 1) * (x - (m-1) * (4*m-1))
@@ -828,7 +826,8 @@ class DRGParameters(PolyASParameters):
                      [("Vidali13", "Thm. 4.6.3")])
         if self._.subconstituents[h] is None:
             subc, refs, rels = PolyASParameters.subconstituent(self, h,
-                compute=compute, return_rels=True)
+                                                               compute=compute,
+                                                               return_rels=True)
             trd = tuple(range(subc._.d+1))
             if subc is not None and len(rels) > 1 and rels[1] == 1 \
                     and subc.is_pPolynomial() \
@@ -1023,7 +1022,7 @@ class DRGParameters(PolyASParameters):
         if self._.d >= 2:
             if self._.a[1] == 0 and any(2*self._.a[i] > self._.k[i]
                                         for i in range(2, self._.d+1)):
-                raise InfeasibleError(u"Turán's theorem",
+                raise InfeasibleError("Turán's theorem",
                                       ("BCN", "Prop. 5.6.4."))
             for h in range(1, self._.d + 1):
                 for i in range(self._.d + 1):
@@ -1406,7 +1405,7 @@ class DRGParameters(PolyASParameters):
                 (th1 * (self._.a[1] + 1) + self._.k[1]) * \
                 (thd * (self._.a[1] + 1) + self._.k[1])
             refs = []
-            jk = u"JurišićKoolen00"
+            jk = "JurišićKoolen00"
             jkt = "JKT00"
             if bd == 0:
                 refs.append(jk)
@@ -1440,7 +1439,7 @@ class DRGParameters(PolyASParameters):
 
         def checkMul(h):
             if self._.antipodal and self._.omega[h, self._.d] != 1 and \
-                  self._.m[h] < self._.k[1] + self._.r - 2:
+               self._.m[h] < self._.k[1] + self._.r - 2:
                 return ("m[%d] < k+r-2" % h, "GodsilHensel92")
             elif self._.a[self._.d] == 0 and \
                     1 not in [self._.omega[h, 2],
@@ -1481,7 +1480,7 @@ class DRGParameters(PolyASParameters):
         rng, refs = self.localEigenvalue_range(compute=compute,
                                                b=(bm, bp),
                                                lowm=[h for h in s if
-                                                self._.m[h] < self._.k[1]],
+                                                     self._.m[h] < self._.k[1]],
                                                return_refs=True)
         c = rng.cardinality()
         if rng.sup() <= bp or self._.subconstituents[1] is not None or \

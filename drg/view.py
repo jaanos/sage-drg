@@ -1,6 +1,5 @@
 import math
 import operator
-import six
 from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
 from sage.structure.sage_object import SageObject
@@ -217,16 +216,14 @@ class View(SageObject):
         LaTeX representation in case of nonexistent parameter.
         """
         part, key, obj = getattribute(self, 'nonex')()
-        return LatexExpr(r"\text{View of nonexistent %s }%s"
-                         r"\text{ of }\left\langle%s\right\rangle" %
-                         (part, latex(key), latex(obj)))
+        return LatexExpr(fr"\text{{View of nonexistent {part} }}{latex(key)}"
+                         fr"\text{{ of }}\left\langle{latex(obj)}\right\rangle")
 
     def repr_nonex(self):
         """
         String representation in case of nonexistent parameter.
         """
-        return "View of nonexistent %s %s of <%s>" % \
-            getattribute(self, 'nonex')()
+        return "View of nonexistent {} {} of <{}>".format(*getattribute(self, 'nonex')())
 
     def unicode_art_nonex(self):
         """
@@ -236,10 +233,10 @@ class View(SageObject):
         art = unicode_art(" ", obj, " ")
         return unicode_art("View of nonexistent %s " % part, key, " of ",
                            unicode_left_parenthesis.character_art(
-                            art.height())
+                               art.height())
                            + art +
                            unicode_right_parenthesis.character_art(
-                            art.height()))
+                               art.height()))
 
     __repr__ = attr(repr, repr_nonex)
     __str__ = attr(str)
@@ -299,28 +296,19 @@ class View(SageObject):
     _latex_ = attr(latex, latex_nonex)
     _unicode_art_ = attr(unicode_art, unicode_art_nonex)
 
-    if six.PY2:
-        __cmp__ = attr(cmp)
-        __unicode__ = attr(unicode)
-        __div__ = attr(operator.div)
-        __idiv__ = attr(operator.idiv)
-        __long__ = attr(long)
-        __coerce__ = attr(coerce)
+    @attr
+    def __rmatmul__(val, other):
+        """
+        ``other @ val``
+        """
+        return val.__rmatmul__(other)
 
-    if six.PY3:
-        @attr
-        def __rmatmul__(val, other):
-            """
-            ``other @ val``
-            """
-            return val.__rmatmul__(other)
-
-        __matmul__ = attr(operator.matmul)
-        __imatmul__ = attr(operator.imatmul)
-        __round__ = attr(round)
-        __trunc__ = attr(math.trunc)
-        __floor__ = attr(math.floor)
-        __ceil__ = attr(math.ceil)
+    __matmul__ = attr(operator.matmul)
+    __imatmul__ = attr(operator.imatmul)
+    __round__ = attr(round)
+    __trunc__ = attr(math.trunc)
+    __floor__ = attr(math.floor)
+    __ceil__ = attr(math.ceil)
 
 
 class AttrView(View):
@@ -371,7 +359,7 @@ class KeyView(View):
         return ("key", key, view)
 
 
-class Param(object):
+class Param:
     """
     Descriptor class for read-only parameters.
     """

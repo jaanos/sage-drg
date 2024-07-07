@@ -78,7 +78,7 @@ class Array3D(SageObject):
         String representation of the array.
         """
         l = len(repr(self.n - 1))
-        fmt = '%{}d: '.format(l)
+        fmt = f'%{l}d: '
         return '\n\n'.join((fmt % i) + repr(M).replace('\n',
                                                        '\n' + (' ' * (l+2)))
                            for i, M in enumerate(self.A))
@@ -96,7 +96,7 @@ class Array3D(SageObject):
         ASCII art representation of the array.
         """
         l = len(repr(self.n - 1))
-        fmt = '%{}d: '.format(l)
+        fmt = f'%{l}d: '
         art = [ascii_art(M) for M in self.A]
         return ascii_art("\n".join((fmt % i) + "\n"*a.height()
                                    for i, a in enumerate(art))) + \
@@ -115,7 +115,7 @@ class Array3D(SageObject):
         Unicode art representation of the array.
         """
         l = len(repr(self.n - 1))
-        fmt = '%{}d: '.format(l)
+        fmt = f'%{l}d: '
         art = [unicode_art(M) for M in self.A]
         return unicode_art("\n".join((fmt % i) + "\n"*a.height()
                                      for i, a in enumerate(art))) + \
@@ -179,7 +179,7 @@ class Array3D(SageObject):
 
     def variables(self):
         """
-        Return the variables occuring in the array.
+        Return the variables occurring in the array.
         """
         return tuple(set(sum((variables(x)
                               for M in self for r in M for x in r), ())))
@@ -255,8 +255,8 @@ class Array4D(SageObject):
         String representation of the array.
         """
         l = len(repr(self.n - 1))
-        fmt = '%{}d'.format(l)
-        return '\n\n'.join(('(%s, %s): ' % (fmt % i, fmt % j)) +
+        fmt = f'%{l}d'
+        return '\n\n'.join((f'({fmt % i}, {fmt % j}): ') +
                            repr(M).replace('\n', '\n' + (' ' * (2*l+6)))
                            for i, A in enumerate(self.A)
                            for j, M in enumerate(A))
@@ -274,8 +274,8 @@ class Array4D(SageObject):
         ASCII art representation of the array.
         """
         l = len(repr(self.n - 1))
-        fmt = '%{}d'.format(l)
-        art = [("(%s, %s): " % (fmt % i, fmt % j), ascii_art(M))
+        fmt = f'%{l}d'
+        art = [(f"({fmt % i}, {fmt % j}): ", ascii_art(M))
                for i, A in enumerate(self.A) for j, M in enumerate(A)]
         return ascii_art("\n".join(i + "\n"*a.height() for i, a in art)) + \
             ascii_art("\n".join(sum([a._matrix + [""] for i, a in art], [])))
@@ -294,8 +294,8 @@ class Array4D(SageObject):
         Unicode art representation of the array.
         """
         l = len(repr(self.n - 1))
-        fmt = '%{}d'.format(l)
-        art = [("(%s, %s): " % (fmt % i, fmt % j), unicode_art(M))
+        fmt = f'%{l}d'
+        art = [(f"({fmt % i}, {fmt % j}): ", unicode_art(M))
                for i, A in enumerate(self.A) for j, M in enumerate(A)]
         return unicode_art("\n".join(i + "\n"*a.height() for i, a in art)) + \
             unicode_art("\n".join(sum([a._matrix + [""] for i, a in art],
@@ -363,7 +363,7 @@ class Array4D(SageObject):
 
     def variables(self):
         """
-        Return the variables occuring in the array.
+        Return the variables occurring in the array.
         """
         return tuple(set(sum((variables(x)
                               for A in self for M in A for r in M for x in r),

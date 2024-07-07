@@ -60,11 +60,13 @@ class PartitionGraph(Graph):
         """
         assert h >= 0 and h <= p._.d, "distance not in feasible range"
         d = dict(sum([[((i, j), x) for j, x in enumerate(r) if x != 0]
-                      for i, r in enumerate(p._.p[h])],  []))
+                      for i, r in enumerate(p._.p[h])], []))
         if h == 0:
-            pos = lambda t: t[:1]
+            def pos(t):
+                return t[:1]
         else:
-            pos = lambda t: t
+            def pos(t):
+                return t
         b = {k: Bubble(v, *pos(k)) for k, v in d.items()}
         V = b.values()
         Graph.__init__(self,

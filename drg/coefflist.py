@@ -1,9 +1,8 @@
-import six
 from sage.misc.functional import numerical_approx
 from sage.rings.integer import Integer
 from sage.symbolic.expression import Expression
 from sage.symbolic.ring import SR
-from .util import checkNonneg
+
 from .util import checkPos
 from .util import variables
 
@@ -68,8 +67,8 @@ class CoefficientList:
         if other is None:
             keys = set()
         else:
-            keys = set(six.iterkeys(other.val))
-        for k in sorted(keys.union(six.iterkeys(self.val)), reverse=True):
+            keys = set(other.val)
+        for k in sorted(keys.union(self.val), reverse=True):
             if k not in keys:
                 c = self.val[k].__cmp__(None)
             elif k not in self.val:

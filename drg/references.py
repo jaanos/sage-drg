@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 import re
-from .util import utf8
 from sage.structure.sage_object import SageObject
 
 
@@ -59,22 +57,23 @@ class Reference(SageObject):
         """
         String representation.
         """
-        return "%s(%s)" % (self.__class__.__name__, utf8(self.name))
+        return f"{self.__class__.__name__}({self.name})"
 
     def __str__(self):
         """
         Print representation.
         """
-        return utf8(self.name)
+        return self.name
 
     def author(self, bibtex=False, short=False):
         """
         Return the author(s).
         """
         abbrv = (lambda s: "%s." % s[0]) if short else (lambda s: s)
-        authors = ["%s%s" % (("%s " % " ".join(abbrv(name) for name in first))
-                             if first else "", last) for last, first
-                             in self.fields["author"]]
+        authors = ["{}{}".format(("%s " % " ".join(abbrv(name)
+                                                   for name in first))
+                                 if first else "", last)
+                   for last, first in self.fields["author"]]
         if not bibtex and len(authors) > 2:
             authors[:-1] = [", ".join(authors[:-1])]
         return " and ".join(authors)
@@ -83,13 +82,13 @@ class Reference(SageObject):
         """
         Return the BibTeX string.
         """
-        return "@%s{%s\n%s}\n" % (self.__class__.__name__.lower(),
-                                  utf8(self.name),
-                                  "".join("%11s = {%s},\n" %
-                                          (key,
-                                           utf8(getattr(self,
-                                                        key)(bibtex=True)))
-                                          for key in self.fields))
+        return "@{}{{{}\n{}}}\n".format(self.__class__.__name__.lower(),
+                                        self.name,
+                                        "".join("%11s = {%s},\n" %
+                                                (key,
+                                                 getattr(self,
+                                                         key)(bibtex=True))
+                                                for key in self.fields))
 
     def range(self, name, delim):
         """
@@ -100,7 +99,7 @@ class Reference(SageObject):
         data = self.fields[name]
         if isinstance(data, tuple):
             left, right = data
-            return "%s%s%s" % (left, delim, right)
+            return f"{left}{delim}{right}"
         else:
             return data
 
@@ -363,8 +362,8 @@ Article("Coolsaet05",
         year=2005
 )
 
-Article(u"CoolsaetJurišić08",
-        author=[("Coolsaet", ("Kris", )), (u"Jurišić", ("Aleksandar", ))],
+Article("CoolsaetJurišić08",
+        author=[("Coolsaet", ("Kris", )), ("Jurišić", ("Aleksandar", ))],
         title="Using equality in the Krein conditions "
               "to prove nonexistence of certain distance-regular graphs",
         journal="J. Combin. Theory Ser. A",
@@ -377,7 +376,7 @@ Article(u"CoolsaetJurišić08",
 )
 
 Article("CJK08",
-        author=[("Coolsaet", ("Kris", )), (u"Jurišić", ("Aleksandar", )),
+        author=[("Coolsaet", ("Kris", )), ("Jurišić", ("Aleksandar", )),
                  ("Koolen", ("Jack", ))],
         title="On triangle-free distance-regular graphs "
               "with an eigenvalue multiplicity equal to the valency",
@@ -414,7 +413,7 @@ Article("DeBruyn01",
 )
 
 Article("DeBruynVanhove15",
-        author=[("De Bruyn", ("Bart", )), ("Vanhove", (u"Frédéric", ))],
+        author=[("De Bruyn", ("Bart", )), ("Vanhove", ("Frédéric", ))],
         title="On $Q$-polynomial regular near $2d$-gons",
         journal="Combinatorica",
         fjournal="Combinatorica",
@@ -611,7 +610,7 @@ Article("GKP21",
 
 Article("GSV20",
         author=[("Gavrilyuk", ("Alexander", "L.")), ("Suda", ("Sho", )),
-                 ("Vidali", (u"Janoš", ))],
+                 ("Vidali", ("Janoš", ))],
         title="On tight $4$-designs in Hamming association schemes",
         journal="Combinatorica",
         fjournal="Combinatorica",
@@ -624,7 +623,7 @@ Article("GSV20",
 
 Article("GVW21",
         author=[("Gavrilyuk", ("Alexander", "L.")),
-                ("Vidali", (u"Janoš", )),
+                ("Vidali", ("Janoš", )),
                 ("Williford", ("Jason", "S."))],
         title="On few-class $Q$-polynomial association schemes: "
               "feasible parameters and nonexistence results",
@@ -676,8 +675,8 @@ Article("IvanovShpectorov90",
         year=1990
 )
 
-Article(u"JurišićKoolen00",
-        author=[(u"Jurišić", ("Aleksandar", )), ("Koolen", ("Jack", ))],
+Article("JurišićKoolen00",
+        author=[("Jurišić", ("Aleksandar", )), ("Koolen", ("Jack", ))],
         title="Nonexistence of some antipodal distance-regular graphs "
               "of diameter four",
         journal="European J. Combin.",
@@ -688,8 +687,8 @@ Article(u"JurišićKoolen00",
         year=2000
 )
 
-Article(u"JurišićKoolen11",
-        author=[(u"Jurišić", ("Aleksandar", )), ("Koolen", ("Jack", ))],
+Article("JurišićKoolen11",
+        author=[("Jurišić", ("Aleksandar", )), ("Koolen", ("Jack", ))],
         title=r"Classification of the family $\rm{AT4}(qs,q,q)$ "
               "of antipodal tight graphs",
         journal="J. Combin. Theory Ser. A",
@@ -700,8 +699,8 @@ Article(u"JurišićKoolen11",
         year=2011
 )
 
-Article(u"JurišićVidali12",
-        author=[(u"Jurišić", ("Aleksandar", )), ("Vidali", (u"Janoš", ))],
+Article("JurišićVidali12",
+        author=[("Jurišić", ("Aleksandar", )), ("Vidali", ("Janoš", ))],
         title="Extremal $1$-codes in distance-regular graphs of diameter $3$",
         journal="Des. Codes Cryptogr.",
         fjournal="Designs, Codes and Cryptography",
@@ -712,8 +711,8 @@ Article(u"JurišićVidali12",
         year=2012
 )
 
-Article(u"JurišićVidali17",
-        author=[(u"Jurišić", ("Aleksandar", )), ("Vidali", (u"Janoš", ))],
+Article("JurišićVidali17",
+        author=[("Jurišić", ("Aleksandar", )), ("Vidali", ("Janoš", ))],
         title="Restrictions on classical distance-regular graphs",
         journal="J. Algebraic Combin.",
         fjournal="Journal of Algebraic Combinatorics",
@@ -724,7 +723,7 @@ Article(u"JurišićVidali17",
 )
 
 Article("JKT00",
-        author=[(u"Jurišić", ("Aleksandar", )), ("Koolen", ("Jack", )),
+        author=[("Jurišić", ("Aleksandar", )), ("Koolen", ("Jack", )),
                  ("Terwilliger", ("Paul", ))],
         title="Tight distance-regular graphs",
         journal="J. Algebraic Combin.",
@@ -811,7 +810,7 @@ Article("Makhnev02",
         title="On the nonexistence of strongly regular graphs "
               "with the parameters $(486, 165, 36, 66)$",
         journal="Ukrain. Mat. Zh.",
-        fjournal=u"Ukraïns′kiĭ Matematichniĭ Zhurnal",
+        fjournal="Ukraïns′kiĭ Matematichniĭ Zhurnal",
         volume=54,
         number=7,
         pages=(941, 949),
@@ -901,7 +900,7 @@ Book("PayneThas",
      edition="Second",
      series="EMS Series of Lectures in Mathematics",
      publisher="European Mathematical Society (EMS)",
-     address=u"Zürich",
+     address="Zürich",
      year=2009,
      url="https://doi.org/10.4171/066",
      pages=("xii", 287)
@@ -937,7 +936,7 @@ Article("SumalrojWorawannotai16",
 )
 
 Article("Urlep12",
-        author=[("Urlep", (u"Matjaž", ))],
+        author=[("Urlep", ("Matjaž", ))],
         title="Triple intersection numbers of "
               "$Q$-polynomial distance-regular graphs",
         journal="European J. Combin.",
@@ -950,7 +949,7 @@ Article("Urlep12",
 )
 
 PhDThesis("Vidali13",
-          author=[("Vidali", (u"Janoš", ))],
+          author=[("Vidali", ("Janoš", ))],
           title="Codes in distance-regular graphs",
           school="University of Ljubljana",
           url="http://eprints.fri.uni-lj.si/2167/",
@@ -958,7 +957,7 @@ PhDThesis("Vidali13",
 )
 
 Article("Vidali18",
-        author=[("Vidali", (u"Janoš", ))],
+        author=[("Vidali", ("Janoš", ))],
         title="Using symbolic computation "
               "to prove nonexistence of distance-regular graphs",
         journal="Electron. J. Combin",

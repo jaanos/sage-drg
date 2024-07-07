@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
 from sage.functions.other import floor
-from sage.matrix.constructor import Matrix
 from sage.rings.integer import Integer
 from sage.rings.rational_field import Q as QQ
-from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
 from .array3d import Array3D
 from .assoc_scheme import ASParameters
@@ -138,12 +135,11 @@ class QPolyParameters(PolyASParameters):
         """
         if self._.antipodal and self._.d >= 3:
             self.all_dismantlements()
-        for par, part, refs, reorder in PolyASParameters._derived(self, derived):
-            yield (par, part, refs, reorder)
+        yield from PolyASParameters._derived(self, derived)
 
     def _copy(self, p):
         """
-        Copy fields to the given obejct.
+        Copy fields to the given object.
         """
         PolyASParameters._copy(self, p)
         if self._has("dismantled_schemes"):
@@ -198,7 +194,7 @@ class QPolyParameters(PolyASParameters):
         return QPolyParameters
 
     def _init_schoenberg(self):
-        u"""
+        """
         Initialize parameters for the computation of the limit
         up to which Schönberg's theorem is tested.
 
@@ -321,6 +317,7 @@ class QPolyParameters(PolyASParameters):
         """
         Return parameters of the h-th subconstituent
         if it is known to form an association scheme.
+
         If the resulting scheme is Q-polynomial,
         the parameters are returned as such.
 
@@ -329,7 +326,8 @@ class QPolyParameters(PolyASParameters):
         """
         if self._.subconstituents[h] is None:
             subc, refs, rels = PolyASParameters.subconstituent(self, h,
-                compute=compute, return_rels=True)
+                                                               compute=compute,
+                                                               return_rels=True)
             if subc is not None and subc.is_qPolynomial():
                 old, subc = subc, QPolyParameters(subc)
                 self._.subconstituents[h] = (subc, refs)

@@ -45,7 +45,7 @@ def find(expressions, vars, conditions=None, solver=None):
 
         def makeLPExpression(e):
             return sum(e.coefficient(y) * v[str(y)] for y in vars) \
-                   + e.subs(zero) * lp[1]
+                + e.subs(zero) * lp[1]
 
         lpopt = makeLPExpression(opt)
 

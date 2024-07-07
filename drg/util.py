@@ -1,11 +1,8 @@
 import operator
 import re
-import six
-from sage.arith.misc import factor as factorize
+
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as _simplify
-from sage.functions.other import ceil
-from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.rings.integer import Integer
 from sage.rings.number_field.number_field import NumberField
@@ -117,7 +114,7 @@ def checkPrimePower(exp):
 
 def eigenvalue_interval(l, u):
     """
-    Return an appropriate interval for eigenvalues between ``l'' and ``u''.
+    Return an appropriate interval for eigenvalues between ''l'' and ''u''.
     """
     return INTERVAL[is_algebraic_integer(l), is_algebraic_integer(u)](l, u)
 
@@ -135,7 +132,7 @@ def frac(a, b):
     """
     Return the fraction ``a/b``.
     """
-    return Integer(a)/Integer(b)
+    return Integer(a) / Integer(b)
 
 
 def full_simplify(exp):
@@ -240,6 +237,7 @@ def is_integer(x):
         return True
     except TypeError:
         return False
+
 
 def is_integral(sol):
     """
@@ -398,17 +396,6 @@ def symbol(a=None):
     if isinstance(a, Expression):
         return a
     return SR.symbol(a)
-
-
-def utf8(msg):
-    """
-    UTF-8 encode the string.
-
-    Provided for Python 2/3 compatibility.
-    """
-    if six.PY2 and isinstance(msg, unicode):
-        msg = msg.encode("utf-8")
-    return msg
 
 
 def variables(exp):

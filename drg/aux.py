@@ -1,5 +1,4 @@
 from .references import refs as references
-from .util import utf8
 
 
 class InfeasibleError(Exception):
@@ -16,7 +15,7 @@ class InfeasibleError(Exception):
         elif not isinstance(part, tuple):
             part = (part, )
         if refs is None:
-                refs = []
+            refs = []
         elif not isinstance(refs, list):
             refs = [refs]
         refs = [(references[pap], thm)
@@ -42,7 +41,7 @@ class InfeasibleError(Exception):
         if len(self.refs) > 0:
             msg.append("nonexistence by %s" %
                        "; ".join(self.formatRef(ref) for ref in self.refs))
-        self.args = (utf8(": ".join(msg)), )
+        self.args = (": ".join(msg), )
 
     @staticmethod
     def formatRef(ref):
@@ -53,10 +52,10 @@ class InfeasibleError(Exception):
         if thm is None:
             return pap.name
         else:
-            return "%s, %s" % (pap.name, thm)
+            return f"{pap.name}, {thm}"
 
 
-class Parameters(object):
+class Parameters:
     """
     An auxiliary class for storing the computed parameters.
     """
