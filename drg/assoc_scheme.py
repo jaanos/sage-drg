@@ -49,6 +49,7 @@ from .util import change_ring
 from .util import checklist
 from .util import checkNonneg
 from .util import checkPos
+from .util import checkRational
 from .util import _factor
 from .util import full_simplify
 from .util import integralize
@@ -475,8 +476,8 @@ class ASParameters(SageObject):
         p = Array3D(self._.d + 1, self._.ring)
         self._compute_parameters(p, self._.P, self._.m, integral=True,
                                  name=PARAMETER, sym=SYMBOL)
+        self.check_handshake(p=p)
         self._.p = p
-        self.check_handshake()
 
     def _compute_subset_quotient(self, base, verify=True):
         if verify:
@@ -686,17 +687,22 @@ class ASParameters(SageObject):
         """
         Initialize the list of variables.
         """
+        rat = False
         if not self._has("vars"):
             if self._has("p"):
                 self._.vars = self._.p.variables()
+                rat = True
             elif self._has("q"):
                 self._.vars = self._.q.variables()
+                rat = all(checkRational(x) for A in self._.q for r in A for x in r)
             elif self._has("P"):
                 self._.vars = variables(self._.P)
+                rat = all(checkRational(x) for r in self._.P for x in r)
             elif self._has("Q"):
                 self._.vars = variables(self._.Q)
+                rat = all(checkRational(x) for r in self._.Q for x in r)
         self._.vars_ordered = len(self._.vars) <= 1
-        if len(self._.vars) == 0 and self._.ring is SR:
+        if rat and len(self._.vars) == 0 and self._.ring is SR:
             self._change_ring(QQ)
 
     def _is_polynomial(self, p, i):
@@ -937,14 +943,14 @@ class ASParameters(SageObject):
                     raise InfeasibleError(ex, refs=refs, part=pt)
                 i += 1
 
-    def check_handshake(self):
+    def check_handshake(self, p=None):
         """
         Verify the handshake lemma for all relations in all subconstituents.
         """
         if not self._has("k"):
             self.kTable()
-        if not self._has("p"):
-            self.pTable()
+        if p is None:
+            p = self.pTable()
         d = [self._.d, 0 if self.METRIC else self._.d]
         b = 2 if self._.bipartite else 1
         odd = not is_divisible(self._.n, 2)
@@ -956,12 +962,12 @@ class ASParameters(SageObject):
                     raise InfeasibleError("handshake lemma not satisfied "
                                           "for relation %d" % i)
                 for j in range(b, min(d) + 1, b):
-                    if not is_divisible(self._.p[i, i, j], 2):
+                    if not is_divisible(p[i, i, j], 2):
                         raise InfeasibleError("handshake lemma not satisfied"
                                               " for relation %d in"
                                               " subconstituent %d" % (j, i))
             if ndiv3 and not is_divisible(self._.k[i], 3) \
-                    and not is_divisible(self._.p[i, i, i], 3):
+                    and not is_divisible(p[i, i, i], 3):
                 raise InfeasibleError("handshake lemma not satisfied "
                                       "for triangles in relation %d" % i)
 

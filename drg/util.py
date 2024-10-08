@@ -137,6 +137,19 @@ def checkPrimePower(exp):
         return False
 
 
+def checkRational(exp):
+    """
+    Check whether an expression is rational.
+
+    Returns ``True`` if ``exp`` is a rational number.
+    Otherwise, returns ``False``.
+    """
+    try:
+        QQ(exp)
+        return True
+    except TypeError:
+        return False
+
 def eigenvalue_interval(l, u):
     """
     Return an appropriate interval for eigenvalues between ``l'' and ``u''.
