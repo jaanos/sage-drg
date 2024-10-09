@@ -253,8 +253,9 @@ class ASParameters(SageObject):
             except TypeError:
                 raise InfeasibleError("%s %s[%d, %d, %d] is nonintegral"
                                       % (name, sym, h, i, j))
-        assert checkNonneg(v), \
-            "%s %s[%d, %d, %d] is negative" % (name, sym, h, i, j)
+        if not checkNonneg(v):
+            raise InfeasibleError("%s %s[%d, %d, %d] is negative"
+                                  % (name, sym, h, i, j))
         return v
 
     def _check_parameters(self, p, integral=False, name=None, sym=None):
@@ -1396,7 +1397,8 @@ class ASParameters(SageObject):
         if not solve:
             return (out, vars)
         sol = _solve(out, tuple(vars))
-        assert len(sol) > 0, "system of equations has no solution"
+        if not sol:
+            raise InfeasibleError("system of equations has no solution")
         Q = Array4D(self._.d + 1)
         for A in R:
             for B in R:
@@ -1752,7 +1754,8 @@ class ASParameters(SageObject):
         if not solve:
             return (out, vars)
         sol = _solve(out, tuple(vars))
-        assert len(sol) > 0, "system of equations has no solution"
+        if not sol:
+            raise InfeasibleError("system of equations has no solution")
         S = Array3D(self._.d + 1)
         for h in r:
             for i in r:
