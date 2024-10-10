@@ -1250,10 +1250,11 @@ class DRGParameters(PolyASParameters):
                                           ("PayneThas", "1.2.2."))
             elif g == 6 and 1 in [s, t]:
                 m = next(x for x in [s, t] if x != 1)
-                if is_integer(m) and Integer(m) % 4 in [1, 2] and \
-                        not is_squareSum(m):
-                    raise InfeasibleError("Bruck-Ryser theorem",
-                                          ("BCN", "Thm. 1.10.4."))
+                if is_integer(m):
+                    m = Integer(m)
+                    if m % 4 in [1, 2] and not is_squareSum(m):
+                        raise InfeasibleError("Bruck-Ryser theorem",
+                                              ("BCN", "Thm. 1.10.4."))
         if self._.antipodal and self._.d == 3 and self._.r > 2 and \
                 self._.b[0] == (self._.r - 1) * (self._.c[2] + 1):
             s = self._.r - 1

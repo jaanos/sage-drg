@@ -422,7 +422,10 @@ class ASParameters(SageObject):
             if not self._has("Q"):
                 self.dualEigenmatrix(expand=expand, factor=factor,
                                      simplify=simplify)
-            m = tuple(integralize(x) for x in self._.Q[0])
+            try:
+                m = tuple(integralize(x) for x in self._.Q[0])
+            except TypeError:
+                raise InfeasibleError("multiplicities not integral")
         assert m[0] == 1, "the multiplicity of the first eigenspace is not 1"
         self._.m = m
 

@@ -18,6 +18,7 @@ from sage.rings.number_field.number_field_element import NumberFieldElement
 from sage.rings.polynomial.polynomial_element import Polynomial
 from sage.rings.rational_field import Q as QQ
 from sage.rings.real_mpfr import create_RealNumber
+from sage.rings.real_mpfr import RR
 from sage.sets.real_set import RealSet
 from sage.structure.element import Matrix as MatrixClass
 from sage.structure.factorization_integer import IntegerFactorization
@@ -400,7 +401,7 @@ def numberField(*mcs, K=QQ, x=None):
                 name = "e%s" % (i if i else "")
                 i += 1
                 try:
-                    K = K.extension(mps[j], names=name, embedding=th)
+                    K = K.extension(mps[j], names=name, embedding=RR(th))
                 except TypeError:
                     K = K.extension(mps[j], names=name)
                 for mp, _ in K.relative_polynomial().change_ring(K).factor():
