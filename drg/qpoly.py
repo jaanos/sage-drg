@@ -200,6 +200,10 @@ class QPolyParameters(PolyASParameters):
         return QPolyParameters
 
     def _imprimitivity_dicts(self):
+        """
+        Return a pair of dictionaries storing the parameters
+        of quotients and subsets of the scheme.
+        """
         return (self._.quotients, self._.subsets)
 
     def _init_schoenberg(self):

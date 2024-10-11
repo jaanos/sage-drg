@@ -256,6 +256,10 @@ class DRGParameters(PolyASParameters):
         return DRGParameters
 
     def _imprimitivity_dicts(self):
+        """
+        Return a pair of dictionaries storing the parameters
+        of subsets and quotients of the scheme.
+        """
         return (self._.subsets, self._.quotients)
 
     def _init_array(self, b, c):
