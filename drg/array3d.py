@@ -18,15 +18,20 @@ class Array3D(SageObject):
     A three-dimensional array of expressions.
     """
 
-    def __init__(self, n, K=SR):
+    def __init__(self, n, K=SR, immutable=False):
         """
         Object constructor.
 
         ``n`` is the size of the array in each dimension.
         """
-        self.A = [Matrix(K, n) for i in range(n)]
-        self.n = n
-        self.ring = K
+        if isinstance(n, Array3D):
+            self.A = [Matrix(n.ring, A, immutable=immutable) for A in n.A]
+            self.n = n.n
+            self.ring = n.ring
+        else:
+            self.A = [Matrix(K, n, immutable=immutable) for i in range(n)]
+            self.n = n
+            self.ring = K
 
     def __copy__(self):
         """
@@ -67,6 +72,12 @@ class Array3D(SageObject):
                 else:
                     return self.A[s1][sm]
         return self.A[key]
+
+    def __hash__(self):
+        """
+        Return the hash value.
+        """
+        return hash(tuple(self.A))
 
     def __len__(self):
         """

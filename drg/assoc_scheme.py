@@ -121,33 +121,43 @@ class ASParameters(SageObject):
         """
         self._init_storage()
         if self._get_class() is ASParameters:
-            self._init_prefix()
             self._.bipartite = False
-        assert (p, q, P, Q).count(None) >= 3, \
-            "precisely one of p, q, P, Q must be given"
+        cn = (p, q, P, Q).count(None)
+        assert cn >= 3, "precisely one of p, q, P, Q must be given"
         if isinstance(p, ASParameters):
             p._copy(self)
-        elif p is not None:
-            self._.p = self._init_parameters(p, integral=True,
-                                             name=PARAMETER, sym=SYMBOL)
-            self._compute_kTable()
-            self._check_consistency(self._.p, self._.k,
-                                    name=PARAMETER, sym=SYMBOL)
-            self.check_handshake()
-        elif q is not None:
-            self._.q = self._init_parameters(q, integral=False,
-                                             name=DUAL_PARAMETER,
-                                             sym=DUAL_SYMBOL)
-            self._compute_multiplicities()
-            self._check_consistency(self._.q, self._.m,
-                                    name=DUAL_PARAMETER, sym=DUAL_SYMBOL)
-        elif P is not None:
-            self._.P = self._init_eigenmatrix(P)
-        elif Q is not None:
-            self._.Q = self._init_eigenmatrix(Q)
         else:
-            assert self._.d is not None, "insufficient data"
-        self._.subconstituents = [None] * (self._.d + 1)
+            if p is not None:
+                self._.p = self._init_parameters(p, integral=True,
+                                                name=PARAMETER, sym=SYMBOL)
+                self._compute_kTable()
+                self._check_consistency(self._.p, self._.k,
+                                        name=PARAMETER, sym=SYMBOL)
+                self.check_handshake()
+                self._.defining_parameters = ("p", Array3D(self._.p,
+                                                           immutable=True))
+            elif q is not None:
+                self._.q = self._init_parameters(q, integral=False,
+                                                name=DUAL_PARAMETER,
+                                                sym=DUAL_SYMBOL)
+                self._compute_multiplicities()
+                self._check_consistency(self._.q, self._.m,
+                                        name=DUAL_PARAMETER, sym=DUAL_SYMBOL)
+                self._.defining_parameters = ("q", Array3D(self._.q,
+                                                           immutable=True))
+            elif P is not None:
+                self._.P = self._init_eigenmatrix(P)
+                self._.defining_parameters = ("P", Matrix(self._.P,
+                                                          immutable=True))
+            elif Q is not None:
+                self._.Q = self._init_eigenmatrix(Q)
+                self._.defining_parameters = ("Q", Matrix(self._.Q,
+                                                          immutable=True))
+            else:
+                assert self._.d is not None, "insufficient data"
+            if cn == 3:
+                self._init_prefix()
+            self._.subconstituents = [None] * (self._.d + 1)
         self._compute_complement(complement)
         self._init_vars()
 
@@ -155,7 +165,7 @@ class ASParameters(SageObject):
         """
         Return the hash value.
         """
-        return hash(id(self))
+        return hash(self._.defining_parameters)
 
     def __len__(self, expand=False, factor=False, simplify=False):
         """
@@ -164,6 +174,15 @@ class ASParameters(SageObject):
         self._.n = rewriteExp(self._.n, expand=expand, factor=factor,
                               simplify=simplify)
         return self._.n
+
+    def __eq__(self, other):
+        """
+        Compare self to other.
+        """
+        if isinstance(other, ASParameters):
+            return self._.defining_parameters == other._.defining_parameters
+        else:
+            return self._.defining_parameters == other
 
     def __repr__(self):
         """
@@ -426,7 +445,8 @@ class ASParameters(SageObject):
             try:
                 m = tuple(integralize(x) for x in self._.Q[0])
             except TypeError:
-                raise InfeasibleError("multiplicities not integral")
+                raise InfeasibleError("multiplicities not integral",
+                                      ("BCN", "Proposition 4.1.6.(iv)"))
         assert m[0] == 1, "the multiplicity of the first eigenspace is not 1"
         self._.m = m
 
@@ -581,6 +601,7 @@ class ASParameters(SageObject):
         p._.d = self._.d
         p._.n = self._.n
         p._.ring = self._.ring
+        p._.defining_parameters = self._.defining_parameters
         if self._has("p"):
             p._.p = copy(self._.p)
         if self._has("q"):
@@ -604,6 +625,8 @@ class ASParameters(SageObject):
         p._.fusion_schemes.update(self._.fusion_schemes)
         p._.subschemes.update(self._.subschemes)
         p._.subconstituents = list(self._.subconstituents)
+        p._.quotients = dict(self._.quotients)
+        p._.subsets = dict(self._.subsets)
         p._.triple.update(self._.triple)
         p._.triple_solution.update(self._.triple_solution)
         p._.triple_solution_generator.update(self._.triple_solution_generator)
@@ -2215,24 +2238,10 @@ class PolyASParameters(ASParameters):
             self._.vars = tuple(set(sum(map(variables, tuple(b) + tuple(c)),
                                         ())))
             ASParameters.__init__(self, complement=False)
-        self._.hash_parameters = self.parameterArray(factor=True, simplify=2)
+        self._.defining_parameters = (self.SYMBOL,
+                                      self.parameterArray(factor=True,
+                                                          simplify=2))
         self._init_prefix()
-
-    def __eq__(self, other):
-        """
-        Compare self to other.
-        """
-        if isinstance(other, self._get_class()):
-            return self._.hash_parameters == other._.hash_parameters
-        else:
-            return not isinstance(other, ASParameters) \
-                   and self._.hash_parameters == other
-
-    def __hash__(self):
-        """
-        Return the hash value.
-        """
-        return hash((self.SYMBOL, self._.hash_parameters))
 
     def __repr__(self):
         """

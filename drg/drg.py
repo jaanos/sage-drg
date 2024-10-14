@@ -157,12 +157,14 @@ class DRGParameters(PolyASParameters):
         """
         Check the basic restrictions on the intersection array.
         """
-        assert all(checkNonneg(self._.b[i] - self._.b[i+1])
-                   for i in range(self._.d)), \
-            "b sequence not non-ascending"
-        assert all(checkNonneg(self._.c[i+1] - self._.c[i])
-                   for i in range(self._.d)), \
-            "c sequence not non-descending"
+        if not all(checkNonneg(self._.b[i] - self._.b[i+1])
+                   for i in range(self._.d)):
+            raise InfeasibleError("b sequence not non-ascending",
+                                  ("BCN", "Proposition 4.1.6.(i)"))
+        if not all(checkNonneg(self._.c[i+1] - self._.c[i])
+                   for i in range(self._.d)):
+            raise InfeasibleError("c sequence not non-descending",
+                                  ("BCN", "Proposition 4.1.6.(i)"))
         if any(self._.b[j] < self._.c[i]
                for i in range(self._.d+1) for j in range(self._.d-i+1)):
             raise InfeasibleError("b[j] < c[i] with i+j <= d",

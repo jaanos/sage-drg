@@ -69,6 +69,7 @@ class Parameters(object):
         Object constructor.
         """
         self._parameters = p
+        self.defining_parameters = None
         self.fusion_schemes = {}
         self.subschemes = {}
         self.subsets = {}
