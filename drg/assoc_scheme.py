@@ -4,6 +4,7 @@ from copy import copy
 from warnings import warn
 from sage.all import pi
 from sage.calculus.functional import expand as _expand
+from sage.combinat.combination import Combinations
 from sage.combinat.permutation import Permutations
 from sage.combinat.set_partition import SetPartitions
 from sage.functions.orthogonal_polys import gegenbauer
@@ -638,6 +639,7 @@ class ASParameters(SageObject):
         """
         self.polynomialOrders()
         self.all_subconstituents(compute=derived > 1)
+        self.all_subsets_quotients()
         if derived > 1:
             self.all_fusions()
         subcs = set()
@@ -933,6 +935,29 @@ class ASParameters(SageObject):
             try:
                 out[parts] = fun(*parts)
             except IndexError:
+                pass
+        return out
+
+    def all_subsets_quotients(self):
+        """
+        Return a dictionary of pairs of all subset and quotient schemes.
+        """
+        out = {}
+        if self._has("p"):
+            eig = False
+        elif self._has("q"):
+            eig = True
+        elif self._has("P"):
+            eig = False
+        elif self._has("Q"):
+            eig = True
+        for c in Combinations(range(1, self._.d+1)):
+            if len(c) in (0, self._.d):
+                continue
+            try:
+                out[tuple(c)] = (self.subset(*c, eigenspaces=eig),
+                                 self.quotient(*c, eigenspaces=eig))
+            except AssertionError:
                 pass
         return out
 
