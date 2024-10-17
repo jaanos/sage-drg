@@ -394,7 +394,8 @@ def numberField(*mcs, K=QQ, x=None):
             if mp.change_ring(K).is_irreducible() and mp.degree() > 1:
                 d[mp].append(th)
         for mp, ths in d.items():
-            mps = [mp]
+            mps = [mpf for mpf, _ in mp.change_ring(K).factor()
+                   if mpf.degree() > 1]
             for j, th in enumerate(ths):
                 if j == len(mps):
                     break
