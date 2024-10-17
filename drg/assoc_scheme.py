@@ -747,20 +747,19 @@ class ASParameters(SageObject):
         """
         Initialize the list of variables.
         """
-        rat = False
+        rat = True
         if not self._has("vars"):
             if self._has("p"):
                 self._.vars = self._.p.variables()
-                rat = True
-            elif self._has("q"):
+            if self._has("q"):
                 self._.vars = self._.q.variables()
-                rat = all(checkRational(x) for A in self._.q for r in A for x in r)
-            elif self._has("P"):
+                rat &= all(checkRational(x) for A in self._.q for r in A for x in r)
+            if self._has("P"):
                 self._.vars = variables(self._.P)
-                rat = all(checkRational(x) for r in self._.P for x in r)
-            elif self._has("Q"):
+                rat &= all(checkRational(x) for r in self._.P for x in r)
+            if self._has("Q"):
                 self._.vars = variables(self._.Q)
-                rat = all(checkRational(x) for r in self._.Q for x in r)
+                rat &= all(checkRational(x) for r in self._.Q for x in r)
         self._.vars_ordered = len(self._.vars) <= 1
         if rat and len(self._.vars) == 0 and \
                 (self._.ring is SR or self._.ring is ZZ):
