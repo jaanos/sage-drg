@@ -10,7 +10,6 @@ from sage.functions.other import floor
 from sage.functions.other import sqrt
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
-from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from sage.rings.infinity import Infinity
 from sage.sets.real_set import RealSet
@@ -29,6 +28,7 @@ from .nonex import classicalFamilies
 from .nonex import families
 from .nonex import sporadic
 from .partition import PartitionGraph
+from .util import bruck_chowla_ryser
 from .util import checklist
 from .util import checkNonneg
 from .util import checkPos
@@ -1157,23 +1157,28 @@ class DRGParameters(PolyASParameters):
     def check_2design(self):
         """
         For an graph with intersection array
-        {r*mu+1, (r-1)*mu, 1; 1, mu, r*mu+1},
+        {r*mu+1, (r-1)*mu, 1; 1, mu, r*mu+1} or {k, k-1, k-mu; 1, mu, k},
         check whether a corresponding 2-design exists.
         """
-        if self._.d == 3 and self._.antipodal \
-                and is_integer(self._.r) and is_integer(self._.b[0]) \
-                and self._.b[0] - 1 == self._.b[1] + self._.c[2]:
+        if self._.d == 3 and is_integer(self._.b[0]) \
+                and is_integer(self._.c[2]):
             ok = True
-            if is_divisible(self._.r, 2):
-                ok = is_squareSum(self._.b[0])
-            elif is_divisible(self._.b[0], 2):
-                r = Integer(self._.r if is_divisible(self._.r - 1, 4) else -self._.r)
-                ok = Integer(self._.b[0]).is_square() or r.is_square() or \
-                    (Integers(self._.r)(self._.b[0]).is_square() and
-                     Integers(self._.b[0])(r).is_square())
+            if self._.antipodal \
+                    and self._.b[0] - 1 == self._.b[1] + self._.c[2]:
+                reason = ("BCN", "Prop. 1.10.5.")
+                if is_divisible(self._.r, 2):
+                    ok = is_squareSum(self._.b[0])
+                elif is_divisible(self._.b[0], 2):
+                    ok = bruck_chowla_ryser(self._.r, self._.b[0], self._.r)
+            elif self._.bipartite:
+                reason = ("BCN", "Prop. 1.10.4.")
+                klm = Integer(self._.b[0] - self._.c[2])
+                if is_divisible(self._.n, 4):
+                    ok = klm.is_square()
+                else:
+                    ok = bruck_chowla_ryser(self._.n / 2, klm, self._.c[2])
             if not ok:
-                raise InfeasibleError("no corresponding 2-design",
-                                      ("BCN", "Prop. 1.10.5."))
+                raise InfeasibleError("no corresponding 2-design", reason)
 
     @check(1)
     def check_hadamard(self):

@@ -3,6 +3,7 @@ import re
 import six
 from collections import defaultdict
 from sage.arith.misc import factor as factorize
+from sage.arith.misc import GCD as gcd
 from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as __simplify
 from sage.functions.other import ceil
@@ -13,6 +14,7 @@ from sage.matrix.special import block_matrix
 from sage.matrix.special import identity_matrix
 from sage.matrix.special import zero_matrix
 from sage.rings.integer import Integer
+from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.number_field.number_field import NumberField
 from sage.rings.number_field.number_field_element import NumberFieldElement
 from sage.rings.polynomial.polynomial_element import Polynomial
@@ -40,6 +42,24 @@ INTERVAL = {(True, True): RealSet.closed,
             (None, True): lambda l, u: RealSet.unbounded_below_closed(u),
             (None, False): lambda l, u: RealSet.unbounded_below_open(u),
             (None, None): lambda l, u: RealSet().complement()}
+
+
+def bruck_chowla_ryser(v, klm, lm):
+    """
+    Verify whether the equation ``klm*X^2 + (-1)^((v-1)/2)*lm*Y^2 = Z^2``
+    can have a solution in integers ``X, Y, Z`` not all zero.
+    """
+    assert checkPos(klm) and checkPos(lm), \
+        "coefficients not known to be positive"
+    assert is_divisible(v - 1, 2), "v is not odd"
+    sklm = Integer(klm).squarefree_part()
+    slm = Integer(lm if is_divisible(v - 1, 4) else -lm).squarefree_part()
+    g = gcd(sklm, slm)
+    gklm = sklm / g
+    glm = slm / g
+    return sklm == 1 or slm == 1 or \
+        (Integers(glm)(sklm).is_square() and Integers(gklm)(slm).is_square()
+         and Integers(g)(-gklm * glm).is_square())
 
 
 def change_ring(obj, K):
