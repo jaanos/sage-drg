@@ -643,7 +643,7 @@ class ASParameters(SageObject):
         if derived > 1:
             self.all_fusions()
         subcs = set()
-        pars = self._get_parameters()
+        cls = self._get_class()
         c = self.classes()
         def derived():
             for pa, part in self._.fusion_schemes.items():
@@ -658,7 +658,8 @@ class ASParameters(SageObject):
                 if pa not in subcs:
                     yield (pa, part, [], False)
         for pa, part, refs, fusion in derived():
-            if pars is not None or not fusion or pa.classes() < c:
+            if not issubclass(cls, pa._get_class()) \
+                    or not fusion or pa.classes() < c:
                 yield pa, part, refs, fusion
 
     @staticmethod
