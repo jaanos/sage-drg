@@ -1738,7 +1738,9 @@ class ASParameters(SageObject):
             self.kreinParameters()
 
         def fail():
-            raise InfeasibleError("system of equations has no solution")
+            raise InfeasibleError(
+                            "no solution found for a triple of vertices "
+                            "in relations (%d, %d, %d)" % (u, v, w))
 
         out = []
         r = range(self._.d+1)
@@ -2106,12 +2108,12 @@ class ASParameters(SageObject):
                 for w in range(v, self._.d + 1):
                     if self._.p[u, v, w] == 0:
                         continue
+                    S = self.tripleEquations(u, v, w)
+                    g[u, v, w] = self.tripleSolution_generator(u, v, w, S=S,
+                                                               solver=solver)
                     try:
-                        S = self.tripleEquations(u, v, w)
-                        g[u, v, w] = self.tripleSolution_generator(u, v, w,
-                                                        S=S, solver=solver)
                         sol = sort_solution(next(g[u, v, w]))
-                    except (InfeasibleError, StopIteration):
+                    except StopIteration:
                         raise InfeasibleError(
                             "no solution found for a triple of vertices "
                             "in relations (%d, %d, %d)" % (u, v, w))
