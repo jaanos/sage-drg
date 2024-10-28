@@ -2953,10 +2953,10 @@ class PolyASParameters(ASParameters):
         Performs the part of the reordering that is common
         to P- and Q-polynomial association schemes.
         """
-        self._.a = tuple(p[i, i, 1] for i in range(self._.d + 1))
-        self._.b = tuple(p[i, i+1, 1] if i < self._.d else Integer(0)
+        self._.a = tuple(self._.ring(p[i, i, 1]) for i in range(self._.d + 1))
+        self._.b = tuple(self._.ring(p[i, i+1, 1] if i < self._.d else 0)
                          for i in range(self._.d + 1))
-        self._.c = tuple(p[i, i-1, 1] if i > 0 else Integer(0)
+        self._.c = tuple(self._.ring(p[i, i-1, 1] if i > 0 else 0)
                          for i in range(self._.d + 1))
         if self._has("omega"):
             self._.omega = Matrix(self._.ring, [[r[i] for i in order]

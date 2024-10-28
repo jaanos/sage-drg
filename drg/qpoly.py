@@ -284,6 +284,8 @@ class QPolyParameters(PolyASParameters):
         Compute and return the dual eigenvalues of the first eigenspace
         of the Q-polynomial association scheme.
         """
+        if not self._has("theta") and self._has("Q"):
+            self._.theta, = tuple(zip(*self._.Q[:, 1]))
         return self._compute_eigenvalues(self._.q, expand=expand,
                                          factor=factor, simplify=simplify)
 

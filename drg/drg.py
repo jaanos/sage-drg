@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import operator
 import six
+from warnings import warn
 from sage.arith.misc import GCD
 from sage.combinat.q_analogues import q_int
 from sage.functions.generalized import sgn
@@ -329,6 +330,8 @@ class DRGParameters(PolyASParameters):
         """
         Compute and return the eigenvalues of the graph.
         """
+        if not self._has("theta") and self._has("P"):
+            self._.theta, = tuple(zip(*self._.P[:, 1]))
         return self._compute_eigenvalues(self._.p, expand=expand,
                                          factor=factor, simplify=simplify)
 
@@ -570,11 +573,13 @@ class DRGParameters(PolyASParameters):
         """
         refs = []
         out = lambda ii: (ii, refs) if return_refs else ii
-        a = self._.a[1]
+        a = SR(self._.a[1])
         if a == 0:
             return out(RealSet([0, 0]))
         elif a == 1 or self._.d == 1:
             return out(RealSet([-1, -1]) + RealSet([a, a]))
+        if not self._has("theta"):
+            self.eigenvalues()
         if not self._has("m"):
             self.multiplicities()
         assert all(is_constant(th) for th in self._.theta), \
@@ -587,18 +592,26 @@ class DRGParameters(PolyASParameters):
         if lowm is None:
             lowm = [h for h in range(1, self._.d+1) if self._.m[h] < self._.k[1]]
         try:
-            loc = self.localGraph(compute=compute, check_local=check_local)
-            if isinstance(loc, DRGParameters):
-                interval = sum((RealSet([th, th]) for th in loc.eigenvalues()
-                                if th != a), RealSet())
-                if interval.inf() < bm or interval.sup() > bp:
-                    raise InfeasibleError("local eigenvalues "
-                                          "not in allowed range",
-                                          ("BCN", "Thm. 4.4.3."))
-            else:
-                raise IndexError
-        except IndexError:
-            interval = eigenvalue_interval(bm, bp) & RealSet([-a, a])
+            bm, bp = SR(bm), SR(bp)
+            try:
+                loc = self.localGraph(compute=compute, check_local=check_local)
+                if isinstance(loc, DRGParameters):
+                    loc = DRGParameters(loc)
+                    loc._change_ring(SR)
+                    interval = sum((RealSet([th, th]) for th in loc.eigenvalues()
+                                    if th != a), RealSet())
+                    if interval.inf() < bm or interval.sup() > bp:
+                        raise InfeasibleError("local eigenvalues "
+                                            "not in allowed range",
+                                            ("BCN", "Thm. 4.4.3."))
+                else:
+                    raise IndexError
+            except IndexError:
+                interval = eigenvalue_interval(bm, bp) & RealSet([-a, a])
+        except TypeError:
+            raise TypeError("no embedding into symbolic ring available, "
+                            "local eigenvalue check aborted")
+            return
         orig = interval
         ll = -Infinity
         uu = Infinity
@@ -1494,11 +1507,15 @@ class DRGParameters(PolyASParameters):
                                       "or algebraic conjugates", ref)
         if not check_range:
             return
-        rng, refs = self.localEigenvalue_range(compute=compute,
-                                               b=(bm, bp),
-                                               lowm=[h for h in s if
-                                                self._.m[h] < self._.k[1]],
-                                               return_refs=True)
+        try:
+            rng, refs = self.localEigenvalue_range(compute=compute,
+                                                b=(bm, bp),
+                                                lowm=[h for h in s if
+                                                    self._.m[h] < self._.k[1]],
+                                                return_refs=True)
+        except TypeError as ex:
+            warn(Warning(ex.args))
+            return
         c = rng.cardinality()
         if rng.sup() <= bp or self._.subconstituents[1] is not None or \
                 not is_integer(c):

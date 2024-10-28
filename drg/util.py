@@ -326,6 +326,7 @@ def is_squareSum(x):
     """
     Determine whether an integer is a sum of two squares.
     """
+    x = Integer(x)
     if x.is_prime():
         return x == 2 or x % 4 == 1
     i, j, y = -1, 0, x
