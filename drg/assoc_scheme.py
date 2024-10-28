@@ -1672,8 +1672,8 @@ class ASParameters(SageObject):
     def triple_generator(self, t, d):
         """
         Generate computed values of triple intersecion numbers
-        counting the number of vertices at distances given by the triple d
-        corresponding to vertices at mutual distances given by the triple t.
+        counting the number of vertices in relations given by the triple d
+        corresponding to vertices in mutual relations given by the triple t.
         """
         if 0 in t:
             j = t.index(0)
@@ -1736,6 +1736,10 @@ class ASParameters(SageObject):
             "no triple of vertices in relations %d, %d, %d" % (u, v, w)
         if not self._has("q"):
             self.kreinParameters()
+
+        def fail():
+            raise InfeasibleError("system of equations has no solution")
+
         out = []
         r = range(self._.d+1)
         s = [[[Integer(1) if (h, i, j) in [(v, w, 0), (u, 0, w), (0, u, v)]
@@ -1783,6 +1787,8 @@ class ASParameters(SageObject):
                 j = next(t for t in r if s[h][i][t] in vars)
                 x = s[h][i][j]
                 s[h][i][j] = p[u, h, i] - sum(s[h][i][t] for t in r if t != j)
+                if s[h][i][j] < 0:
+                    fail()
                 c[1][h][j] -= 1
                 c[2][i][j] -= 1
                 if c[1][h][j] == 1:
@@ -1793,6 +1799,8 @@ class ASParameters(SageObject):
                 i = next(t for t in r if s[h][t][j] in vars)
                 x = s[h][i][j]
                 s[h][i][j] = p[v, h, j] - sum(s[h][t][j] for t in r if t != i)
+                if s[h][i][j] < 0:
+                    fail()
                 c[0][h][i] -= 1
                 c[2][i][j] -= 1
                 if c[0][h][i] == 1:
@@ -1803,6 +1811,8 @@ class ASParameters(SageObject):
                 h = next(t for t in r if s[t][i][j] in vars)
                 x = s[h][i][j]
                 s[h][i][j] = p[w, i, j] - sum(s[t][i][j] for t in r if t != h)
+                if s[h][i][j] < 0:
+                    fail()
                 c[0][h][i] -= 1
                 c[1][h][j] -= 1
                 if c[0][h][i] == 1:
@@ -1815,20 +1825,20 @@ class ASParameters(SageObject):
             for j in r:
                 l = sum(s[i][j][t] for t in r)
                 if isinstance(l, Integer):
-                    assert p[u, i, j] == l, \
-                        "value of p[%d, %d, %d] exceeded" % (u, i, j)
+                    if p[u, i, j] != l:
+                        fail()
                 else:
                     out.append(p[u, i, j] == l)
                 l = sum(s[i][t][j] for t in r)
                 if isinstance(l, Integer):
-                    assert p[v, i, j] == l, \
-                        "value of p[%d, %d, %d] exceeded" % (v, i, j)
+                    if p[v, i, j] != l:
+                        fail()
                 else:
                     out.append(p[v, i, j] == l)
                 l = sum(s[t][i][j] for t in r)
                 if isinstance(l, Integer):
-                    assert p[w, i, j] == l, \
-                        "value of p[%d, %d, %d] exceeded" % (w, i, j)
+                    if p[w, i, j] != l:
+                        fail()
                 else:
                     out.append(p[w, i, j] == l)
         if krein is None:
@@ -1855,9 +1865,8 @@ class ASParameters(SageObject):
                 for k in range(d):
                     y = sum(z[k] * s[th][ti][tj] for (th, ti, tj), z in l.items())
                     if is_constant(y):
-                        assert y == 0, \
-                            "Krein equation for (%d, %d, %d) not satisfied" % \
-                            (h, i, j)
+                        if y != 0:
+                            fail()
                     else:
                         out.append(y == 0)
         if params:
@@ -1869,7 +1878,7 @@ class ASParameters(SageObject):
             return (out, vars)
         sol = _solve(out, tuple(vars))
         if not sol:
-            raise InfeasibleError("system of equations has no solution")
+            fail()
         S = Array3D(self._.d + 1)
         for h in r:
             for i in r:
@@ -2003,7 +2012,8 @@ class ASParameters(SageObject):
                     if self._.q[h, i, i] != 0)
             if ineq < 0:
                 raise InfeasibleError("absolute bound exceeded "
-                                      "for (%d, %d)" % (i, i))
+                                      "for (%d, %d)" % (i, i),
+                                      ("BCN", "Theorem 2.3.4."))
             elif not (ineq >= 0):
                 ineqs[i, i] = rewriteExp(ineq, expand=expand,
                                          factor=factor, simplify=simplify)
@@ -2013,7 +2023,8 @@ class ASParameters(SageObject):
                         if self._.q[h, i, j] != 0)
                 if ineq < 0:
                     raise InfeasibleError("absolute bound exceeded "
-                                          "for (%d, %d)" % (i, j))
+                                          "for (%d, %d)" % (i, j),
+                                          ("BCN", "Theorem 2.3.4."))
                 elif not (ineq >= 0):
                     ineqs[i, j] = rewriteExp(ineq, expand=expand,
                                              factor=factor,
@@ -2095,15 +2106,15 @@ class ASParameters(SageObject):
                 for w in range(v, self._.d + 1):
                     if self._.p[u, v, w] == 0:
                         continue
-                    S = self.tripleEquations(u, v, w)
-                    g[u, v, w] = self.tripleSolution_generator(u, v, w, S=S,
-                                                               solver=solver)
                     try:
+                        S = self.tripleEquations(u, v, w)
+                        g[u, v, w] = self.tripleSolution_generator(u, v, w,
+                                                        S=S, solver=solver)
                         sol = sort_solution(next(g[u, v, w]))
-                    except StopIteration:
+                    except (InfeasibleError, StopIteration):
                         raise InfeasibleError(
                             "no solution found for a triple of vertices "
-                            "at distances (%d, %d, %d)" % (u, v, w))
+                            "in relations (%d, %d, %d)" % (u, v, w))
                     s = S.subs(sol)
                     r[u, v, w] = {sol: s}
                     zero[u, v, w] = {(h, i, j)
