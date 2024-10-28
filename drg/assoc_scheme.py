@@ -2013,7 +2013,7 @@ class ASParameters(SageObject):
             if ineq < 0:
                 raise InfeasibleError("absolute bound exceeded "
                                       "for (%d, %d)" % (i, i),
-                                      ("BCN", "Theorem 2.3.4."))
+                                      ("BCN", "Theorem 2.3.3."))
             elif not (ineq >= 0):
                 ineqs[i, i] = rewriteExp(ineq, expand=expand,
                                          factor=factor, simplify=simplify)
@@ -2024,7 +2024,7 @@ class ASParameters(SageObject):
                 if ineq < 0:
                     raise InfeasibleError("absolute bound exceeded "
                                           "for (%d, %d)" % (i, j),
-                                          ("BCN", "Theorem 2.3.4."))
+                                          ("BCN", "Theorem 2.3.3."))
                 elif not (ineq >= 0):
                     ineqs[i, j] = rewriteExp(ineq, expand=expand,
                                              factor=factor,
