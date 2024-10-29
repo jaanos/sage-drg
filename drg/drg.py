@@ -598,7 +598,8 @@ class DRGParameters(PolyASParameters):
                 if isinstance(loc, DRGParameters):
                     loc = DRGParameters(loc)
                     loc._change_ring(SR)
-                    interval = sum((RealSet([th, th]) for th in loc.eigenvalues()
+                    interval = sum((RealSet([SR(th), SR(th)])
+                                    for th in loc.eigenvalues()
                                     if th != a), RealSet())
                     if interval.inf() < bm or interval.sup() > bp:
                         raise InfeasibleError("local eigenvalues "
