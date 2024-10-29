@@ -384,6 +384,35 @@ def nrows(M):
     return M.nrows() if isinstance(M, MatrixClass) else len(M)
 
 
+def _numberField(vals, K, i=0):
+    """
+    Return the number field containing the given values.
+    """
+    d = defaultdict(list)
+    for th in vals:
+        mp = th.minpoly().change_ring(K)
+        if mp.degree() > 1:
+            d[mp].append(th)
+    for mp, ths in d.items():
+        mps = [mpf for mpf, _ in mp.change_ring(K).factor()
+                if mpf.degree() > 1]
+        for j, th in enumerate(ths):
+            if j == len(mps):
+                break
+            name = "e%s" % (i if i else "")
+            if name == str(K.gen()):
+                name = "e0"
+            i += 1
+            try:
+                K = K.extension(mps[j], names=name, embedding=RR(th))
+            except TypeError:
+                K = K.extension(mps[j], names=name)
+            for mp, _ in K.relative_polynomial().change_ring(K).factor():
+                if mp.degree() > 1:
+                    mps.append(mp)
+    return (K, i)
+
+
 def numberField(*mcs, K=QQ, x=None):
     """
     Return the number field containing the eigenvalues of the given matrices.
@@ -408,27 +437,11 @@ def numberField(*mcs, K=QQ, x=None):
                 [zero_matrix(K, 1, n-1), identity_matrix(K, n-1)]), b]])
         else:
             M = Matrix(K, M)
-        theta = M.eigenvalues()
+            if K is SR:
+                K, i = _numberField([v for r in M for v in r], QQ, i)
+                M = Matrix(K, M)
         d = defaultdict(list)
-        for th in theta:
-            mp = th.minpoly()
-            if mp.change_ring(K).is_irreducible() and mp.degree() > 1:
-                d[mp].append(th)
-        for mp, ths in d.items():
-            mps = [mpf for mpf, _ in mp.change_ring(K).factor()
-                   if mpf.degree() > 1]
-            for j, th in enumerate(ths):
-                if j == len(mps):
-                    break
-                name = "e%s" % (i if i else "")
-                i += 1
-                try:
-                    K = K.extension(mps[j], names=name, embedding=RR(th))
-                except TypeError:
-                    K = K.extension(mps[j], names=name)
-                for mp, _ in K.relative_polynomial().change_ring(K).factor():
-                    if mp.degree() > 1:
-                        mps.append(mp)
+        K, i = _numberField(M.eigenvalues(), K, i)
     K, _ = normalize_field(K)
     return K
 

@@ -744,23 +744,26 @@ class ASParameters(SageObject):
         if self._ is None:
             self._ = Parameters(self)
 
-    def _init_vars(self):
+    def _init_vars(self, rat=True):
         """
         Initialize the list of variables.
         """
-        rat = True
+        if self._has("q"):
+            rat &= all(checkRational(x) for A in self._.q
+                       for r in A for x in r)
+        if self._has("P"):
+            rat &= all(checkRational(x) for r in self._.P for x in r)
+        if self._has("Q"):
+            rat &= all(checkRational(x) for r in self._.Q for x in r)
         if not self._has("vars"):
             if self._has("p"):
                 self._.vars = self._.p.variables()
-            if self._has("q"):
+            elif self._has("q"):
                 self._.vars = self._.q.variables()
-                rat &= all(checkRational(x) for A in self._.q for r in A for x in r)
-            if self._has("P"):
+            elif self._has("P"):
                 self._.vars = variables(self._.P)
-                rat &= all(checkRational(x) for r in self._.P for x in r)
-            if self._has("Q"):
+            elif self._has("Q"):
                 self._.vars = variables(self._.Q)
-                rat &= all(checkRational(x) for r in self._.Q for x in r)
         self._.vars_ordered = len(self._.vars) <= 1
         if rat and len(self._.vars) == 0 and \
                 (self._.ring is SR or self._.ring is ZZ):
@@ -2434,7 +2437,7 @@ class PolyASParameters(ASParameters):
                                      for i in range(self._.d + 1))
             else:
                 B = Matrix(self._.ring, [M[1] for M in p])
-                if self._.ring is SR:
+                if len(self._.vars) > 0:
                     theta = [v for v in B.eigenvalues()
                              if _simplify(_expand(v - p[0, 1, 1])) != 0]
                     try:
@@ -2703,6 +2706,13 @@ class PolyASParameters(ASParameters):
         self._.n = sum(k)
         return k
 
+    def _init_vars(self):
+        """
+        Initialize the list of variables.
+        """
+        ASParameters._init_vars(self,
+                            all(checkRational(x) for x in self._.b + self._.c))
+        
     def _latex_(self):
         """
         LaTeX representation.
