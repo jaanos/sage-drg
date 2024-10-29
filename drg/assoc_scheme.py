@@ -2710,8 +2710,10 @@ class PolyASParameters(ASParameters):
         """
         Initialize the list of variables.
         """
-        ASParameters._init_vars(self,
-                            all(checkRational(x) for x in self._.b + self._.c))
+        rat = True
+        if self._has("b") and self._has("c"):
+            rat = all(checkRational(x) for x in self._.b + self._.c)
+        ASParameters._init_vars(self, rat)
         
     def _latex_(self):
         """
