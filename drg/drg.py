@@ -5,12 +5,12 @@ from warnings import warn
 from sage.arith.misc import GCD
 from sage.combinat.q_analogues import q_int
 from sage.functions.generalized import sgn
-from sage.functions.log import log
 from sage.functions.other import ceil
 from sage.functions.other import floor
-from sage.functions.other import sqrt
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
+from sage.misc.functional import log
+from sage.misc.functional import sqrt
 from sage.rings.integer import Integer
 from sage.rings.infinity import Infinity
 from sage.sets.real_set import RealSet

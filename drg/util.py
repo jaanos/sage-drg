@@ -8,11 +8,11 @@ from sage.calculus.functional import expand as _expand
 from sage.calculus.functional import simplify as __simplify
 from sage.functions.other import ceil
 from sage.functions.other import floor
-from sage.functions.other import sqrt
 from sage.matrix.constructor import Matrix
 from sage.matrix.special import block_matrix
 from sage.matrix.special import identity_matrix
 from sage.matrix.special import zero_matrix
+from sage.misc.functional import sqrt
 from sage.rings.integer import Integer
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.number_field.number_field import NumberField

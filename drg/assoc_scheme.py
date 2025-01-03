@@ -2,20 +2,19 @@
 import six
 from copy import copy
 from warnings import warn
-from sage.all import pi
 from sage.calculus.functional import expand as _expand
 from sage.combinat.combination import Combinations
 from sage.combinat.permutation import Permutations
 from sage.combinat.set_partition import SetPartitions
+from sage.combinat.subset import subsets
 from sage.functions.orthogonal_polys import gegenbauer
 from sage.functions.other import floor
 from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
-from sage.matrix.constructor import diagonal_matrix
-from sage.matrix.constructor import identity_matrix
+from sage.matrix.special import identity_matrix
+from sage.matrix.special import diagonal_matrix
 from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
-from sage.misc.misc import subsets
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import Z as ZZ
 from sage.rings.number_field.number_field import NumberField
@@ -28,6 +27,7 @@ from sage.rings.rational_field import Q as QQ
 from sage.sets.set import Set
 from sage.structure.element import Matrix as MatrixClass
 from sage.structure.sage_object import SageObject
+from sage.symbolic.constants import pi
 from sage.symbolic.expression import Expression
 from sage.symbolic.relation import solve as _solve
 from sage.symbolic.ring import SR
