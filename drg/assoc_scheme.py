@@ -858,17 +858,17 @@ class ASParameters(SageObject):
             return (seen[id(self)], False)
         seen[id(self)] = p
         if self._has("p") and not p._has("p"):
-            p._.p = self._.p.subs(*exp)
+            p._.p = self._.p.subs(exp)
         if self._has("q") and not p._has("q"):
-            p._.q = self._.q.subs(*exp)
+            p._.q = self._.q.subs(exp)
         if self._has("P") and not p._has("P"):
-            p._.P = self._.P.subs(*exp)
+            p._.P = self._.P.subs(exp)
         if self._has("Q") and not p._has("Q"):
-            p._.Q = self._.Q.subs(*exp)
+            p._.Q = self._.Q.subs(exp)
         for k, v in self._.triple.items():
-            p._.triple[k] = v.subs(*exp)
+            p._.triple[k] = v.subs(exp)
         for k, v in self._.quadruple.items():
-            p._.quadruple[k] = v.subs(*exp)
+            p._.quadruple[k] = v.subs(exp)
         for par, part in self._.subschemes.items():
             try:
                 p.add_subscheme(par.subs(*exp, seen=seen), part)
@@ -1641,13 +1641,13 @@ class ASParameters(SageObject):
         """
         par = {}
         if self._has("p"):
-            par["p"] = self._.p.subs(*exp)
+            par["p"] = self._.p.subs(exp)
         elif self._has("q"):
-            par["q"] = self._.q.subs(*exp)
+            par["q"] = self._.q.subs(exp)
         elif self._has("P"):
-            par["P"] = self._.P.subs(*exp)
+            par["P"] = self._.P.subs(exp)
         elif self._has("Q"):
-            par["Q"] = self._.Q.subs(*exp)
+            par["Q"] = self._.Q.subs(exp)
         p, new = self._subs(exp, ASParameters(**par), kargs.get("seen", {}))
         return p
 
