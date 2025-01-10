@@ -98,8 +98,11 @@ def find(expressions, vars, conditions=None, solver=None):
         g = find(make_expressions((e.subs(eq), l, u)
                                   for e, (l, u) in expressions.items()),
                  vars=rest, conditions={c.subs(eq) for c in conditions})
+        stop = False
         try:
             while vnew == vmin:
+                if stop:
+                    raise StopIteration
                 sol = next(g)
                 t = (yield (eq.subs(sol), ) + sol)
                 while t is not None:
@@ -122,8 +125,11 @@ def find(expressions, vars, conditions=None, solver=None):
                             return
                         lp.set_objective(lpopt)
                         vnew = round(lp.solve())
-                        if vnew == vmin:
-                            g.send((False, c.subs(eq)))
+                        if vnew == vmin and not stop:
+                            try:
+                                g.send((False, c.subs(eq)))
+                            except StopIteration:
+                                stop = True
                         t = yield
             vmin = vnew
         except StopIteration:
