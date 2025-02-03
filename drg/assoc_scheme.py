@@ -1071,6 +1071,26 @@ class ASParameters(SageObject):
         assert self._.d == 2, "the complement is only defined for two classes"
         return self._.complement
 
+    def direct_product(self, other):
+        """
+        Compute the parameters of the direct product
+        of the association schemes with the given parameters.
+        """
+        if not isinstance(other, ASParameters):
+            other = ASParameters(other)
+        p = Array3D((self._.d + 1) * (other._.d + 1))
+        if not self._has("p"):
+            self.pTable()
+        if not other._has("p"):
+            other.pTable()
+        r = tuple(enumerate((i, j) for i in range(self._.d + 1)
+                                   for j in range(other._.d + 1)))
+        for h, (h1, h2) in r:
+            for i, (i1, i2) in r:
+                for j, (j1, j2) in r:
+                    p[h, i, j] = self._.p[h1, i1, j1] * other._.p[h2, i2, j2]
+        return ASParameters(p=p)
+
     def dualEigenmatrix(self, expand=False, factor=False, simplify=False):
         """
         Compute and return the dual eigenmatrix of the association scheme.
@@ -1196,6 +1216,34 @@ class ASParameters(SageObject):
         self._.k = rewriteTuple(self._.k, expand=expand, factor=factor,
                                 simplify=simplify)
         return self._.k
+
+    def lexicographic_product(self, other):
+        """
+        Compute the parameters of the lexicographic (co)product
+        of an association scheme with parameters of ``self`` as its quotient
+        and association schemes with parameters of ``other`` as its subsets.
+        """
+        if not isinstance(other, ASParameters):
+            other = ASParameters(other)
+        p = Array3D(self._.d + other._.d + 1)
+        if not self._has("p"):
+            self.pTable()
+        if not other._has("p"):
+            other.pTable()
+        rq = tuple(enumerate(range(1, self._.d + 1), other._.d + 1))
+        rs = range(other._.d + 1)
+        for h in rs:
+            for i in rs:
+                for j in rs:
+                    p[h, i, j] = other._.p[h, i, j]
+            for i, ii in rq:
+                p[h, i, i] = self._.k[ii] * other._.n
+                p[i, h, i] = p[i, i, h] = other._.k[h]
+        for h, hh in rq:
+            for i, ii in rq:
+                for j, jj in rq:
+                    p[h, i, j] = self._.p[hh, ii, jj] * other._.n
+        return ASParameters(p=p)
 
     def merge_eigenspaces(self, *parts):
         """
@@ -2432,9 +2480,6 @@ class PolyASParameters(ASParameters):
         if not self._has("theta"):
             if self._has("omega"):
                 self._.theta = tuple(r[1] * p[0, 1, 1] for r in self._.omega)
-            elif self.is_cyclic():
-                self._.theta = tuple(2*cos(2*i*pi/self._.n)
-                                     for i in range(self._.d + 1))
             else:
                 B = Matrix(self._.ring, [M[1] for M in p])
                 if len(self._.vars) > 0:
