@@ -2047,6 +2047,70 @@ class ASParameters(SageObject):
         """
         self._check_family()
 
+    @check(1)
+    def check_spread(self, expand=False, factor=False,
+                     simplify=False):
+        """
+        Check whether the association scheme corresponds
+        to a strongly regular graph with a spread.
+        """
+        if self._.d != 3:
+            return
+        if not self._has("P"):
+            self.eigenmatrix(expand=expand, factor=factor,
+                             simplify=simplify)
+        rr = range(1, 4)
+        for i3 in rr:
+            t = tuple(x for x, in self._.P[:, i3])
+            if t.count(-1) != 2:
+                continue
+            j3 = next(j for j in rr if t[j] != -1)
+            for i2 in rr:
+                if i2 == i3:
+                    continue
+                i1, = set(rr) - {i2, i3}
+                for j1 in rr:
+                    if j1 == j3 or self._.P[j1, i2] != self._.P[j3, i2]:
+                        continue
+                    j2, = set(rr) - {j1, j3}
+                    if self._.P[0, i1] + self._.P[0, i3] != \
+                            (1 - self._.P[j2, i1]) * self._.P[0, i3]:
+                        continue
+                    p = self.merge_relations([i1, i3], [i2])
+                    P = p.eigenmatrix(expand=expand, factor=factor,
+                                      simplify=simplify)
+                    if 0 not in P[1]:
+                        if P[0, 2] * P[2, 2] < P[1, 2] ** 2:
+                            raise InfeasibleError("no spread in corresponding "
+                                                  "strongly regular graph",
+                                                  ("HaemersTonchev96",
+                                                   "Theorem 2.2."))
+                        c = -P[0, 2] / P[1, 2]
+                        if (c == 2 and (P[0, 2], P[2, 2]) != (4, 1)) or \
+                                (c == 3 and (P[0, 2], P[2, 2])
+                                not in [(9, 1), (6, 2), (18, 2)]):
+                            raise InfeasibleError("no spread in corresponding "
+                                                  "strongly regular graph",
+                                                  ("HaemersTonchev96",
+                                                   "Theorem 2.4."))
+                        m = p.multiplicities(expand=expand, factor=factor,
+                                             simplify=simplify)
+                        k = p._.n / (1 + c)
+                        b = (m[1] - k + 1) * (k - 1)
+                        if m[2] > b or (m[2] == b and
+                                        not is_divisible(p._.p[1, 2, 2], c-1)):
+                            raise InfeasibleError("no spread in corresponding "
+                                                  "strongly regular graph",
+                                                  ("HaemersTonchev96",
+                                                   "Theorem 5.1."))
+                        if (P[1, 2], P[2, 2]) == (-4, 2) \
+                                and P[0, 2] in (16, 32):
+                            raise InfeasibleError("no spread in corresponding "
+                                                  "strongly regular graph",
+                                                  ("HaemersTonchev96",
+                                                   "Theorem 6.1."))
+
+
     @check(2)
     def check_absoluteBound(self, expand=False, factor=False,
                             simplify=False):

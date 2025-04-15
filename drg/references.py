@@ -649,6 +649,19 @@ InCollection("Haemers93",
              year=1993
 )
 
+Article("HaemersTonchev96",
+        author=[("Haemers", ("Willem", "H.")),
+                ("Tonchev", ("Vladimir", "D."))],
+        title="Spreads in strongly regular graphs",
+        journal="Des. Codes Cryptogr.",
+        fjournal="Designs, Codes and Cryptography",
+        volume=8,
+        issue=(1, 2),
+        pages=(145, 157),
+        url="https://doi.org/10.1007/BF00130574",
+        year=1996
+)
+
 Article("HPW15",
         author=[("Huang", ("Yu-pei", )), ("Pan", ("Yeh-jong", )),
                  ("Weng", ("Chih-wen", ))],
