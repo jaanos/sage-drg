@@ -570,6 +570,7 @@ class ASParameters(SageObject):
             sd[symbol, base] = self.add_subscheme(ASParameters(**{symbol: a}), name)
         except (InfeasibleError, AssertionError) as ex:
             raise InfeasibleError(ex, part=name)
+        return ps
 
     def _compute_subset_quotient_from_eigenspaces(self, base, verify=True):
         """
@@ -578,7 +579,7 @@ class ASParameters(SageObject):
         """
         if not self._has("q"):
             self.qTable()
-        self._compute_subset_quotient(base,
+        return self._compute_subset_quotient(base,
             ("q", "eigenspaces", self._.subsets, self._.quotients,
              "subset of vertices", "quotient"),
             verify=verify)
@@ -590,7 +591,7 @@ class ASParameters(SageObject):
         """
         if not self._has("p"):
             self.pTable()
-        self._compute_subset_quotient(base,
+        return self._compute_subset_quotient(base,
             ("p", "relations", self._.quotients, self._.subsets,
              "quotient", "subset of vertices"),
             verify=verify)
@@ -941,25 +942,32 @@ class ASParameters(SageObject):
                 pass
         return out
 
-    def all_subsets_quotients(self):
+    def all_subsets_quotients(self, eigenspaces=None):
         """
         Return a dictionary of pairs of all subset and quotient schemes.
+
+        If ``eigenspaces`` is ``True`` or ``False'',
+        the output will be indexed according to the base set
+        of eigenspaces or relations, respectively.
+        If not specified, the choice will be made
+        depending on which parameters are available.
         """
         out = {}
-        if self._has("p"):
-            eig = False
-        elif self._has("q"):
-            eig = True
-        elif self._has("P"):
-            eig = False
-        elif self._has("Q"):
-            eig = True
+        if eigenspaces is None:
+            if self._has("p"):
+                eigenspaces = False
+            elif self._has("q"):
+                eigenspaces = True
+            elif self._has("P"):
+                eigenspaces = False
+            elif self._has("Q"):
+                eigenspaces = True
         for c in Combinations(range(1, self._.d+1)):
             if len(c) in (0, self._.d):
                 continue
             try:
-                out[tuple(c)] = (self.subset(*c, eigenspaces=eig),
-                                 self.quotient(*c, eigenspaces=eig))
+                out[tuple(c)] = (self.subset(*c, eigenspaces=eigenspaces),
+                                 self.quotient(*c, eigenspaces=eigenspaces))
             except AssertionError:
                 pass
         return out
@@ -1546,14 +1554,18 @@ class ASParameters(SageObject):
             self._.quadruple[h, i, j, r, s, t] = Q
         return Q
 
-    def quotient(self, *args, eigenspaces=False):
+    def quotient(self, *args, eigenspaces=False, groups=False):
         """
         Return parameters of the quotient association scheme
         formed by merging vertices in the given relations
         if their union is an equivalence relation.
 
-        If ``eigenspace`` is ``True``,
+        If ``eigenspaces`` is ``True``,
         interpret the given indices as those of eigenspaces instead.
+
+        If ``groups'' is ``True'',
+        return a tuple containing the parameters of the quotient
+        and the grouping of relations/eigenspaces.
 
         Relation/eigenspace 0 (identity) is implicitly included.
         """
@@ -1564,9 +1576,9 @@ class ASParameters(SageObject):
             if eigenspaces else \
             ("p", self._compute_subset_quotient_from_relations)
         sbase = (symbol, base)
-        if sbase not in self._.quotients:
-            fun(base)
-        return self._.quotients[sbase]
+        if groups or sbase not in self._.quotients:
+            grp = fun(base)
+        return (self._.quotients[sbase], grp) if groups else self._.quotients[sbase]
 
     def reorderEigenspaces(self, *order):
         """
@@ -1699,14 +1711,18 @@ class ASParameters(SageObject):
         p, new = self._subs(exp, ASParameters(**par), kargs.get("seen", {}))
         return p
 
-    def subset(self, *args, eigenspaces=False):
+    def subset(self, *args, eigenspaces=False, groups=False):
         """
         Return parameters of the subset association scheme
         formed by taking vertices in the given relations with a vertex
         if their union is an equivalence relation.
 
-        If ``eigenspace`` is ``True``,
+        If ``eigenspaces`` is ``True``,
         interpret the given indices as those of eigenspaces instead.
+
+        If ``groups'' is ``True'',
+        return a tuple containing the parameters of the quotient
+        and the grouping of relations/eigenspaces.
 
         Relation/eigenspace 0 (identity) is implicitly included.
         """
@@ -1717,9 +1733,9 @@ class ASParameters(SageObject):
             if eigenspaces else \
             ("p", self._compute_subset_quotient_from_relations)
         sbase = (symbol, base)
-        if sbase not in self._.subsets:
-            fun(base)
-        return self._.subsets[sbase]
+        if groups or sbase not in self._.subsets:
+            grp = fun(base)
+        return (self._.subsets[sbase], grp) if groups else self._.subsets[sbase]
 
     def triple_generator(self, t, d):
         """
