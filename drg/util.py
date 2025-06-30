@@ -57,9 +57,8 @@ def bruck_chowla_ryser(v, klm, lm):
     g = gcd(sklm, slm)
     gklm = sklm / g
     glm = slm / g
-    return sklm == 1 or slm == 1 or \
-        (Integers(glm)(sklm).is_square() and Integers(gklm)(slm).is_square()
-         and Integers(g)(-gklm * glm).is_square())
+    return Integers(glm)(sklm).is_square() and Integers(gklm)(slm).is_square() \
+         and Integers(g)(-gklm * glm).is_square()
 
 
 def change_ring(obj, K):

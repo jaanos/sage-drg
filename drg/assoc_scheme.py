@@ -2,6 +2,8 @@
 import six
 from copy import copy
 from warnings import warn
+from sage.arith.functions import lcm
+from sage.arith.misc import GCD as gcd
 from sage.calculus.functional import expand as _expand
 from sage.combinat.combination import Combinations
 from sage.combinat.permutation import Permutations
@@ -15,6 +17,7 @@ from sage.matrix.special import identity_matrix
 from sage.matrix.special import diagonal_matrix
 from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
+from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import Z as ZZ
 from sage.rings.number_field.number_field import NumberField
@@ -47,6 +50,7 @@ from .nonex import checkConditions
 from .nonex import families
 from .nonex import sporadic
 from .view import Param
+from .util import bruck_chowla_ryser
 from .util import change_ring
 from .util import checklist
 from .util import checkNonneg
@@ -2125,6 +2129,69 @@ class ASParameters(SageObject):
                                                   "strongly regular graph",
                                                   ("HaemersTonchev96",
                                                    "Theorem 6.1."))
+
+    @check(1)
+    def check_hasse_minkowski(self, expand=False, factor=False,
+                              simplify=False):
+        """
+        Check whether an imprimitive 3-class association scheme
+        satisfies restrictions from the Hasse-Minkowski theory.
+        """
+        if self._.d != 3:
+            return
+        if not self._has("p"):
+            self.pTable(expand=expand, factor=factor, simplify=simplify)
+        for h, *t in self.all_subsets_quotients():
+            if t:
+                continue
+            try:
+                n = Integer(1 + self._.p[0, h, h])
+                m = Integer(self._.n / n)
+            except TypeError:
+                continue
+            ii, jj = {1, 2, 3} - {h}
+            for i, j in [(ii, jj), (jj, ii)]:
+                try:
+                    k = Integer(self._.p[0, i, i])
+                    lm = Integer(self._.p[i, i, i])
+                    mp = Integer(self._.p[j, i, i])
+                    mu = Integer(self._.p[h, i, i])
+                except TypeError:
+                    continue
+                d = (mp - lm) / 2
+                kdmnmp = (k + d)**2 - m * n * mp
+                kdmu = k + d**2 - mu
+                nmp = n * mp
+                if m % 2 == 0:
+                    if kdmnmp.is_square() and \
+                            (m % 4 == 0 or bruck_chowla_ryser(3, kdmu, 1)):
+                        continue
+                elif n % 2 == 0:
+                    if kdmu.is_square() and \
+                            bruck_chowla_ryser(m, kdmnmp, nmp):
+                        continue
+                else:
+                    skdmu = kdmu.squarefree_part()
+                    sn = (n if is_divisible(n - 1, 4) else -n).squarefree_part()
+                    skdmnmp = kdmnmp.squarefree_part()
+                    snmp = (nmp if is_divisible(m - 1, 4) else -nmp).squarefree_part()
+                    for p, _ in gcd(lcm(skdmu, sn), lcm(skdmnmp, snmp)).factor():
+                        Zp = Integers(p)
+                        pkdmu = Zp(skdmu)
+                        pn = Zp(sn)
+                        pkdmnmp = Zp(skdmnmp)
+                        pnmp = Zp(snmp)
+                        if (Zp(-skdmu*sn / p**2).is_square()
+                            if (pkdmu + pn).is_zero() else
+                            pkdmu.is_square() and pn.is_square()) != \
+                                (Zp(-skdmnmp*snmp / p**2).is_square()
+                                 if (pkdmnmp + pnmp).is_zero() else
+                                 pkdmnmp.is_square() and pnmp.is_square()):
+                            break
+                    else:
+                        continue
+                raise InfeasibleError("Hasse-Minkowski restrictions not satisfied",
+                                      ("vanDam99", "Lemma 6.1."))
 
 
     @check(2)
