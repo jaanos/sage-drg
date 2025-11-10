@@ -71,6 +71,7 @@ from .util import rewriteExp
 from .util import rewriteMatrix
 from .util import rewriteTuple
 from .util import _simplify
+from .util import solve_eqs
 from .util import sort_solution
 from .util import subs
 from .util import symbol
@@ -2514,9 +2515,7 @@ class PolyASParameters(ASParameters):
             if s != self.SYMBOL or len(b) != self._.d:
                 continue
             vars = tuple(set(sum(map(variables, b + c), ())))
-            sols = _solve([SR(l) == r for l, r
-                           in zip(self._.b[:-1] + self._.c[1:], b + c)],
-                          vars)
+            sols = solve_eqs(zip(self._.b[:-1] + self._.c[1:], b + c), *vars)
             if any(checkConditions(cond, sol) for sol in sols
                    if is_integral(sol)):
                 raise InfeasibleError(refs=ref)
@@ -2922,9 +2921,8 @@ class PolyASParameters(ASParameters):
         Return the values the variables need to take
         to match with the given array.
         """
-        return _solve([SR(l) == r for l, r in
-                       zip(self._.b[:-1] + self._.c[1:], tuple(b) + tuple(c))],
-                      self._.vars)
+        return solve_eqs(zip(self._.b[:-1] + self._.c[1:], tuple(b) + tuple(c)),
+                         *self._.vars)
 
     def _subs(self, exp, p, seen):
         """

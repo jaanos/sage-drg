@@ -517,6 +517,20 @@ def _simplify(exp):
     return out
 
 
+def solve_eqs(f, *vars):
+    """
+    Solve the system of equations given by the list of pairs ``f''.
+    """
+    eqs = []
+    for l, r in f:
+        eq = SR(l) == r
+        if not eq.is_constant():
+            eqs.append(eq)
+        elif not eq:
+            return []
+    return solve(eqs, *vars)
+
+
 def sort_solution(sol):
     """
     Sort a solution to an equation by the variable names.

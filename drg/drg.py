@@ -46,6 +46,7 @@ from .util import is_squareSum
 from .util import pair_keep
 from .util import pair_swap
 from .util import rewriteExp
+from .util import solve_eqs
 from .util import subs
 from .util import symbol
 from .util import variables
@@ -452,10 +453,12 @@ class DRGParameters(PolyASParameters):
         """
         Check whether the graph can have the specified classical parameters.
         """
-        p = DRGParameters(self._.d, b, alpha, beta)
-        return len(_solve([SR(l) == r for l, r in
-                           zip(self._.b + self._.c, p._.b + p._.c)],
-                          self._.vars)) > 0
+        try:
+            p = DRGParameters(self._.d, b, alpha, beta)
+            return len(solve_eqs(zip(self._.b + self._.c, p._.b + p._.c),
+                                 *self._.vars)) > 0
+        except (AssertionError, InfeasibleError):
+            return False
 
     def is_dualPolar2Aodd(self):
         """
@@ -494,23 +497,24 @@ class DRGParameters(PolyASParameters):
         """
         Check whether the graph can be a halved cube.
         """
-        b1 = [SR(x) == (self._.d-i) * (2*(self._.d-i) - 1)
+        b1 = [(x, (self._.d-i) * (2*(self._.d-i) - 1))
               for i, x in enumerate(self._.b[:-1])]
-        b2 = [SR(x) == (self._.d-i) * (2*(self._.d-i) + 1)
+        b2 = [(x, (self._.d-i) * (2*(self._.d-i) + 1))
               for i, x in enumerate(self._.b[:-1])]
-        c = [SR(x) == (i+1) * (2*i + 1) for i, x in enumerate(self._.c[1:])]
-        return len(_solve(b1 + c, self._.vars)) > 0 or \
-            len(_solve(b2 + c, self._.vars)) > 0
+        c = [(x, (i+1) * (2*i + 1)) for i, x in enumerate(self._.c[1:])]
+        return len(solve_eqs(b1 + c, self._.vars)) > 0 or \
+            len(solve_eqs(b2 + c, self._.vars)) > 0
 
     def is_hamming(self):
         """
         Check whether the graph can be a Hamming (or Doob) graph.
         """
         z = symbol()
-        return len(_solve([SR(x) == (self._.d-i) * z
-                           for i, x in enumerate(self._.b[:-1])] +
-                          [SR(x) == i+1 for i, x in enumerate(self._.c[1:])],
-                          self._.vars + (z, ))) > 0
+        return len(solve_eqs([*((x, (self._.d-i) * z)
+                                for i, x in enumerate(self._.b[:-1])),
+                              *((x, i+1)
+                                for i, x in enumerate(self._.c[1:]))],
+                             *self._.vars, z)) > 0
 
     def is_hermitean(self):
         """
@@ -533,11 +537,11 @@ class DRGParameters(PolyASParameters):
         Check whether the graph can be a Johnson graph.
         """
         z = symbol()
-        return len(_solve([SR(x) == (self._.d-i) * (self._.d - z - i)
-                           for i, x in enumerate(self._.b[:-1])] +
-                          [SR(x) == (i+1)**2 for i, x
-                           in enumerate(self._.c[1:])],
-                          self._.vars + (z, ))) > 0
+        return len(solve_eqs([*((x, (self._.d-i) * (self._.d - z - i))
+                                for i, x in enumerate(self._.b[:-1])),
+                              *((x, (i+1)**2)
+                                for i, x in enumerate(self._.c[1:]))],
+                             *self._.vars, z)) > 0
 
     def is_locallyPetersen(self):
         """
@@ -947,11 +951,11 @@ class DRGParameters(PolyASParameters):
                 diam = None
             vars = tuple(set(sum(map(variables, cl), ())))
             for c in clas:
-                sols = _solve([SR(l) == r for l, r in zip(c, cl)], vars)
+                sols = solve_eqs(zip(c, cl), *vars)
                 if all(isinstance(e, Expression) for e in sols):
-                    continue
+                    sols = [[s] for s in sols]
                 if diam is not None:
-                    sols = [s + [diam] for s in sols]
+                    sols = [[*s, diam] for s in sols]
                 if any(checkConditions(cond, sol) for sol in sols):
                     raise InfeasibleError(refs=ref)
         if self._.d >= 3 and self._.a[1] == 0 and self._.a[2] > 0 and \
