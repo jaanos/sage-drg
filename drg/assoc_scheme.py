@@ -1803,7 +1803,9 @@ class ASParameters(SageObject):
             self.dualEigenmatrix()
         if not self._has("p"):
             self.pTable()
-        p = self._.p.change_ring(QQ)
+        p = self._.p
+        if p.ring is not SR:
+            p = p.change_ring(QQ)
         assert checkPos(p[u, v, w]), \
             "no triple of vertices in relations %d, %d, %d" % (u, v, w)
         if not self._has("q"):
