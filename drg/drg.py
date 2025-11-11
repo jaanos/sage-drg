@@ -616,7 +616,6 @@ class DRGParameters(PolyASParameters):
         except TypeError:
             raise TypeError("no embedding into symbolic ring available, "
                             "local eigenvalue check aborted")
-            return
         orig = interval
         ll = -Infinity
         uu = Infinity
@@ -689,8 +688,6 @@ class DRGParameters(PolyASParameters):
             if u - l <= 4 and uu - ll < 4:
                 keep = RealSet()
                 m = l + 2
-                if u - l <= 3:
-                    uu = m
                 k = 3
                 while m + 2*cos(2*pi/k) <= uu:
                     t = floor((k-1)/2)
@@ -715,9 +712,11 @@ class DRGParameters(PolyASParameters):
             th = -1 - self._.b[1] / (self._.theta[h] + 1)
             minmult[th] = self._.k[1] - self._.m[h] + (1 if th == a else 0)
         posint = interval - RealSet.unbounded_below_open(0)
+        negint = interval - RealSet.unbounded_above_open(0)
         th1 = posint.inf()
-        th2 = (interval - RealSet.unbounded_above_open(0)).sup()
-        if posint.cardinality() <= 2 and th1 != th2 and -th2 <= th1:
+        th2 = negint.sup()
+        if th1 != th2 and -th2 <= th1 and negint.cardinality() > 2 and \
+                posint.cardinality() <= (1 if bp == a else 2):
             rr = [("MakhnevBelousov21", "cf. Sec. 4")]
             if len(minmult) > 1 or minmult[a] > 1:
                 rr.insert(0, ("BCN", "Thm. 4.4.4."))
@@ -1522,22 +1521,30 @@ class DRGParameters(PolyASParameters):
             warn(Warning(ex.args))
             return
         c = rng.cardinality()
-        if rng.sup() <= bp or self._.subconstituents[1] is not None or \
-                not is_integer(c):
+        if rng.sup() <= bp or not is_integer(c):
             return
-        ths = {SR.symbol("__m%d" % i): ii.lower()
-               for i, ii in enumerate(rng) if ii.lower() != self._.a[1]}
+        i = 0
+        seen = {self._.a[1]}
+        ths = {}
+        for ii in rng:
+            ix = SR(ii.lower())
+            if ix in seen:
+                continue
+            rs = [r for r, _ in ix.minpoly().roots(SR)]
+            ths[SR.symbol("__m%d" % i)] = rs
+            i += 1
+            seen.update(rs)
         exps = {m: (0, self._.k[1] - 1) for m in ths}
-        conds = [sum(m for m in ths) == self._.k[1] - 1,
-                 sum(a*m for m, a in ths.items()) == -self._.a[1],
-                 sum(a**2 * m for m, a in ths.items())
+        conds = [sum(len(r) * m for m, r in ths.items()) == self._.k[1] - 1,
+                 sum(sum(r) * m for m, r in ths.items()) == -self._.a[1],
+                 sum(a**2 * m for m, r in ths.items() for a in r)
                  == (self._.k[1] - self._.a[1]) * self._.a[1]]
         lvl = 0
         reason = None
         ref = None
-        for sol in find(exps, ths.keys(), conds):
-            sp = {ths[eq.lhs()]: eq.rhs()
-                  for eq in sol if eq.rhs() != 0}
+        for sol in find(exps, ths.keys(), [exp.expand() for exp in conds]):
+            sp = {th: eq.rhs() for eq in sol if eq.rhs() != 0
+                  for th in ths[eq.lhs()]}
             lsp = len(sp)
             if lsp <= 3:
                 q = max(p ** (e+1 if p == 2 else e)
