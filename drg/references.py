@@ -91,18 +91,29 @@ class Reference(SageObject):
                                                         key)(bibtex=True)))
                                           for key in self.fields))
 
-    def range(self, name, delim):
+    @classmethod
+    def _range(cls, data, delim):
         """
-        Insert the given delimiter if the named field is a tuple.
+        Insert the given delimiter if the given data is a tuple,
+        or format as a comma-separated sequence if data is a list.
 
         Otherwise, returns the data unchanged.
         """
-        data = self.fields[name]
         if isinstance(data, tuple):
             left, right = data
-            return "%s%s%s" % (left, delim, right)
+            return f"{left}{delim}{right}"
+        elif isinstance(data, list):
+            return ", ".join(f"{{{cls._range(entry, delim)}}}"
+                             for entry in data)
         else:
             return data
+
+    def range(self, name, delim):
+        """
+        Format the data in the named field using the given range delimiter,
+        if applicable.
+        """
+        return self._range(self.fields[name], delim)
 
     def title(self, bibtex=False):
         """
@@ -229,6 +240,20 @@ Article("BHMW89",
         pages=(413, 418),
         url="https://doi.org/10.1016/S0195-6698(89)80014-9",
         year=1989
+)
+
+Article("BHS00",
+        author=[("Bussemaker", ("Frans", "C.")),
+                 ("Haemers", ("Willem", "H.")),
+                 ("Spence", ("Edward", ))],
+        title="The search for pseudo orthogonal Latin squares of order six",
+        journal="Des. Codes Cryptogr.",
+        fjournal="Designs, Codes and Cryptography",
+        volume=21,
+        issue=(1, 3),
+        pages=(77, 82),
+        url="https://doi.org/10.1023/A:1008379409579",
+        year=2000
 )
 
 Article("BSW16",
@@ -374,6 +399,18 @@ Article(u"CoolsaetJurišić08",
         pages=(1086, 1095),
         url="https://doi.org/10.1016/j.jcta.2007.12.001",
         year=2008
+)
+
+Book("ColbournDinitz",
+     author=[("Colbourn", ("Charles", "J.")),
+              ("Dinitz", ("Jeffrey", "H."))],
+     title="Handbook of combinatorial designs, Second edition",
+     series="Discrete Mathematics and its Application",
+     volume=18,
+     publisher="CRC Press",
+     year=2007,
+     url="https://doi.org/10.1201/9781420010541",
+     pages=("xxvi", 1016)
 )
 
 Article("CJK08",
@@ -932,6 +969,18 @@ Book("PayneThas",
      pages=("xii", 287)
 )
 
+Article("Shrikhande59",
+        author=[("Shrikhande", ("S.", "S."))],
+        title="The uniqueness of the $L_2$ association scheme",
+        journal="Ann. Math. Statist.",
+        fjournal="Annals of Mathematical Statistics",
+        volume=30,
+        number=3,
+        pages=(781, 798),
+        url="https://doi.org/10.1214/aoms/1177706207",
+        year=1959
+)
+
 Article("Soicher17",
         author=[("Soicher", ("Leonard", "H."))],
         title="The uniqueness of a distance-regular graph "
@@ -959,6 +1008,16 @@ Article("SumalrojWorawannotai16",
         url="http://www.combinatorics.org/ojs/index.php/eljc/article/"
             "view/v23i1p32",
         year=2016
+)
+
+Article("Tarry00",
+        author=[("Tarry", ("Gaston", ))],
+        title=u"Le probléme de 36 officiers",
+        journal="C. R. Assoc. Fr. Avanc. Sci. Natur.",
+        fjournal=u"Compte Rendu de l'Association Française pour l'Avancement de Science Naturel",
+        volume=(1, 2),
+        pages=[(122, 123), (170, 203)],
+        year=(1900, 1901)
 )
 
 Article("Urlep12",

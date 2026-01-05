@@ -15,6 +15,7 @@ from sage.functions.trig import cos
 from sage.matrix.constructor import Matrix
 from sage.matrix.special import identity_matrix
 from sage.matrix.special import diagonal_matrix
+from sage.misc.functional import sqrt
 from sage.misc.latex import latex
 from sage.misc.latex import LatexExpr
 from sage.rings.finite_rings.integer_mod_ring import Integers
@@ -63,6 +64,7 @@ from .util import integralize
 from .util import is_constant
 from .util import is_divisible
 from .util import is_integral
+from .util import is_squareSum
 from .util import make_expressions
 from .util import nrows
 from .util import normalize_field
@@ -2132,6 +2134,10 @@ class ASParameters(SageObject):
                                                   "strongly regular graph",
                                                   ("HaemersTonchev96",
                                                    "Theorem 6.1."))
+                        if (P[0, 2], P[1, 2], P[2, 2]) == (15, -3, 3):
+                            raise InfeasibleError("no spread in corresponding "
+                                                  "strongly regular graph",
+                                                  "BHS00")
 
     @check(1)
     def check_hasse_minkowski(self, expand=False, factor=False,
@@ -2197,6 +2203,39 @@ class ASParameters(SageObject):
                 raise InfeasibleError("Hasse-Minkowski restrictions not satisfied",
                                       ("vanDam99", "Lemma 6.1."))
 
+
+    @check(1)
+    def check_orthogonalArray(self, expand=False, factor=False,
+                              simplify=False):
+        """
+        Check whether an orthogonal array implied by the parameters can exist.
+        """
+        nn = Integer(self._.n)
+        if not nn.is_square():
+            return
+        n = sqrt(nn)
+        if n % 4 in (0, 3) or (n != 10 and is_squareSum(n)):
+            return
+        if not self._has("P"):
+            self.eigenmatrix(expand=expand, factor=factor,
+                             simplify=simplify)
+        s = [set(r) for r in self._.P.transpose()]
+        m1 = s.count({n - 1, -1})
+        m2 = s.count({2*n - 2, n - 2, -2})
+        t = n + 1 - m1 - 2 * m2
+        refs = []
+        if m2:
+            refs.append("Shrikhande59")
+        if n == 6 and t <= 3:
+            refs.append("Tarry00")
+        elif n == 10 and t <= 2:
+            refs.append("LTS89")
+        elif t**4 / 2 - t**3 + t**2 + t/2 - 1 <= n:
+            refs.append(("ColbournDinitz", "Theorem III.3.32"))
+        else:
+            return
+        raise InfeasibleError("corresponding orthogonal array does not exist",
+                              refs)
 
     @check(2)
     def check_absoluteBound(self, expand=False, factor=False,
