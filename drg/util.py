@@ -18,6 +18,7 @@ from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.number_field.number_field import NumberField
 from sage.rings.number_field.number_field_element import NumberFieldElement
 from sage.rings.polynomial.polynomial_element import Polynomial
+from sage.rings.rational import Rational
 from sage.rings.rational_field import Q as QQ
 from sage.rings.real_mpfr import create_RealNumber
 from sage.rings.real_mpfr import RR
@@ -49,16 +50,20 @@ def bruck_chowla_ryser(v, klm, lm):
     Verify whether the equation ``klm*X^2 + (-1)^((v-1)/2)*lm*Y^2 = Z^2``
     can have a solution in integers ``X, Y, Z`` not all zero.
     """
-    assert checkPos(klm) and checkPos(lm), \
-        "coefficients not known to be positive"
+    assert checkNonneg(klm) and checkNonneg(lm), \
+        "coefficients not known to be nonnegative"
     assert is_divisible(v - 1, 2), "v is not odd"
-    sklm = Integer(klm).squarefree_part()
-    slm = Integer(lm if is_divisible(v - 1, 4) else -lm).squarefree_part()
+    sklm = Rational(klm).squarefree_part()
+    slm = Rational(lm if is_divisible(v - 1, 4) else -lm).squarefree_part()
+    if (sklm.is_zero() and slm.is_square()) \
+            or (slm.is_zero() and sklm.is_square()):
+        return True
     g = gcd(sklm, slm)
     gklm = sklm / g
     glm = slm / g
-    return Integers(glm)(sklm).is_square() and Integers(gklm)(slm).is_square() \
-         and Integers(g)(-gklm * glm).is_square()
+    return Integers(glm)(sklm).is_square() \
+        and Integers(gklm)(slm).is_square() \
+        and Integers(g)(-gklm * glm).is_square()
 
 
 def change_ring(obj, K):
@@ -98,6 +103,16 @@ def checklist(checks, inherit=None):
             return fun
         return decorator
     return check
+
+
+def checkDimensions(M, d):
+    """
+    Check whether ``M'' is a square matrix of the given dimensions.
+    """
+    if isinstance(M, MatrixClass):
+        return M.nrows() == d and M.ncols() == d
+    else:
+        return len(M) == d and all(len(r) == d for r in M)
 
 
 def checkNonneg(exp):

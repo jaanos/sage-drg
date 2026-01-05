@@ -1564,8 +1564,9 @@ class DRGParameters(PolyASParameters):
                             ref = "vanDam95"
                         break
                     if i == 4:
-                        xi = Integer(tr / self._.k[1] -
-                                     self._.a[1] * (2*self._.a[1] - 1))
+                        xi = Integer((tr / self._.k[1] -
+                                      self._.a[1] * (2*self._.a[1] - 1))
+                                     .simplify_full())
                         if xi % 2 != 0:
                             if lvl < 2:
                                 lvl = 2

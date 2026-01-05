@@ -53,6 +53,7 @@ from .view import Param
 from .util import bruck_chowla_ryser
 from .util import change_ring
 from .util import checklist
+from .util import checkDimensions
 from .util import checkNonneg
 from .util import checkPos
 from .util import checkRational
@@ -719,9 +720,8 @@ class ASParameters(SageObject):
             a = p
             self._.ring = p.ring
         else:
-            assert all(len(M) == self._.d + 1 and all(len(r) == self._.d+1
-                                                      for r in M)
-                       for M in p), "parameter length mismatch"
+            assert all(checkDimensions(M, self._.d + 1) for M in p), \
+                "parameter length mismatch"
             a = Array3D(self._.d + 1, self._.ring)
             for h in range(self._.d + 1):
                 for i in range(self._.d + 1):
@@ -2167,7 +2167,8 @@ class ASParameters(SageObject):
                 nmp = n * mp
                 if m % 2 == 0:
                     if kdmnmp.is_square() and \
-                            (m % 4 == 0 or bruck_chowla_ryser(3, kdmu, 1)):
+                            (m % 4 == 0 or n % 2 == 1 or
+                             bruck_chowla_ryser(3, kdmu, 1)):
                         continue
                 elif n % 2 == 0:
                     if kdmu.is_square() and \
