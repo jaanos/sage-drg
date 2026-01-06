@@ -502,8 +502,8 @@ class DRGParameters(PolyASParameters):
         b2 = [(x, (self._.d-i) * (2*(self._.d-i) + 1))
               for i, x in enumerate(self._.b[:-1])]
         c = [(x, (i+1) * (2*i + 1)) for i, x in enumerate(self._.c[1:])]
-        return len(solve_eqs(b1 + c, self._.vars)) > 0 or \
-            len(solve_eqs(b2 + c, self._.vars)) > 0
+        return len(solve_eqs(b1 + c, *self._.vars)) > 0 or \
+            len(solve_eqs(b2 + c, *self._.vars)) > 0
 
     def is_hamming(self):
         """
