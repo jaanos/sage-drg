@@ -45,7 +45,7 @@ Also includes conference and seminar presentations.
 
 If you use `sage-drg` in your research, please cite both the paper and the software:
 
-* J. Vidali. Using symbolic computation to prove nonexistence of distance-regular graphs. *Electron. J. Combin.*, 25(4)#P4.21, 2018. [`http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21`](http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21).
+* J. Vidali. Using symbolic computation to prove nonexistence of distance-regular graphs. *Electron. J. Combin.*, 25(4)#P4.21, 2018. [`doi:10.37236/7763`](https://doi.org/10.37236/7763).
 
 * J. Vidali. `jaanos/sage-drg`: `sage-drg` v0.9, 2019. [`https://github.com/jaanos/sage-drg/`](https://github.com/jaanos/sage-drg/), [`doi:10.5281/zenodo.1418409`](https://doi.org/10.5281/zenodo.1418409).
 
@@ -57,6 +57,9 @@ You may also want to cite other documents containing descriptions of features th
 * A. L. Gavrilyuk, J. Vidali, J. S. Williford. On few-class *Q*-polynomial association schemes: feasible parameters and nonexistence results, *Ars Math. Contemp.*, 20(1):103-127, 2021. [`doi:10.26493/1855-3974.2101.b76`](https://doi.org/10.26493/1855-3974.2101.b76).
     + triple intersection number solution finder and forbidden quadruples check
     + support for quadruple intersection numbers
+
+* J. Vidali. Eigenspace embeddings of imprimitive association schemes, *Electron. J. Combin.*, 33(1)#P1.2, 2026. [`doi:10.37236/14071`](https://doi.org/10.37236/14071).
+    + support for number fields
 
 ### BibTeX
 
@@ -71,7 +74,7 @@ The above citations are given here in BibTeX format.
     VOLUME = {25},
     NUMBER = {4},
      PAGES = {P4.21},
-      NOTE = {\url{http://www.combinatorics.org/ojs/index.php/eljc/article/view/v25i4p21}},
+      NOTE = {\href{https://doi.org/10.37236/7763}{\texttt{doi:10.37236/7763}}},
       YEAR = {2018},
 }
 
@@ -96,7 +99,7 @@ The above citations are given here in BibTeX format.
 
 @article{gvw21,
     AUTHOR = {Gavrilyuk, Alexander L. and Vidali, Jano\v{s} and Williford, Jason S.},
-     TITLE = {On few-class $Q$-polynomial association schemes: feasible parameters and nonexistence results},
+     TITLE = {On few-class {$Q$}-polynomial association schemes: feasible parameters and nonexistence results},
    JOURNAL = {Ars Math. Contemp.},
   FJOURNAL = {Ars Mathematica Contemporanea},
     VOLUME = {20},
@@ -104,6 +107,18 @@ The above citations are given here in BibTeX format.
      PAGES = {103--127},
       NOTE = {\href{https://doi.org/10.26493/1855-3974.2101.b76}{\texttt{doi:10.26493/1855-3974.2101.b76}}},
       YEAR = {2021},
+}
+
+@article{v26,
+    AUTHOR = {Vidali, Jano\v{s}},
+     TITLE = {Eigenspace embeddings of imprimitive association schemes},
+   JOURNAL = {Electron. J. Combin.},
+  FJOURNAL = {Electronic Journal of Combinatorics},
+    VOLUME = {33},
+    NUMBER = {1},
+     PAGES = {P1.2},
+      NOTE = {\href{https://doi.org/10.37236/14071}{\texttt{doi:10.37236/14071}}},
+      YEAR = {2026},
 }
 ```
 ### Other uses
