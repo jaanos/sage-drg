@@ -17,7 +17,7 @@ class InfeasibleError(Exception):
         elif not isinstance(part, tuple):
             part = (part, )
         if refs is None:
-                refs = []
+            refs = []
         elif not isinstance(refs, list):
             refs = [refs]
         refs = [(references[pap], thm)

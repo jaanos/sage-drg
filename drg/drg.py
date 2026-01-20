@@ -1421,6 +1421,8 @@ class DRGParameters(PolyASParameters):
         If ``compute`` is set to ``True``,
         then the relevant triple intersection numbers will be computed.
         """
+        if not self._has("theta"):
+            self.eigenvalues()
         if not self._has("m"):
             self.multiplicities()
         if self._.d < 3 or self._.a[1] <= 2 or self.match(ICOSAHEDRON) or \

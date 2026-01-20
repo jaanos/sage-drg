@@ -667,8 +667,8 @@ class ASParameters(SageObject):
                 if pa not in subcs:
                     yield (pa, part, [], False)
         for pa, part, refs, fusion in derived():
-            if not issubclass(cls, pa._get_class()) \
-                    or not fusion or pa.classes() < c:
+            if not issubclass(cls, pa._get_class()) or not fusion \
+                    or pa.classes() < c or pa._get_parameters():
                 yield pa, part, refs, fusion
 
     @staticmethod
@@ -995,55 +995,120 @@ class ASParameters(SageObject):
                 pass
         return out
 
-    def check_feasible(self, checked=None, skip=None, derived=None, levels=3,
+    def check_feasible(self, checked=None, skip=None, derived=True, levels=3,
                        queue=None, part=()):
         """
         Check whether the parameter set is feasible.
         """
-        if self._is_trivial():
+        if self._is_trivial() or self.is_complete_multipartite():
             return
         par = self._get_parameters()
         if checked is None:
-            checked = set()
+            checked = {}
         if par in checked:
-            return
+            ex, _, _ = checked[par]
+            if isinstance(ex, Exception):
+                raise ex
+            elif ex:
+                return
+        else:
+            ex = None
+            if par is not None:
+                checked[par] = (None, {}, None)
         if skip is None:
             skip = set()
         elif isinstance(skip, six.string_types):
             skip = {skip}
         else:
             skip = set(skip)
-        for i, lvl in enumerate(self._checklist[:levels]):
-            for name, check in lvl:
-                if name not in skip:
-                    check(self)
-                    if i > 1:
-                        skip.add(name)
-        if (derived is None and self.is_complete_multipartite()) \
-                or not derived:
-            return
-        if par is not None:
-            checked.add(par)
-        do_bfs = False
-        if queue is None:
-            queue = []
-            do_bfs = True
-        for par, pt, refs, reorder in \
-                self._derived(derived or derived is None):
-            if par in checked:
-                continue
-            queue.append((par, (pt, *part), refs, skip if reorder else None))
-        if do_bfs:
-            i = 0
-            while i < len(queue):
-                par, pt, refs, skip = queue[i]
-                try:
-                    par.check_feasible(checked=checked, skip=skip,
-                                       derived=derived, levels=levels,
-                                       queue=queue, part=pt)
-                except (InfeasibleError, AssertionError) as ex:
-                    raise InfeasibleError(ex, refs=refs, part=pt)
-                i += 1
+        try:
+            if ex is None:
+                for i, lvl in enumerate(self._checklist[:levels]):
+                    for name, check in lvl:
+                        if name not in skip:
+                            check(self)
+                            if i > 1:
+                                skip.add(name)
+                if par is not None:
+                    _, d, _ = checked[par]
+                    ps = set()
+                    checked[par] = (False, d, ps)
+            elif par is not None:
+                _, _, ps = checked[par]
+            if derived:
+                do_bfs = False
+                if queue is None:
+                    ql = []
+                    qs = set()
+                    queue = (ql, qs)
+                    do_bfs = True
+                else:
+                    ql, qs = queue
+                for pmt, pt, refs, reorder in \
+                        self._derived(derived):
+                    pp = pmt._get_parameters()
+                    if pp in checked:
+                        e, d, _ = checked[pp]
+                        if isinstance(e, Exception):
+                            raise InfeasibleError(e, refs=refs, part=pt)
+                        elif e:
+                            continue
+                    elif pp is not None:
+                        d = {}
+                        checked[pp] = (None, d, None)
+                    if pp is None or pp not in qs:
+                        ql.append((pmt, (pt, *part), refs,
+                                    skip if reorder else None))
+                        if pp is not None:
+                            qs.add(pp)
+                    if par is not None and pp is not None:
+                        d[par] = (pt, refs)
+                        ps.add(pp)
+                if do_bfs:
+                    i = 0
+                    while i < len(ql):
+                        pmt, pt, refs, skip = ql[i]
+                        try:
+                            pmt.check_feasible(checked=checked, skip=skip,
+                                               derived=derived, levels=levels,
+                                               queue=queue, part=pt)
+                        except (InfeasibleError, AssertionError) as e:
+                            raise InfeasibleError(e, refs=refs, part=pt)
+                        i += 1
+        except (InfeasibleError, AssertionError) as e:
+            if par is not None:
+                qq = [(par, e)]
+                while qq:
+                    pp, ee = qq.pop()
+                    eee, d, s = checked[pp]
+                    if eee:
+                        continue
+                    if s:
+                        for ppp in s:
+                            _, dd, _ = checked[ppp]
+                            if dd:
+                                del dd[pp]
+                    for ppp, (pt, refs) in d.items():
+                        eee, _, ss = checked[ppp]
+                        if ss:
+                            ss.discard(pp)
+                        qq.append((ppp, InfeasibleError(ee, refs=refs,
+                                                        part=pt)))
+                    checked[pp] = (ee, None, None)
+            raise e
+        if derived and par is not None:
+            qq = [par]
+            while qq:
+                pp = qq.pop()
+                eee, d, s = checked[pp]
+                if s or eee:
+                    continue
+                for ppp, (pt, refs) in d.items():
+                    eee, _, ss = checked[ppp]
+                    if ss:
+                        ss.discard(pp)
+                    qq.append(ppp)
+                checked[pp] = (True, None, None)
 
     def check_handshake(self, p=None):
         """
